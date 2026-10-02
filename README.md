@@ -2,6 +2,8 @@
 
 A mathematically exact, double-layer geodesic sphere in the manner of Buckminster Fuller's Montreal Biosphere (1967), with a browser studio for exploring and exporting it.
 
+**Try it:** [hankwhiteco.github.io/dymaxion-sphere-studio/studio.html](https://hankwhiteco.github.io/dymaxion-sphere-studio/studio.html)
+
 - **Outer layer**: Class I breakdown of an icosahedron in Fuller's Dymaxion orientation, projected radially onto the sphere (2v–16v).
 - **Inner layer**: the dual net, one node beneath the centroid of every outer triangle, giving hexagons and the 12 pentagons.
 - **Web**: each inner node strutted to its triangle's three corners. At 100% truss depth (`a·√(2/3)`), these form regular tetrahedra: an octet truss.
@@ -43,3 +45,7 @@ GIF and MP4 export load [gifenc](https://github.com/mattdesl/gifenc) and [mp4-mu
 - The node count is checked against 10f² + 2, and Euler's formula V − E + F = 2 holds at every frequency.
 - Distinct outer strut lengths match the standard Class I counts (2 at 2v, 3 at 3v, 6 at 4v).
 - The jitterbug is the family of cyclic permutations of (0, ±1, ±t): t = 1 is the cuboctahedron, t = φ the icosahedron. Edge length is held constant throughout, and the end state is rotated to land exactly on the Dymaxion vertices.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
