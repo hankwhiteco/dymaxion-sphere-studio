@@ -1,0 +1,1177 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dymaxion Sphere Studio</title>
+<style>
+  /* Layout: the sphere's artboard set into a grey housing, beside an off-white control face
+     of keys, switches and a tuning scale (after Dieter Rams' Braun work); stacks on phones. */
+  :root {
+    --bg: #e4e2dd;          /* housing grey */
+    --panel: #f2f1ed;       /* control face */
+    --well: #e3e1dc;        /* recessed key bed */
+    --fg: #1d1d1c;
+    --muted: #84827d;
+    --line: rgba(29, 29, 28, 0.12);
+    --track: rgba(29, 29, 28, 0.22);
+    --key: #2b2b2a;         /* dark keys */
+    --key-fg: #f2f1ed;
+    --cap: #2b2b2a;         /* slider caps, switch tongues */
+    --accent: #ef5a1f;      /* Braun orange */
+    --accent-ink: #ffffff;
+    --checker-a: #dddbd5;
+    --checker-b: #ecebe6;
+    --font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141413; --panel: #1f1f1e; --well: #2a2a28; --fg: #e8e6e0; --muted: #8d8b85;
+      --line: rgba(232, 230, 224, 0.1); --track: rgba(232, 230, 224, 0.24);
+      --key: #3a3a38; --key-fg: #e8e6e0; --cap: #d8d6d0; --accent: #f26a2c; --accent-ink: #141413;
+      --checker-a: #262624; --checker-b: #1d1d1c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141413; --panel: #1f1f1e; --well: #2a2a28; --fg: #e8e6e0; --muted: #8d8b85;
+    --line: rgba(232, 230, 224, 0.1); --track: rgba(232, 230, 224, 0.24);
+    --key: #3a3a38; --key-fg: #e8e6e0; --cap: #d8d6d0; --accent: #f26a2c; --accent-ink: #141413;
+    --checker-a: #262624; --checker-b: #1d1d1c;
+    color-scheme: dark;
+  }
+
+  html, body { height: 100%; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 400 13px/1.4 var(--font);
+         -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+
+  .app { display: grid; grid-template-columns: minmax(0, 1fr) 344px; height: 100%; }
+
+  /* ── stage ── */
+  .stage { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 16px;
+           padding: 22px 28px; min-width: 0; min-height: 0; }
+  .masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  /* speaker-grille perforation, the one ornament */
+  .grille { width: 34px; height: 16px; flex: none;
+            background: radial-gradient(circle, var(--fg) 1.1px, transparent 1.4px) 0 0 / 5.6px 5.4px; opacity: .8; }
+  h1 { font: 500 17px/1 var(--font); margin: 0; letter-spacing: -0.005em; }
+  .hint { color: var(--muted); font-size: 12px; }
+  .board-wrap { display: grid; place-items: center; min-height: 0; container-type: size; }
+  .board { position: relative; width: min(100%, 100cqh); aspect-ratio: 1; max-width: 100%;
+           border-radius: 6px; overflow: hidden; touch-action: none; cursor: grab;
+           box-shadow: inset 0 0 0 1px var(--line); }
+  .board.dragging { cursor: grabbing; }
+  .board[data-bg="paper"] { background: #f2f1ed; }
+  .board[data-bg="ink"] { background: #141413; }
+  .board[data-bg="clear"] {
+    background: repeating-conic-gradient(var(--checker-a) 0 25%, var(--checker-b) 0 50%) 0 0 / 20px 20px;
+  }
+  .board canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .phase { position: absolute; left: 12px; bottom: 12px; font: 500 11px/1 var(--font);
+           padding: 7px 9px; border-radius: 3px; background: rgba(242, 241, 237, 0.92); color: #1d1d1c;
+           pointer-events: none; }
+  .board[data-bg="ink"] .phase { background: rgba(20, 20, 19, 0.85); color: #e8e6e0; }
+
+  .readout { display: flex; flex-wrap: wrap; gap: 6px 24px; font: 400 11.5px/1.4 var(--font); color: var(--muted); }
+  .readout b { color: var(--fg); font-weight: 500; }
+
+  /* ── control face ── */
+  .panel { background: var(--panel); box-shadow: -1px 0 0 var(--line); overflow-y: auto;
+           padding-block: 6px 28px; padding-inline: 22px; }
+  section { display: grid; gap: 12px; padding-block: 18px; border-bottom: 1px solid var(--line); }
+  section:last-child { border-bottom: 0; }
+  h2 { margin: 0; font: 500 11px/1 var(--font); color: var(--muted); text-transform: lowercase; letter-spacing: 0.01em; }
+  .row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 12px; }
+  .row label, .row .lbl { font-weight: 500; }
+  .val { font: 400 12px var(--font); color: var(--muted); text-align: right; }
+  .row input[type="range"] { grid-column: 1 / -1; }
+  .row.dim > :not(input) { opacity: .45; }
+
+  /* frequency: a tuning scale */
+  .freq-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .freq-num { font: 300 46px/0.9 var(--font); letter-spacing: -0.03em; }
+  .freq-num small { font-size: 18px; font-weight: 400; letter-spacing: 0; color: var(--muted); margin-left: 2px; }
+  .freq { display: grid; grid-template-columns: 30px 1fr 30px; align-items: center; gap: 4px 10px; }
+  .dial { grid-column: 2; display: flex; justify-content: space-between; padding-inline: 5px; margin-top: -4px; }
+  .dial span { position: relative; width: 1px; height: 6px; background: var(--track); }
+  .dial span:nth-child(odd) { height: 10px; background: var(--fg); }
+  .dial span:nth-child(odd)::after { content: attr(data-n); position: absolute; top: 13px; left: 50%; transform: translateX(-50%);
+                                     font-size: 9.5px; color: var(--muted); }
+  .dial span.on { background: var(--accent); }
+  .dial span.on::after { color: var(--fg); font-weight: 500; }
+  .freq + .row, .freq ~ .check { margin-top: 10px; }
+
+  .step { width: 30px; height: 30px; border-radius: 50%; border: 0; background: var(--well); color: var(--fg);
+          font: 400 17px/1 var(--font); cursor: pointer; box-shadow: inset 0 -1px 0 var(--line); }
+  .step:hover { background: var(--line); }
+  .step:active { transform: translateY(1px); }
+
+  /* sliders: thin rail, rectangular cap */
+  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; background: transparent; margin: 0; cursor: pointer; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 2px; background: var(--track); }
+  input[type="range"]::-moz-range-track { height: 2px; background: var(--track); }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 20px; margin-top: -9px;
+           border-radius: 2px; background: var(--cap); box-shadow: 0 1px 1px rgba(0,0,0,.18); }
+  input[type="range"]::-moz-range-thumb { width: 10px; height: 20px; border: 0; border-radius: 2px; background: var(--cap); }
+  input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
+  input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
+
+  /* layer switches */
+  .layers { display: grid; gap: 0; }
+  .layer { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 12px;
+           padding: 8px 0; cursor: pointer; border-top: 1px solid var(--line); }
+  .layer:first-child { border-top: 0; }
+  .layer input { position: absolute; opacity: 0; pointer-events: none; }
+  .layer svg { width: 30px; height: 20px; overflow: visible; }
+  .layer svg * { fill: none; stroke: var(--fg); stroke-linecap: round; }
+  .layer .name { font-weight: 500; }
+  .layer .count { font-size: 11px; color: var(--muted); }
+  .layer .meta { display: grid; gap: 1px; }
+  /* slide switch with an indicator lamp */
+  .layer .sw { width: 30px; height: 16px; border-radius: 3px; background: var(--well); position: relative;
+               box-shadow: inset 0 0 0 1px var(--line); }
+  .layer .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 2px;
+                      background: var(--track); transition: transform .15s, background .15s; }
+  .layer input:checked ~ .sw::after { transform: translateX(14px); background: var(--cap); }
+  .layer[data-accent] input:checked ~ .sw::after { background: var(--accent); }
+  .layer input:not(:checked) ~ svg, .layer input:not(:checked) ~ .meta { opacity: .42; }
+  .layer input:focus-visible ~ .sw { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .layer[data-accent] svg * { stroke: var(--accent); }
+
+  /* push-button rows with indicator lamps */
+  .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .seg.three { grid-template-columns: repeat(3, 1fr); }
+  .seg label { position: relative; display: grid; justify-items: center; gap: 2px; padding: 15px 4px 8px; cursor: pointer;
+               text-align: center; font-weight: 500; font-size: 12px; border-radius: 3px; background: var(--well);
+               box-shadow: inset 0 -1px 0 var(--line); }
+  .seg label::before { content: ""; position: absolute; top: 6px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px;
+                       border-radius: 50%; background: var(--track); }
+  .seg label small { font-size: 10px; font-weight: 400; color: var(--muted); }
+  .seg label:hover { background: var(--line); }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg input:checked + label { background: var(--key); color: var(--key-fg); box-shadow: none; }
+  .seg input:checked + label::before { background: var(--accent); }
+  .seg input:checked + label small { color: var(--key-fg); opacity: .6; }
+  .seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* colors */
+  .colors { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .color { display: grid; gap: 8px; }
+  .color .lbl { font-weight: 500; }
+  .swatches { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  .swatch { width: 20px; height: 20px; border-radius: 50%; border: 0; cursor: pointer; padding: 0;
+            box-shadow: inset 0 0 0 1px var(--line); }
+  .swatch[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--line), 0 0 0 2px var(--panel), 0 0 0 3.5px var(--fg); }
+  .swatch:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  input[type="color"] { width: 20px; height: 20px; border: 0; border-radius: 50%; padding: 0; background: none; cursor: pointer;
+                        box-shadow: inset 0 0 0 1px var(--line); }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+  input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
+
+  .check { display: grid; grid-template-columns: 14px 1fr; align-items: center; gap: 2px 10px; cursor: pointer; font-weight: 500; }
+  .check input { accent-color: var(--cap); width: 14px; height: 14px; margin: 0; }
+  .check small { grid-column: 2; color: var(--muted); font-weight: 400; font-size: 11.5px; }
+  .check:has(input:disabled) { opacity: .45; cursor: default; }
+
+  /* round transport keys, labelled underneath */
+  .keys { display: flex; align-items: flex-start; gap: 18px; }
+  .key-wrap { display: grid; justify-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+  .key { width: 38px; height: 38px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer;
+         background: var(--key); color: var(--key-fg); box-shadow: inset 0 -2px 0 rgba(0,0,0,.25); }
+  .key svg { width: 13px; height: 13px; fill: currentColor; }
+  .key:active { transform: translateY(1px); box-shadow: inset 0 -1px 0 rgba(0,0,0,.25); }
+  .key.play { width: 50px; height: 50px; background: var(--accent); color: var(--accent-ink); }
+  .key.play svg { width: 16px; height: 16px; }
+  .key-wrap.main { color: var(--fg); font-weight: 500; }
+  .keys .spacer { flex: 1; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 14px;
+         border-radius: 3px; border: 0; background: var(--well); color: var(--fg); font: 500 13px var(--font);
+         cursor: pointer; box-shadow: inset 0 -1px 0 var(--line); }
+  .btn:hover { background: var(--line); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: var(--key); color: var(--key-fg); box-shadow: none; }
+  .btn.primary:hover { filter: brightness(1.15); }
+  .btn:focus-visible, .step:focus-visible, .key:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .transport { display: flex; gap: 6px; }
+  .grow { flex: 1; }
+  .exports { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .exports.three { grid-template-columns: 1fr 1fr 84px; }
+  .seg.two { grid-template-columns: repeat(2, 1fr); }
+  .btn:disabled { opacity: .45; cursor: default; transform: none; }
+  .btn.busy { background: var(--accent); color: var(--accent-ink); }
+  .progress { height: 3px; background: var(--well); border-radius: 2px; overflow: hidden; }
+  .progress span { display: block; height: 100%; width: 0; background: var(--accent); }
+  .note { margin: 0; font-size: 11.5px; line-height: 1.45; color: var(--muted); }
+  select { height: 36px; border-radius: 3px; border: 0; background: var(--well); color: var(--fg); font: 400 12px var(--font);
+           padding: 0 8px; box-shadow: inset 0 -1px 0 var(--line); }
+
+  /* jitterbug stages: a real sequence, so the steps are numbered */
+  .stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; font-size: 10.5px; line-height: 1.3; color: var(--muted); }
+  .stages span { border-top: 2px solid var(--track); padding-top: 6px; }
+  .stages span.on { border-top-color: var(--accent); color: var(--fg); }
+
+  .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+           background: var(--key); color: var(--key-fg); padding: 10px 14px; border-radius: 3px; font-weight: 500;
+           opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 860px) {
+    html, body { height: auto; }
+    .app { grid-template-columns: minmax(0, 1fr); height: auto; }
+    .stage { padding: 16px; }
+    .board-wrap { container-type: normal; }
+    .board { width: 100%; }
+    .panel { box-shadow: 0 -1px 0 var(--line); overflow: visible; padding-inline: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <main class="stage">
+    <div class="masthead">
+      <div class="brand"><span class="grille" aria-hidden="true"></span><h1>Dymaxion Sphere Studio</h1></div>
+      <span class="hint">Drag the sphere to turn it · Space to play or pause</span>
+    </div>
+    <div class="board-wrap">
+      <div class="board" id="board" data-bg="paper"><canvas id="cv" aria-label="Rotating geodesic sphere" role="img"></canvas><span class="phase" id="phase" hidden></span></div>
+    </div>
+    <div class="readout" id="readout"></div>
+  </main>
+
+  <aside class="panel">
+    <section>
+      <h2>Frequency</h2>
+      <div class="freq-head">
+        <span class="freq-num" id="freqNum">16<small>v</small></span>
+        <span class="val" id="freqNote"></span>
+      </div>
+      <div class="freq">
+        <button class="step" id="freqDown" aria-label="Lower frequency">−</button>
+        <input type="range" id="freq" min="2" max="16" step="1" value="16" aria-label="Frequency">
+        <button class="step" id="freqUp" aria-label="Raise frequency">+</button>
+        <div class="dial" id="dial" aria-hidden="true"><span data-n="2"></span><span data-n="3"></span><span data-n="4"></span><span data-n="5"></span><span data-n="6"></span><span data-n="7"></span><span data-n="8"></span><span data-n="9"></span><span data-n="10"></span><span data-n="11"></span><span data-n="12"></span><span data-n="13"></span><span data-n="14"></span><span data-n="15"></span><span data-n="16"></span></div>
+      </div>
+      <label class="check"><input type="checkbox" id="trueScale"><span>Keep strut size constant</span><small>sphere grows with frequency</small></label>
+      <div class="row">
+        <label for="depth">Truss depth</label><span class="val" id="depthVal"></span>
+        <input type="range" id="depth" min="0" max="150" step="5" value="100">
+      </div>
+    </section>
+
+    <section>
+      <h2>Layers</h2>
+      <div class="layers">
+        <label class="layer"><input type="checkbox" id="L_outer" checked>
+          <svg viewBox="0 0 34 22"><path d="M2 20 L11 3 L20 20 Z M11 3 L29 3 L20 20 M29 3 L32 9" stroke-width="1.6"/></svg>
+          <span class="meta"><span class="name">Outer triangles</span><span class="count" id="c_outer"></span></span><span class="sw"></span></label>
+        <label class="layer"><input type="checkbox" id="L_inner" checked>
+          <svg viewBox="0 0 34 22"><path d="M9 3 L19 3 L24 11 L19 19 L9 19 L4 11 Z M24 11 L32 11" stroke-width="1.1"/></svg>
+          <span class="meta"><span class="name">Inner hexagons</span><span class="count" id="c_inner"></span></span><span class="sw"></span></label>
+        <label class="layer"><input type="checkbox" id="L_web" checked>
+          <svg viewBox="0 0 34 22"><path d="M17 12 L4 3 M17 12 L30 3 M17 12 L17 21" stroke-width=".8"/></svg>
+          <span class="meta"><span class="name">Web diagonals</span><span class="count" id="c_web"></span></span><span class="sw"></span></label>
+        <label class="layer" data-accent><input type="checkbox" id="L_net">
+          <svg viewBox="0 0 34 22"><path d="M2 20 L17 2 L32 20 Z" stroke-width="1.8"/></svg>
+          <span class="meta"><span class="name">Icosahedron net</span><span class="count">20 Dymaxion faces</span></span><span class="sw"></span></label>
+        <label class="layer" data-accent><input type="checkbox" id="L_poles">
+          <svg viewBox="0 0 34 22"><circle cx="17" cy="11" r="4" stroke-width="1.6"/><path d="M17 3 L17 1 M24 8 L26 7 M22 18 L23 20 M12 18 L11 20 M10 8 L8 7" stroke-width="1.2"/></svg>
+          <span class="meta"><span class="name">Five-fold nodes</span><span class="count">12 pentagon centers</span></span><span class="sw"></span></label>
+        <label class="layer" data-accent><input type="checkbox" id="L_ve">
+          <svg viewBox="0 0 34 22"><circle cx="17" cy="11" r="9.5" stroke-width="1.2"/><ellipse cx="17" cy="11" rx="9.5" ry="3.6" stroke-width="1"/><ellipse cx="17" cy="11" rx="3.6" ry="9.5" stroke-width="1"/></svg>
+          <span class="meta"><span class="name">Vector equilibrium</span><span class="count">4 great circles</span></span><span class="sw"></span></label>
+        <label class="layer"><input type="checkbox" id="L_back" checked>
+          <svg viewBox="0 0 34 22"><circle cx="17" cy="11" r="9" stroke-width="1.4"/><path d="M8 11 Q17 16 26 11" stroke-width="1" stroke-dasharray="2 2"/></svg>
+          <span class="meta"><span class="name">Far side</span><span class="count">see-through hemisphere</span></span><span class="sw"></span></label>
+      </div>
+      <div class="row">
+        <label for="backOp">Far side opacity</label><span class="val" id="backVal"></span>
+        <input type="range" id="backOp" min="5" max="100" step="1" value="28">
+      </div>
+      <div class="row">
+        <label for="weight">Line weight</label><span class="val" id="weightVal"></span>
+        <input type="range" id="weight" min="0.25" max="4" step="0.05" value="1">
+      </div>
+    </section>
+
+    <section>
+      <h2>Color</h2>
+      <div class="colors">
+        <div class="color"><span class="lbl">Struts</span>
+          <div class="swatches" id="sw_line"></div></div>
+        <div class="color"><span class="lbl">Highlights</span>
+          <div class="swatches" id="sw_accent"></div></div>
+      </div>
+      <div class="row"><span class="lbl">Artboard</span></div>
+      <div class="seg three" role="radiogroup" aria-label="Artboard background">
+        <input type="radio" name="bg" id="bg_paper" value="paper" checked><label for="bg_paper">Paper</label>
+        <input type="radio" name="bg" id="bg_ink" value="ink"><label for="bg_ink">Ink</label>
+        <input type="radio" name="bg" id="bg_clear" value="clear"><label for="bg_clear">Clear</label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Motion</h2>
+      <div class="keys">
+        <div class="key-wrap main"><button class="key play" id="play" aria-pressed="true"></button><span id="playLbl">pause</span></div>
+        <div class="key-wrap"><button class="key" id="reverse" aria-label="Reverse direction"><svg viewBox="0 0 12 12"><path d="M1 6 L5.5 2 V10 Z M6.5 6 L11 2 V10 Z"/></svg></button><span id="reverseLbl">reverse</span></div>
+        <div class="key-wrap"><button class="key" id="reset" aria-label="Back to the starting angle"><svg viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="1"/></svg></button><span>reset</span></div>
+      </div>
+      <div class="row">
+        <label for="speed">Speed</label><span class="val" id="speedVal"></span>
+        <input type="range" id="speed" min="0" max="30" step="0.5" value="3">
+      </div>
+      <div class="row"><span class="lbl">Spin axis</span></div>
+      <div class="seg" role="radiogroup" aria-label="Spin axis">
+        <input type="radio" name="axis" id="ax_polar" value="polar"><label for="ax_polar">Polar<small>globe</small></label>
+        <input type="radio" name="axis" id="ax_5" value="5" checked><label for="ax_5">5-fold<small>vertex</small></label>
+        <input type="radio" name="axis" id="ax_3" value="3"><label for="ax_3">3-fold<small>face</small></label>
+        <input type="radio" name="axis" id="ax_2" value="2"><label for="ax_2">2-fold<small>edge</small></label>
+      </div>
+      <div class="row">
+        <label for="tilt">Tilt</label><span class="val" id="tiltVal"></span>
+        <input type="range" id="tilt" min="-89" max="89" step="1" value="12">
+      </div>
+      <div class="row">
+        <label for="wobble">Wobble</label><span class="val" id="wobbleVal"></span>
+        <input type="range" id="wobble" min="0" max="30" step="1" value="0">
+      </div>
+    </section>
+
+    <section>
+      <h2>Jitterbug</h2>
+      <div class="transport">
+        <button class="btn grow" id="jbRun"></button>
+      </div>
+      <div class="row">
+        <label for="jb">Transformation</label><span class="val" id="jbVal"></span>
+        <input type="range" id="jb" min="0" max="1000" step="1" value="1000">
+      </div>
+      <div class="stages" id="stages">
+        <span>1 · Vector equilibrium</span><span>2 · Twist</span><span>3 · Subdivide</span><span>4 · Inflate</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>View &amp; export</h2>
+      <div class="row">
+        <label for="zoom">Size in frame</label><span class="val" id="zoomVal"></span>
+        <input type="range" id="zoom" min="30" max="100" step="1" value="94">
+      </div>
+      <label class="check"><input type="checkbox" id="exportBg"><span>Include artboard background</span><small>off = transparent</small></label>
+      <div class="exports">
+        <button class="btn primary" id="exSvg">Export SVG</button>
+        <div class="transport">
+          <button class="btn grow" id="exPng">PNG</button>
+          <select id="pngSize" aria-label="PNG size"><option value="2048">2048</option><option value="4096" selected>4096</option><option value="1024">1024</option></select>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Motion export</h2>
+      <div class="seg two" role="radiogroup" aria-label="Clip">
+        <input type="radio" name="clip" id="clip_loop" value="loop" checked><label for="clip_loop">Seamless loop<small>one symmetric turn</small></label>
+        <input type="radio" name="clip" id="clip_jb" value="jitterbug"><label for="clip_jb">Jitterbug<small>VE to sphere</small></label>
+      </div>
+      <div class="row"><span class="lbl">Clip</span><span class="val" id="clipInfo"></span></div>
+      <div class="exports three">
+        <button class="btn primary" id="exGif">GIF</button>
+        <button class="btn primary" id="exMp4">MP4</button>
+        <select id="motionSize" aria-label="Clip size"><option value="720" selected>720</option><option value="1080">1080</option><option value="1600">1600</option></select>
+      </div>
+      <div class="progress" id="progress" hidden><span id="progressBar"></span></div>
+      <p class="note" id="clipNote">GIF is transparent unless the artboard background is included; its soft edges are blended for the artboard color, so set the artboard to match where the GIF will sit. MP4 always has a background: the artboard color, or Ink or Paper for Clear, whichever suits the line color.</p>
+    </section>
+  </aside>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  // ───────────────────────── geometry ─────────────────────────
+  // Icosahedron in Fuller's Dymaxion orientation (R. W. Gray's vertex set).
+  const V = [
+    [ 0.420152426708710003,  0.078145249402782959,  0.904082550615019298],
+    [ 0.995009439436241649, -0.091347795276427931,  0.040147175877166645],
+    [ 0.518836730327364437,  0.835420380378235850,  0.181331837557262454],
+    [-0.414682225320335218,  0.655962405434800777,  0.630675807891475371],
+    [-0.515455959944041808, -0.381716898287133011,  0.767200992517747538],
+    [ 0.355781402532944713, -0.843580002466178147,  0.402234226602925571],
+    [ 0.414682225320335218, -0.655962405434800777, -0.630675807891475371],
+    [ 0.515455959944041808,  0.381716898287133011, -0.767200992517747538],
+    [-0.355781402532944713,  0.843580002466178147, -0.402234226602925571],
+    [-0.995009439436241649,  0.091347795276427931, -0.040147175877166645],
+    [-0.518836730327364437, -0.835420380378235850, -0.181331837557262454],
+    [-0.420152426708710003, -0.078145249402782959, -0.904082550615019298],
+  ];
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  const dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+  const len = a => Math.hypot(a[0], a[1], a[2]);
+  const norm = a => { const l = len(a); return [a[0]/l, a[1]/l, a[2]/l]; };
+  const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+  const clamp01 = x => Math.max(0, Math.min(1, x));
+  const ease = x => x * x * (3 - 2 * x);
+  const seg = (x, a, b) => clamp01((x - a) / (b - a));
+
+  const FACES = (() => {
+    const adj = (i, j) => Math.abs(dot(V[i], V[j]) - 1/Math.sqrt(5)) < 1e-6, F = [];
+    for (let i = 0; i < 12; i++) for (let j = i+1; j < 12; j++) for (let k = j+1; k < 12; k++)
+      if (adj(i, j) && adj(j, k) && adj(i, k)) F.push([i, j, k]);
+    return F;
+  })();
+
+  const AXES = {
+    polar: [0, 0, 1],
+    '5': norm(V[0]),
+    '3': norm(FACES[0].map(i => V[i]).reduce((s, p) => [s[0]+p[0], s[1]+p[1], s[2]+p[2]], [0, 0, 0])),
+    '2': norm([0, 1, 2].map(d => V[FACES[0][0]][d] + V[FACES[0][1]][d])),
+  };
+
+  const cache = new Map();
+  function build(freq) {
+    if (cache.has(freq)) return cache.get(freq);
+    const nodes = [], flat = [], index = new Map();
+    const node = q => {
+      const p = norm(q), key = p.map(v => v.toFixed(9)).join(',');
+      let i = index.get(key);
+      if (i === undefined) { i = nodes.length; index.set(key, i); nodes.push(p); flat.push(q); }
+      return i;
+    };
+    const tris = [], netKeys = new Set();
+    const ekey = (u, v) => Math.min(u, v) * 1e6 + Math.max(u, v);
+    for (const [ia, ib, ic] of FACES) {
+      const A = V[ia], B = V[ib], C = V[ic], g = {};
+      for (let i = 0; i <= freq; i++) for (let j = 0; j <= freq - i; j++) {
+        const k = freq - i - j;
+        g[i + ',' + j] = node([0, 1, 2].map(d => (A[d]*k + B[d]*i + C[d]*j) / freq));
+      }
+      // edges lying on the icosahedron's own 30 edges (the Dymaxion net)
+      for (let t = 0; t < freq; t++) {
+        netKeys.add(ekey(g[t + ',0'], g[(t+1) + ',0']));
+        netKeys.add(ekey(g['0,' + t], g['0,' + (t+1)]));
+        netKeys.add(ekey(g[t + ',' + (freq-t)], g[(t+1) + ',' + (freq-t-1)]));
+      }
+      for (let i = 0; i < freq; i++) for (let j = 0; j < freq - i; j++) {
+        tris.push([g[i+','+j], g[(i+1)+','+j], g[i+','+(j+1)]]);
+        if (i + j < freq - 1) tris.push([g[(i+1)+','+j], g[(i+1)+','+(j+1)], g[i+','+(j+1)]]);
+      }
+    }
+    const edgeTris = new Map();
+    tris.forEach((t, ti) => {
+      for (const [u, v] of [[t[0], t[1]], [t[1], t[2]], [t[2], t[0]]]) {
+        const k = ekey(u, v);
+        (edgeTris.get(k) || edgeTris.set(k, []).get(k)).push(ti);
+      }
+    });
+    const outerE = [], innerE = [], netE = [], lengths = new Set();
+    let chord = 0, cmin = Infinity, cmax = 0;
+    for (const [k, ts] of edgeTris) {
+      const a = Math.floor(k / 1e6), b = k % 1e6;
+      outerE.push(a, b); innerE.push(ts[0], ts[1]);
+      if (netKeys.has(k)) netE.push(a, b);
+      const p = nodes[a], q = nodes[b], c = Math.hypot(p[0]-q[0], p[1]-q[1], p[2]-q[2]);
+      chord += c; cmin = Math.min(cmin, c); cmax = Math.max(cmax, c);
+      lengths.add(c.toFixed(5));
+    }
+    chord /= edgeTris.size;
+    const webE = [];
+    tris.forEach((t, ti) => webE.push(ti, t[0], ti, t[1], ti, t[2]));
+    const outer = new Float32Array(nodes.length * 3), outerFlat = new Float32Array(nodes.length * 3);
+    nodes.forEach((p, i) => { outer.set(p, i * 3); outerFlat.set(flat[i], i * 3); });
+    const innerDir = new Float32Array(tris.length * 3), innerFlat = new Float32Array(tris.length * 3);
+    tris.forEach(([a, b, c], i) => {
+      const cen = [0, 1, 2].map(d => (flat[a][d] + flat[b][d] + flat[c][d]) / 3);
+      innerDir.set(norm(cen), i * 3); innerFlat.set(cen, i * 3);
+    });
+    const poles = V.map(v => { // indices of the 12 five-fold nodes
+      let best = 0, bd = -2;
+      for (let i = 0; i < nodes.length; i++) { const d = dot(nodes[i], v); if (d > bd) { bd = d; best = i; } }
+      return best;
+    });
+    const geo = { freq, outer, outerFlat, innerDir, innerFlat, chord, cmin, cmax, strutTypes: lengths.size, poles,
+      nNodes: nodes.length, nTris: tris.length,
+      outerE: Uint32Array.from(outerE), innerE: Uint32Array.from(innerE),
+      webE: Uint32Array.from(webE), netE: Uint32Array.from(netE) };
+    cache.set(freq, geo);
+    return geo;
+  }
+
+  // ───────────────────────── jitterbug ─────────────────────────
+  // Fuller's jitterbug as the family of cyclic permutations of (0, ±1, ±t):
+  // t = 1 is the vector equilibrium (cuboctahedron), t = φ the icosahedron.
+  // The 8 triangles stay equilateral and rotate about the cube diagonals; the
+  // 6 square diagonals keep length 2 and become icosahedron edges at t = φ.
+  const jbIdx = (a, s1, s2) => a * 4 + (s1 < 0 ? 2 : 0) + (s2 < 0 ? 1 : 0);
+  function jbRaw(t) {
+    const P = [];
+    for (let a = 0; a < 3; a++) for (const s1 of [1, -1]) for (const s2 of [1, -1]) {
+      const p = [0, 0, 0]; p[(a + 1) % 3] = s1; p[(a + 2) % 3] = s2 * t; P.push(p);
+    }
+    return P;
+  }
+  const JB_TRIS = [], JB_DIAG = [];
+  for (const sx of [1, -1]) for (const sy of [1, -1]) for (const sz of [1, -1])
+    JB_TRIS.push([jbIdx(0, sy, sz), jbIdx(1, sz, sx), jbIdx(2, sx, sy)]);
+  for (let a = 0; a < 3; a++) for (const s of [1, -1]) JB_DIAG.push([jbIdx(a, 1, s), jbIdx(a, -1, s)]);
+  const JB_EDGES = JB_TRIS.flatMap(([a, b, c]) => [[a, b], [b, c], [c, a]]);
+
+  // rotation taking the canonical icosahedron (t = φ) onto the Dymaxion one
+  const M = (() => {
+    const C = jbRaw(PHI).map(norm), D = V.map(norm);
+    const c1 = C.find(p => Math.abs(dot(p, C[0]) - 1/Math.sqrt(5)) < 1e-9);
+    const d1 = D.find(p => Math.abs(dot(p, D[0]) - 1/Math.sqrt(5)) < 1e-9);
+    const frame = (e1, p) => { const e2 = norm(p.map((v, i) => v - dot(p, e1) * e1[i])); return [e1, e2, cross(e1, e2)]; };
+    const Fc = frame(C[0], c1), Fd = frame(D[0], d1);
+    // M = Fdᵀ·Fc  (columns of the Dymaxion frame times rows of the canonical frame)
+    const R = [0, 1, 2].map(i => [0, 1, 2].map(j => Fd.reduce((s, _, k) => s + Fd[k][i] * Fc[k][j], 0)));
+    const ok = C.every(p => { const q = R.map(r => dot(r, p)); return D.some(d => dot(d, q) > 1 - 1e-9); });
+    if (!ok) console.warn('Jitterbug alignment failed; the overlay may not land on the Dymaxion vertices.');
+    return R;
+  })();
+  const rot = p => [dot(M[0], p), dot(M[1], p), dot(M[2], p)];
+
+  // jitterbug vertices at parameter t, scaled so edge length is constant and the
+  // icosahedron (t = φ) lands exactly on the unit sphere
+  const edgeLen = t => Math.sqrt(2*t*t - 2*t + 2);
+  function jbVerts(t) {
+    const k = 2 / (Math.sqrt(1 + PHI * PHI) * edgeLen(t));
+    return jbRaw(t).map(p => rot(p.map(v => v * k)));
+  }
+  const VE_VERTS = jbRaw(1).map(p => rot(norm(p)));          // VE on the unit sphere
+  const VE_CIRCLES = [[1, 1, 1], [1, 1, -1], [1, -1, 1], [-1, 1, 1]].map(n => {
+    const N = rot(norm(n)), a = norm(cross(N, Math.abs(N[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0])), b = cross(N, a), pts = [];
+    for (let i = 0; i < 144; i++) { const t = i / 144 * 2 * Math.PI; pts.push([0, 1, 2].map(d => Math.cos(t)*a[d] + Math.sin(t)*b[d])); }
+    return pts;
+  });
+
+  // timeline: x in [0, 1]; 1 means "finished" (normal studio rendering)
+  const JB_DUR = 11;
+  function jbState(x) {
+    if (x >= 1) return null;
+    const twist = ease(seg(x, 0.12, 0.45));
+    const polyPhase = x < 0.55;
+    return {
+      x, t: 1 + (PHI - 1) * twist,
+      polyA: polyPhase ? 1 : 0,
+      diagA: ease(seg(x, 0.22, 0.45)),
+      faceA: 1 - seg(x, 0.48, 0.58),
+      circA: 1 - ease(seg(x, 0.10, 0.24)),
+      gridA: ease(seg(x, 0.55, 0.72)),
+      inflate: ease(seg(x, 0.72, 0.92)),
+      netA: polyPhase ? 0 : (S.L_net ? 1 : 1 - ease(seg(x, 0.92, 1))),
+      veA: S.L_ve ? ease(seg(x, 0.92, 1)) : 0,
+      stage: x < 0.12 ? 0 : x < 0.55 ? 1 : x < 0.72 ? 2 : 3,
+    };
+  }
+  function jbLabel(st, freq) {
+    if (!st) return '';
+    if (st.stage === 0) return 'Vector equilibrium · 12 vertices, 8 triangles, 6 squares';
+    if (st.stage === 1) return st.t > PHI - 0.003 ? 'Icosahedron · 20 triangles' :
+      `Jitterbug twist · t = ${st.t.toFixed(3)} → φ`;
+    if (st.stage === 2) return `Subdividing · ${freq}v Class I`;
+    return `Inflating to the sphere · ${Math.round(st.inflate * 100)}%`;
+  }
+
+  // ───────────────────────── state ─────────────────────────
+  const LINE_SW = [['Ink', '#1d1b18'], ['White', '#ffffff'], ['Signal', '#ff4e02'], ['Cobalt', '#2f4fd8']];
+  const ACC_SW  = [['Signal', '#ff4e02'], ['Cobalt', '#2f4fd8'], ['Ink', '#1d1b18'], ['White', '#ffffff']];
+  const DEFAULTS = {
+    freq: 16, trueScale: false, depth: 100,
+    L_outer: true, L_inner: true, L_web: true, L_net: false, L_poles: false, L_ve: false, L_back: true,
+    backOp: 28, weight: 1, line: '#1d1b18', accent: '#ff4e02', bg: 'paper',
+    playing: true, dir: 1, speed: 3, axis: '5', tilt: 12, wobble: 0, zoom: 94, exportBg: false, clip: 'loop',
+  };
+  const KEY = 'dymaxion-studio:v1';
+  let S = { ...DEFAULTS };
+  try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch {}
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) S.playing = false;
+  let saveT;
+  const persist = () => { clearTimeout(saveT); saveT = setTimeout(() => {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} }, 250); };
+
+  let theta = 0;          // spin angle (rad)
+  let dragTilt = 0;       // extra tilt from dragging (deg)
+  let clock = 0;          // seconds of motion, for wobble
+  let jb = 1, jbRunning = false;
+  let exporting = null;   // the running GIF/MP4 job; the stage holds still meanwhile
+
+  // ───────────────────────── projection & drawing ─────────────────────────
+  // Base widths (px) for a 1000px artboard; tuned so 16v matches the SVG exports.
+  const BASE = { outer: 1.2, inner: 0.65, web: 0.375, net: 2.2, ve: 1.8, circle: 1.1 };
+
+  function camera() {
+    const A = AXES[S.axis];
+    const ref = Math.abs(A[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1];
+    const B = norm(cross(A, ref)), C = cross(A, B);
+    const wob = S.wobble * Math.sin(clock * 0.5);
+    const lat = Math.max(-89, Math.min(89, S.tilt + dragTilt + wob)) * Math.PI / 180;
+    const ct = Math.cos(theta), st = Math.sin(theta), cl = Math.cos(lat), sl = Math.sin(lat);
+    const f = [0, 1, 2].map(d => cl * (ct*B[d] + st*C[d]) + sl*A[d]);
+    const r = norm(cross(A, f)), u = cross(f, r);
+    return { f, r, u };
+  }
+
+  // Build everything one frame draws as plain data: line layers (index pairs into
+  // projected xyz arrays), filled triangles and dots. paint() and toSVG() share it.
+  function frame(geo, size) {
+    const { f, r, u } = camera();
+    const scale = S.trueScale ? geo.freq / 16 : 1;
+    const R = size / 2 * (S.zoom / 100) * scale, c = size / 2;
+    const rIn = 1 - (S.depth / 100) * geo.chord * Math.sqrt(2/3);
+    const jst = jbState(jb);
+    const inflate = jst ? jst.inflate : 1, gridA = jst ? jst.gridA : 1;
+
+    const proj = (src, k, flatSrc) => {
+      const o = new Float32Array(src.length);
+      for (let i = 0; i < src.length; i += 3) {
+        let x = src[i], y = src[i+1], z = src[i+2];
+        if (flatSrc && inflate < 1) {
+          x = flatSrc[i] + (x - flatSrc[i]) * inflate;
+          y = flatSrc[i+1] + (y - flatSrc[i+1]) * inflate;
+          z = flatSrc[i+2] + (z - flatSrc[i+2]) * inflate;
+        }
+        x *= k; y *= k; z *= k;
+        o[i]   = c + (x*r[0] + y*r[1] + z*r[2]) * R;
+        o[i+1] = c - (x*u[0] + y*u[1] + z*u[2]) * R;
+        o[i+2] = x*f[0] + y*f[1] + z*f[2];
+      }
+      return o;
+    };
+    const projPts = pts => proj(Float32Array.from(pts.flat()), 1);
+
+    const po = proj(geo.outer, 1, geo.outerFlat), pi = proj(geo.innerDir, rIn, geo.innerFlat);
+    const px = size / 1000 * S.weight;
+    const layers = [], fills = [];
+    const line = S.line, acc = S.accent;
+    if (S.L_web)   layers.push({ id: 'web',   E: geo.webE,   A: pi, B: po, w: BASE.web * px,   color: line, alpha: gridA });
+    if (S.L_inner) layers.push({ id: 'inner', E: geo.innerE, A: pi, B: pi, w: BASE.inner * px, color: line, alpha: gridA });
+    if (S.L_outer) layers.push({ id: 'outer', E: geo.outerE, A: po, B: po, w: BASE.outer * px, color: line, alpha: gridA });
+
+    const netA = jst ? jst.netA : (S.L_net ? 1 : 0);
+    if (netA > 0) layers.push({ id: 'net', E: geo.netE, A: po, B: po, w: BASE.net * px, color: acc, alpha: netA });
+
+    // static vector equilibrium overlay: its 4 great circles only
+    const veA = jst ? jst.veA : (S.L_ve ? 1 : 0);
+    if (veA > 0) {
+      VE_CIRCLES.forEach((pts, ci) => {
+        const Q = projPts(pts), E = [];
+        for (let i = 0; i < pts.length; i++) E.push(i, (i + 1) % pts.length);
+        layers.push({ id: 've-circle-' + (ci + 1), E: Uint32Array.from(E), A: Q, B: Q, w: BASE.circle * px,
+                      color: acc, alpha: veA });
+      });
+    }
+
+    // the jitterbug itself
+    if (jst && jst.polyA > 0) {
+      const P = projPts(jbVerts(jst.t));
+      for (const [a, b, cc] of JB_TRIS)
+        fills.push({ pts: [P.subarray(a*3, a*3+3), P.subarray(b*3, b*3+3), P.subarray(cc*3, cc*3+3)], color: acc, alpha: 0.16 * jst.faceA });
+      layers.push({ id: 'jitterbug', E: Uint32Array.from(JB_EDGES.flat()), A: P, B: P, w: BASE.net * px, color: acc, alpha: jst.polyA });
+      if (jst.diagA > 0) layers.push({ id: 'jitterbug-diagonals', E: Uint32Array.from(JB_DIAG.flat()), A: P, B: P,
+        w: BASE.net * px, color: acc, alpha: jst.diagA, dash: jst.diagA < 1 ? [3 * px, 3 * px] : null });
+      if (jst.circA > 0) VE_CIRCLES.forEach((pts, ci) => {
+        const k = 1 / (Math.sqrt(1 + PHI * PHI) / Math.SQRT2 * edgeLen(1) / 2); // VE radius at t = 1
+        const Q = projPts(pts.map(p => p.map(v => v * k))), E = [];
+        for (let i = 0; i < pts.length; i++) E.push(i, (i + 1) % pts.length);
+        layers.push({ id: 'jb-circle-' + (ci + 1), E: Uint32Array.from(E), A: Q, B: Q, w: BASE.circle * px,
+                      color: acc, alpha: jst.circA });
+      });
+    }
+
+    const poleA = S.L_poles ? gridA : 0;
+    const poles = poleA > 0 ? geo.poles.map(i => [po[i*3], po[i*3+1], po[i*3+2]]) : [];
+    return { layers, fills, poles, poleA, poleR: Math.max(2.5, 4.2 * px), jst };
+  }
+
+  const sides = () => S.L_back ? [false, true] : [true];
+  const isFront = z => z >= 0;
+
+  function paint(ctx, size, geo, withBg) {
+    const fr = frame(geo, size);
+    ctx.clearRect(0, 0, size, size);
+    if (withBg) { ctx.fillStyle = BG_COLORS[S.bg]; ctx.fillRect(0, 0, size, size); }
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const front of sides()) {
+      const sideA = front ? 1 : S.backOp / 100;
+      for (const F of fr.fills) {
+        const z = (F.pts[0][2] + F.pts[1][2] + F.pts[2][2]) / 3;
+        if (isFront(z) !== front || F.alpha <= 0) continue;
+        ctx.globalAlpha = sideA * F.alpha; ctx.fillStyle = F.color; ctx.beginPath();
+        ctx.moveTo(F.pts[0][0], F.pts[0][1]); ctx.lineTo(F.pts[1][0], F.pts[1][1]); ctx.lineTo(F.pts[2][0], F.pts[2][1]);
+        ctx.closePath(); ctx.fill();
+      }
+      for (const L of fr.layers) {
+        if (L.alpha <= 0.001) continue;
+        ctx.globalAlpha = sideA * L.alpha;
+        ctx.strokeStyle = L.color; ctx.lineWidth = L.w; ctx.setLineDash(L.dash || []); ctx.beginPath();
+        const E = L.E, A = L.A, B = L.B;
+        for (let e = 0; e < E.length; e += 2) {
+          const a = E[e] * 3, b = E[e+1] * 3;
+          if (isFront(A[a+2] + B[b+2]) !== front) continue;
+          ctx.moveTo(A[a], A[a+1]); ctx.lineTo(B[b], B[b+1]);
+        }
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      if (fr.poles.length) {
+        ctx.globalAlpha = sideA * fr.poleA; ctx.fillStyle = S.accent; ctx.beginPath();
+        for (const [x, y, z] of fr.poles) if (isFront(z) === front) { ctx.moveTo(x + fr.poleR, y); ctx.arc(x, y, fr.poleR, 0, Math.PI * 2); }
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+    return fr;
+  }
+
+  function toSVG(geo, size) {
+    const fr = frame(geo, size), n = v => v.toFixed(1), out = [];
+    out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`);
+    out.push(`<title>Geodesic sphere, ${geo.freq}v Class I, double layer</title>`);
+    if (S.exportBg && S.bg !== 'clear') out.push(`<rect width="100%" height="100%" fill="${BG_COLORS[S.bg]}"/>`);
+    out.push('<g fill="none" stroke-linecap="round" stroke-linejoin="round">');
+    for (const front of sides()) {
+      const side = front ? 'front' : 'back';
+      out.push(`<g id="${side}"${front ? '' : ` opacity="${S.backOp / 100}"`}>`);
+      const tris = fr.fills.filter(F => F.alpha > 0 && isFront((F.pts[0][2] + F.pts[1][2] + F.pts[2][2]) / 3) === front);
+      if (tris.length) out.push(`<g id="${side}-jitterbug-faces" fill="${tris[0].color}" fill-opacity="${tris[0].alpha.toFixed(3)}" stroke="none">` +
+        tris.map(F => `<polygon points="${F.pts.map(p => n(p[0]) + ',' + n(p[1])).join(' ')}"/>`).join('') + '</g>');
+      for (const L of fr.layers) {
+        if (L.alpha <= 0.001) continue;
+        let d = '';
+        for (let e = 0; e < L.E.length; e += 2) {
+          const a = L.E[e] * 3, b = L.E[e+1] * 3;
+          if (isFront(L.A[a+2] + L.B[b+2]) !== front) continue;
+          d += `M${n(L.A[a])} ${n(L.A[a+1])}L${n(L.B[b])} ${n(L.B[b+1])}`;
+        }
+        if (!d) continue;
+        const extra = (L.alpha < 1 ? ` stroke-opacity="${L.alpha.toFixed(3)}"` : '') +
+                      (L.dash ? ` stroke-dasharray="${L.dash.map(v => v.toFixed(2)).join(' ')}"` : '');
+        out.push(`<path id="${side}-${L.id}" stroke="${L.color}" stroke-width="${L.w.toFixed(3)}"${extra} d="${d}"/>`);
+      }
+      const dots = fr.poles.filter(p => isFront(p[2]) === front);
+      if (dots.length) out.push(`<g id="${side}-poles" fill="${S.accent}"${fr.poleA < 1 ? ` fill-opacity="${fr.poleA.toFixed(3)}"` : ''}>` +
+        dots.map(([x, y]) => `<circle cx="${n(x)}" cy="${n(y)}" r="${fr.poleR.toFixed(2)}"/>`).join('') + '</g>');
+      out.push('</g>');
+    }
+    out.push('</g></svg>');
+    return out.join('\n');
+  }
+
+  const BG_COLORS = { paper: '#f6f3ee', ink: '#12110f', clear: 'transparent' };
+
+  // ───────────────────────── stage ─────────────────────────
+  const $ = id => document.getElementById(id);
+  const cv = $('cv'), ctx = cv.getContext('2d'), board = $('board');
+  let boardSize = 600, dpr = 1;
+  function resize() {
+    const r = board.getBoundingClientRect();
+    boardSize = Math.max(1, r.width); dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = Math.round(boardSize * dpr); cv.height = Math.round(boardSize * dpr);
+    draw();
+  }
+  new ResizeObserver(resize).observe(board);
+
+  let lastLabel = null;
+  function draw() {
+    const geo = build(S.freq);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const fr = paint(ctx, boardSize, geo, false);
+    const label = jbLabel(fr.jst, S.freq);
+    if (label !== lastLabel) {
+      lastLabel = label;
+      $('phase').hidden = !label; $('phase').textContent = label;
+    }
+  }
+
+  let last = performance.now(), dragging = false;
+  function tick(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (exporting) { requestAnimationFrame(tick); return; }
+    if (S.playing && !dragging) {
+      theta += S.dir * S.speed * Math.PI / 180 * dt;
+      clock += dt;
+    }
+    if (jbRunning) {
+      jb = Math.min(1, jb + dt / JB_DUR);
+      if (jb >= 1) jbRunning = false;
+      syncJb();
+    }
+    draw();
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // drag to orbit: horizontal turns about the spin axis, vertical tilts
+  let px0, py0;
+  board.addEventListener('pointerdown', e => {
+    dragging = true; px0 = e.clientX; py0 = e.clientY;
+    board.setPointerCapture(e.pointerId); board.classList.add('dragging');
+  });
+  board.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const k = 180 / boardSize;
+    theta -= (e.clientX - px0) * k * Math.PI / 180;
+    dragTilt = Math.max(-89 - S.tilt, Math.min(89 - S.tilt, dragTilt + (e.clientY - py0) * k));
+    px0 = e.clientX; py0 = e.clientY;
+  });
+  const endDrag = () => {
+    if (!dragging) return;
+    dragging = false; board.classList.remove('dragging');
+    // fold the drag tilt into the tilt control so it sticks
+    S.tilt = Math.round(Math.max(-89, Math.min(89, S.tilt + dragTilt))); dragTilt = 0;
+    sync(); persist();
+  };
+  board.addEventListener('pointerup', endDrag);
+  board.addEventListener('pointercancel', endDrag);
+
+  // ───────────────────────── controls ─────────────────────────
+  const fmtTime = s => { if (!isFinite(s)) return '—'; const m = Math.floor(s / 60), r = Math.round(s % 60);
+    return m ? `${m}:${String(r).padStart(2, '0')}` : `${r}s`; };
+  const nf = new Intl.NumberFormat('en-US');
+
+  function readout() {
+    const g = build(S.freq);
+    const struts = g.outerE.length/2 + g.innerE.length/2 + g.webE.length/2;
+    $('readout').innerHTML = [
+      `<span><b>${S.freq}v</b> Class I</span>`,
+      `<span><b>${nf.format(g.nNodes + g.nTris)}</b> nodes</span>`,
+      `<span><b>${nf.format(struts)}</b> struts</span>`,
+      `<span><b>${g.strutTypes}</b> outer strut lengths</span>`,
+      `<span>chord <b>${(g.cmin).toFixed(4)}–${(g.cmax).toFixed(4)}</b> r</span>`,
+      `<span>depth <b>${((S.depth/100) * g.chord * Math.sqrt(2/3)).toFixed(4)}</b> r</span>`,
+    ].join('');
+    $('c_outer').textContent = `${nf.format(g.outerE.length/2)} struts · ${nf.format(g.nNodes)} nodes`;
+    $('c_inner').textContent = `${nf.format(g.innerE.length/2)} struts · ${nf.format(g.nTris)} nodes`;
+    $('c_web').textContent = `${nf.format(g.webE.length/2)} struts`;
+    const ratio = S.freq / 16;
+    $('freqNote').textContent = S.freq === 16 ? 'Biosphere density' : `${+ratio.toFixed(4)}× Biosphere scale`;
+  }
+
+  function syncJb() {
+    $('jb').value = Math.round(jb * 1000);
+    const st = jbState(jb);
+    $('jbVal').textContent = st ? `${Math.round(jb * 100)}%` : 'complete';
+    $('jbRun').textContent = jbRunning ? 'Pause jitterbug' : (jb < 1 ? 'Resume jitterbug' : 'Run the jitterbug');
+    const stage = st ? st.stage : 4;
+    $('stages').querySelectorAll('span').forEach((s, i) => s.classList.toggle('on', i <= stage && (st || i <= 3)));
+  }
+
+  function sync() {
+    $('freq').value = S.freq; $('freqNum').innerHTML = `${S.freq}<small>v</small>`;
+    $('trueScale').checked = S.trueScale;
+    $('depth').value = S.depth; $('depthVal').textContent = S.depth === 100 ? 'octet · 100%' : `${S.depth}%`;
+    for (const k of ['L_outer', 'L_inner', 'L_web', 'L_net', 'L_poles', 'L_ve', 'L_back']) $(k).checked = S[k];
+    $('backOp').value = S.backOp; $('backVal').textContent = `${S.backOp}%`;
+    $('backOp').closest('.row').classList.toggle('dim', !S.L_back);
+    $('weight').value = S.weight; $('weightVal').textContent = `${(+S.weight).toFixed(2)}×`;
+    $('speed').value = S.speed;
+    $('speedVal').textContent = S.speed > 0 ? `${(+S.speed).toFixed(1)}°/s · turn ${fmtTime(360 / S.speed)}` : 'still';
+    $('tilt').value = S.tilt; $('tiltVal').textContent = `${S.tilt}°`;
+    $('wobble').value = S.wobble; $('wobbleVal').textContent = S.wobble ? `±${S.wobble}°` : 'off';
+    $('zoom').value = S.zoom; $('zoomVal').textContent = `${S.zoom}%`;
+    $('exportBg').checked = S.exportBg; $('exportBg').disabled = S.bg === 'clear';
+    document.querySelector(`input[name="axis"][value="${S.axis}"]`).checked = true;
+    document.querySelector(`input[name="bg"][value="${S.bg}"]`).checked = true;
+    board.dataset.bg = S.bg;
+    $('play').setAttribute('aria-pressed', S.playing);
+    $('play').innerHTML = S.playing
+      ? '<svg viewBox="0 0 12 12"><rect x="2" y="1" width="3" height="10"/><rect x="7" y="1" width="3" height="10"/></svg>'
+      : '<svg viewBox="0 0 12 12"><path d="M3 1 L11 6 L3 11 Z"/></svg>';
+    $('play').setAttribute('aria-label', S.playing ? 'Pause' : 'Play');
+    $('playLbl').textContent = S.playing ? 'pause' : 'play';
+    $('reverseLbl').textContent = S.dir > 0 ? 'reverse' : 'forward';
+    $('reverse').querySelector('svg').style.transform = S.dir > 0 ? '' : 'scaleX(-1)';
+    $('dial').querySelectorAll('span').forEach(t => t.classList.toggle('on', +t.dataset.n === S.freq));
+    for (const [id, key] of [['sw_line', 'line'], ['sw_accent', 'accent']])
+      $(id).querySelectorAll('.swatch').forEach(b => b.setAttribute('aria-pressed', b.dataset.c.toLowerCase() === S[key].toLowerCase()));
+    $('pick_line').value = S.line; $('pick_accent').value = S.accent;
+    readout(); syncJb(); syncClip();
+  }
+
+  function swatches(id, list, key) {
+    const host = $(id);
+    for (const [name, c] of list) {
+      const b = document.createElement('button');
+      b.className = 'swatch'; b.style.background = c; b.dataset.c = c; b.title = name; b.setAttribute('aria-label', name);
+      b.addEventListener('click', () => set(key, c));
+      host.append(b);
+    }
+    const pick = document.createElement('input');
+    pick.type = 'color'; pick.id = 'pick_' + key; pick.title = 'Custom color'; pick.setAttribute('aria-label', 'Custom color');
+    pick.addEventListener('input', () => set(key, pick.value));
+    host.append(pick);
+  }
+  swatches('sw_line', LINE_SW, 'line');
+  swatches('sw_accent', ACC_SW, 'accent');
+
+  function set(key, v) { S[key] = v; sync(); persist(); }
+
+  const num = (id, key, f = Number) => $(id).addEventListener('input', e => set(key, f(e.target.value)));
+  num('freq', 'freq', v => parseInt(v, 10));
+  num('depth', 'depth'); num('weight', 'weight');
+  // moving the far-side slider always works: it switches the far side back on
+  $('backOp').addEventListener('input', e => { S.L_back = true; set('backOp', +e.target.value); });
+  num('speed', 'speed'); num('tilt', 'tilt'); num('wobble', 'wobble'); num('zoom', 'zoom');
+  $('freqDown').addEventListener('click', () => set('freq', Math.max(2, S.freq - 1)));
+  $('freqUp').addEventListener('click', () => set('freq', Math.min(16, S.freq + 1)));
+  for (const k of ['trueScale', 'L_outer', 'L_inner', 'L_web', 'L_net', 'L_poles', 'L_ve', 'L_back', 'exportBg'])
+    $(k).addEventListener('change', e => set(k, e.target.checked));
+  document.querySelectorAll('input[name="axis"]').forEach(r => r.addEventListener('change', () => { theta = 0; set('axis', r.value); }));
+  document.querySelectorAll('input[name="bg"]').forEach(r => r.addEventListener('change', () => {
+    const v = r.value;
+    // keep lines visible against the new artboard
+    if (v === 'ink' && S.line.toLowerCase() === '#1d1b18') S.line = '#ffffff';
+    if (v === 'paper' && S.line.toLowerCase() === '#ffffff') S.line = '#1d1b18';
+    set('bg', v);
+  }));
+  $('play').addEventListener('click', () => set('playing', !S.playing));
+  $('reverse').addEventListener('click', () => set('dir', -S.dir));
+  $('reset').addEventListener('click', () => { theta = 0; clock = 0; dragTilt = 0; S.tilt = DEFAULTS.tilt; sync(); persist(); });
+  $('jbRun').addEventListener('click', () => {
+    if (jbRunning) jbRunning = false;
+    else { if (jb >= 1) jb = 0; jbRunning = true; }
+    syncJb();
+  });
+  $('jb').addEventListener('input', e => { jbRunning = false; jb = +e.target.value / 1000; syncJb(); });
+  addEventListener('keydown', e => {
+    if (e.code !== 'Space' || /INPUT|SELECT|BUTTON|TEXTAREA/.test(document.activeElement?.tagName || '')) return;
+    e.preventDefault(); set('playing', !S.playing);
+  });
+
+  // ───────────────────────── export ─────────────────────────
+  const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600); };
+
+  async function offer(filename, blob) {
+    if (window.claude && typeof window.claude.use === 'function') {
+      const dl = await window.claude.use('downloads');
+      if (!dl) { toast('Saving files isn’t available in this view.'); return; }
+      try { await dl.save({ filename, data: blob }); toast(`Saved ${filename}`); }
+      catch (e) {
+        if (e?.code === 'declined') return;
+        if (e?.code === 'rate_limited') toast('A save prompt is already open.');
+        else toast(`Couldn’t save ${filename}.`);
+      }
+      return;
+    }
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast(`Saved ${filename}`);
+  }
+
+  const baseName = () => {
+    const st = jbState(jb);
+    const tag = !st ? '' : st.stage === 0 ? '_ve' : st.stage === 1 ? '_jitterbug' : st.stage === 2 ? '_subdivide' : '_inflate';
+    return `geodesic_${S.freq}v${tag}${S.bg === 'clear' || !S.exportBg ? '' : '_' + S.bg}`;
+  };
+  $('exSvg').addEventListener('click', () => {
+    const svg = toSVG(build(S.freq), 2000);
+    offer(baseName() + '.svg', new Blob([svg], { type: 'image/svg+xml' }));
+  });
+  $('exPng').addEventListener('click', () => {
+    const size = +$('pngSize').value, c = document.createElement('canvas');
+    c.width = c.height = size;
+    paint(c.getContext('2d'), size, build(S.freq), S.exportBg && S.bg !== 'clear');
+    c.toBlob(b => b ? offer(`${baseName()}_${size}.png`, b) : toast('Couldn’t render the PNG.'), 'image/png');
+  });
+
+  // ───────────────────────── motion export (GIF / MP4) ─────────────────────────
+  const GIF_FPS = 20, MP4_FPS = 30;
+  // smallest turn that maps the whole drawing onto itself
+  const loopAngle = () => S.L_ve ? 360 : ({ polar: 360, '5': 72, '3': 120, '2': 180 })[S.axis];
+
+  // a clip is n frames and a function giving the stage values for frame i
+  function clipPlan(kind, fps) {
+    const theta0 = theta, clock0 = clock;
+    if (kind === 'loop') {
+      if (!(S.speed > 0)) return null;
+      const sym = loopAngle(), T = sym / S.speed, n = Math.max(2, Math.round(T * fps));
+      // wobble runs sin(clock / 2): fit a whole number of cycles into the loop
+      const wobCycles = S.wobble ? Math.max(1, Math.round(T / (4 * Math.PI))) : 0;
+      return { kind, n, T, sym, at: i => {
+        const u = i / n;
+        return { theta: theta0 + S.dir * sym * u * Math.PI / 180,
+                 clock: wobCycles ? u * wobCycles * 4 * Math.PI : clock0, jb: 1 };
+      } };
+    }
+    const T = JB_DUR + 1.5, n = Math.round(T * fps);
+    return { kind, n, T, at: i => {
+      const t = i / fps;
+      return { theta: theta0 + S.dir * S.speed * Math.PI / 180 * t, clock: clock0 + t, jb: Math.min(1, t / JB_DUR) };
+    } };
+  }
+
+  function syncClip() {
+    document.querySelector(`input[name="clip"][value="${S.clip}"]`).checked = true;
+    const p = clipPlan(S.clip, MP4_FPS);
+    const busy = !!exporting;
+    if (!p) {
+      $('clipInfo').textContent = 'set a speed above 0';
+    } else {
+      const secs = `${p.T.toFixed(p.T < 10 ? 1 : 0)} s`;
+      $('clipInfo').textContent = p.kind === 'loop' ? `${p.sym}° turn · ${secs}` : `jitterbug · ${secs}`;
+    }
+    $('exGif').disabled = !p || (busy && exporting.kind !== 'gif');
+    $('exMp4').disabled = !p || (busy && exporting.kind !== 'mp4');
+    $('motionSize').disabled = busy;
+  }
+
+  const libs = {};
+  const loadGif = () => libs.gif ||= import('https://cdn.jsdelivr.net/npm/gifenc@1.0.3/dist/gifenc.esm.js')
+    .catch(e => { libs.gif = null; throw e; });
+  const loadMp4 = () => libs.mp4 ||= new Promise((res, rej) => {
+    if (window.Mp4Muxer) return res(window.Mp4Muxer);
+    const sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.js';
+    sc.onload = () => window.Mp4Muxer ? res(window.Mp4Muxer) : rej(new Error('missing'));
+    sc.onerror = () => { libs.mp4 = null; sc.remove(); rej(new Error('load')); };
+    document.head.append(sc);
+  });
+
+  const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+  const luma = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  // background for formats that need one: the artboard, or for Clear whichever suits the lines
+  const solidBg = () => S.bg !== 'clear' ? BG_COLORS[S.bg] : (luma(hexRgb(S.line)) > 128 ? BG_COLORS.ink : BG_COLORS.paper);
+
+  const nextTick = () => new Promise(r => setTimeout(r, 0));
+
+  function setProgress(u, label) {
+    $('progress').hidden = u == null;
+    $('progressBar').style.width = `${Math.round((u || 0) * 100)}%`;
+    if (label != null) {
+      const b = exporting.kind === 'gif' ? $('exGif') : $('exMp4');
+      b.textContent = label;
+    }
+  }
+
+  async function runExport(kind) {
+    if (exporting) { if (exporting.kind === kind) exporting.cancel = true; return; }
+    const fps = kind === 'gif' ? GIF_FPS : MP4_FPS;
+    const plan = clipPlan(S.clip, fps);
+    if (!plan) return;
+    if (kind === 'mp4' && typeof VideoEncoder === 'undefined') {
+      toast('MP4 export needs a browser with video encoding: Chrome, Edge or Safari 16.4 and later.'); return;
+    }
+    const size = +$('motionSize').value;
+    const saved = { theta, clock, jb, jbRunning };
+    exporting = { kind, cancel: false };
+    jbRunning = false;
+    const btn = kind === 'gif' ? $('exGif') : $('exMp4');
+    btn.classList.add('busy');
+    syncClip();
+    setProgress(0, 'Loading…');
+    let blob = null, failed = null;
+    try {
+      const c = document.createElement('canvas'); c.width = c.height = size;
+      const cx = c.getContext('2d', { willReadFrequently: kind === 'gif' });
+      const geo = build(S.freq);
+      const frameAt = i => { const v = plan.at(i); theta = v.theta; clock = v.clock; jb = v.jb; };
+      blob = kind === 'gif' ? await encodeGif(plan, c, cx, geo, frameAt, fps)
+                            : await encodeMp4(plan, c, cx, geo, frameAt, fps);
+    } catch (e) { failed = e; console.error(e); }
+    theta = saved.theta; clock = saved.clock; jb = saved.jb; jbRunning = saved.jbRunning;
+    const cancelled = exporting.cancel;
+    btn.classList.remove('busy'); btn.textContent = kind === 'gif' ? 'GIF' : 'MP4';
+    exporting = null; setProgress(null); syncClip(); syncJb();
+    if (cancelled) { toast('Export cancelled.'); return; }
+    if (failed) {
+      toast(failed.message === 'load' || failed instanceof TypeError
+        ? `Couldn’t load the ${kind.toUpperCase()} encoder. Check your connection and try again.`
+        : `Couldn’t encode the ${kind.toUpperCase()}: ${failed.message || 'unknown error'}.`);
+      return;
+    }
+    if (blob) offer(`geodesic_${S.freq}v_${plan.kind}_${size}.${kind}`, blob);
+  }
+
+  async function encodeGif(plan, c, cx, geo, frameAt, fps) {
+    const { GIFEncoder } = await loadGif();
+    const L = 6;                                    // coverage levels per ink
+    const transparent = !(S.exportBg && S.bg !== 'clear');
+    const matte = hexRgb(transparent ? solidBg() : BG_COLORS[S.bg]);
+    const inks = [...new Set([S.line.toLowerCase(), S.accent.toLowerCase()])].map(hexRgb);
+    // index 0 = transparent (or the solid background); then L tints per ink over the matte
+    const palette = [matte];
+    for (const ink of inks) for (let l = 1; l <= L; l++)
+      palette.push(ink.map((v, d) => Math.round(matte[d] + (v - matte[d]) * l / L)));
+    const cutoff = transparent ? 0.16 : 0.5 / L;
+    const gif = GIFEncoder(), delay = Math.round(1000 / fps), npx = c.width * c.height;
+    const idx = new Uint8Array(npx);
+    for (let i = 0; i < plan.n; i++) {
+      if (exporting.cancel) return null;
+      frameAt(i);
+      paint(cx, c.width, geo, false);               // always draw on transparent, then map coverage
+      const d = cx.getImageData(0, 0, c.width, c.height).data;
+      for (let p = 0, q = 0; p < npx; p++, q += 4) {
+        const a = d[q + 3] / 255;
+        if (a < cutoff) { idx[p] = 0; continue; }
+        let k = 0;
+        if (inks.length > 1) {
+          const r = d[q], g = d[q + 1], b = d[q + 2], i0 = inks[0], i1 = inks[1];
+          const d0 = (r - i0[0]) ** 2 + (g - i0[1]) ** 2 + (b - i0[2]) ** 2;
+          const d1 = (r - i1[0]) ** 2 + (g - i1[1]) ** 2 + (b - i1[2]) ** 2;
+          k = d1 < d0 ? 1 : 0;
+        }
+        idx[p] = 1 + k * L + Math.min(L, Math.max(1, Math.round(a * L))) - 1;
+      }
+      gif.writeFrame(idx, c.width, c.height, i === 0
+        ? { palette, delay, repeat: 0, transparent, transparentIndex: 0, dispose: transparent ? 2 : 1 }
+        : { delay, transparent, transparentIndex: 0, dispose: transparent ? 2 : 1 });
+      setProgress((i + 1) / plan.n, `${Math.round((i + 1) / plan.n * 100)}% · cancel`);
+      if (i % 2 === 1) await nextTick();
+    }
+    gif.finish();
+    return new Blob([gif.bytes()], { type: 'image/gif' });
+  }
+
+  async function encodeMp4(plan, c, cx, geo, frameAt, fps) {
+    const Mp4Muxer = await loadMp4();
+    const W = c.width, H = c.height;
+    const bitrate = Math.round(W * H * fps * 0.3);
+    let config = null;
+    for (const codec of ['avc1.640033', 'avc1.4d0033', 'avc1.42003e']) {
+      const cand = { codec, width: W, height: H, bitrate, framerate: fps, avc: { format: 'avc' } };
+      try { if ((await VideoEncoder.isConfigSupported(cand)).supported) { config = cand; break; } } catch {}
+    }
+    if (!config) throw new Error(`this browser can’t encode H.264 video at ${W}×${H}`);
+    const muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(),
+      video: { codec: 'avc', width: W, height: H, frameRate: fps }, fastStart: 'in-memory' });
+    let encErr = null;
+    const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: e => { encErr = e; } });
+    enc.configure(config);
+    const bg = solidBg(), us = 1e6 / fps;
+    for (let i = 0; i < plan.n; i++) {
+      if (exporting.cancel) { try { enc.close(); } catch {} return null; }
+      if (encErr) throw encErr;
+      frameAt(i);
+      paint(cx, W, geo, false);
+      cx.globalCompositeOperation = 'destination-over';   // video has no alpha: lay the background underneath
+      cx.fillStyle = bg; cx.fillRect(0, 0, W, H);
+      cx.globalCompositeOperation = 'source-over';
+      const vf = new VideoFrame(c, { timestamp: Math.round(i * us), duration: Math.round(us) });
+      enc.encode(vf, { keyFrame: i % (fps * 2) === 0 });
+      vf.close();
+      while (enc.encodeQueueSize > 6) await new Promise(r => setTimeout(r, 4));
+      setProgress((i + 1) / plan.n * 0.97, `${Math.round((i + 1) / plan.n * 97)}% · cancel`);
+      if (i % 3 === 2) await nextTick();
+    }
+    await enc.flush();
+    if (encErr) throw encErr;
+    enc.close();
+    muxer.finalize();
+    setProgress(1);
+    return new Blob([muxer.target.buffer], { type: 'video/mp4' });
+  }
+
+  document.querySelectorAll('input[name="clip"]').forEach(r => r.addEventListener('change', () => set('clip', r.value)));
+  $('exGif').addEventListener('click', () => runExport('gif'));
+  $('exMp4').addEventListener('click', () => runExport('mp4'));
+
+  // test hook for the studio's own checks (no effect on the page)
+  window.__studio = { jbVerts, VE_VERTS, PHI, V, edgeLen, setJb: v => { jb = v; jbRunning = false; syncJb(); }, toSVG: () => toSVG(build(S.freq), 2000) };
+
+  sync();
+})();
+</script>

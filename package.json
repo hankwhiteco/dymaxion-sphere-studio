@@ -1,0 +1,16 @@
+{
+  "name": "dymaxion-sphere-studio",
+  "version": "1.0.0",
+  "description": "Double-layer geodesic sphere (Fuller / Montreal Biosphere) with a browser studio",
+  "private": true,
+  "scripts": {
+    "gif": "node export-gif.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "commonjs",
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.10",
+    "gifenc": "^1.0.3"
+  }
+}

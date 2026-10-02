@@ -1,0 +1,4 @@
+node_modules/
+.DS_Store
+# large render; regenerate with export-gif.mjs or the studio
+geodesic_8v_white.gif

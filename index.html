@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Geodesic Spheres</title>
+<script src="geodesic-sphere.js" defer></script>
+<style>
+  :root { --bg: #f6f3ee; --text: #1d1b18; --muted: #6d675f; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #12110f; --text: #f1ece4; --muted: #a39b90; }
+  }
+  :root[data-theme="dark"] { --bg: #12110f; --text: #f1ece4; --muted: #a39b90; }
+
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, sans-serif;
+         min-height: 100vh; display: grid; place-items: center; padding: 48px 16px; }
+  .pair { display: flex; align-items: flex-end; justify-content: center; gap: 48px; flex-wrap: wrap; }
+  figure { display: grid; justify-items: center; gap: 16px; }
+  figcaption { color: var(--muted); font-variant-numeric: tabular-nums; }
+  /* same drawing scale: the 8v sphere is half the diameter of the 16v */
+  .v16 { width: min(640px, 90vw); }
+  .v8  { width: min(320px, 45vw); }
+</style>
+</head>
+<body>
+  <div class="pair">
+    <figure>
+      <geodesic-sphere class="v16" freq="16"></geodesic-sphere>
+      <figcaption>16v · full scale</figcaption>
+    </figure>
+    <figure>
+      <geodesic-sphere class="v8" freq="8"></geodesic-sphere>
+      <figcaption>8v · half scale</figcaption>
+    </figure>
+  </div>
+</body>
+</html>
