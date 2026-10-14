@@ -6,7 +6,7 @@ A mathematically exact, double-layer geodesic sphere in the manner of Buckminste
 
 - **Outer layer**: Class I breakdown of an icosahedron in Fuller's Dymaxion orientation, projected radially onto the sphere (2v–16v).
 - **Inner layer**: the dual net, one node beneath the centroid of every outer triangle, giving hexagons and the 12 pentagons.
-- **Web**: each inner node strutted to its triangle's three corners. At 100% truss depth (`a·√(2/3)`), these form regular tetrahedra: an octet truss.
+- **Web**: each inner node strutted to its triangle's three corners. At 100% truss depth (`a·√(2/3)`, the octet-truss depth for a flat layer) these form near-regular tetrahedra: at 16v the web struts run 0.91–1.02× the outer strut. Curvature pulls the inner layer together, so its hexagon edges are shorter than a flat octet truss's.
 
 At 16v the strut chord is about 0.075 r, close to the density of the Biosphere photograph that started this project.
 
@@ -43,7 +43,9 @@ GIF and MP4 export load [gifenc](https://github.com/mattdesl/gifenc) and [mp4-mu
 
 - The icosahedron vertices are the Dymaxion map orientation as published by Robert W. Gray. The code checks that they form a regular icosahedron (neighbour dot product 1/√5).
 - The node count is checked against 10f² + 2, and Euler's formula V − E + F = 2 holds at every frequency.
-- Distinct outer strut lengths match the standard Class I counts (2 at 2v, 3 at 3v, 6 at 4v).
+- Chord factors match the published Class I values (2v: 0.54653, 0.61803; 3v: 0.34862, 0.40355, 0.41241; 4v: 0.25318 … 0.32492), and the number of distinct strut lengths matches Haghnazar, Nooshin & Golabchi (2014), Table 1, at every frequency from 2v to 16v (72 at 16v).
+- The grid is symmetric under 72°, 120° and 180° turns about the 5-, 3- and 2-fold axes (to float precision), which is what makes the studio's loops seamless.
+- The vector equilibrium's 4 great circles are 4 of the icosahedron's 10 face-axis (3-fold) great circles.
 - The jitterbug is the family of cyclic permutations of (0, ±1, ±t): t = 1 is the cuboctahedron, t = φ the icosahedron. Edge length is held constant throughout, and the end state is rotated to land exactly on the Dymaxion vertices.
 
 ## License

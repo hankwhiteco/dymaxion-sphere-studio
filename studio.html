@@ -464,7 +464,7 @@
         (edgeTris.get(k) || edgeTris.set(k, []).get(k)).push(ti);
       }
     });
-    const outerE = [], innerE = [], netE = [], lengths = new Set();
+    const outerE = [], innerE = [], netE = [], lengths = [];
     let chord = 0, cmin = Infinity, cmax = 0;
     for (const [k, ts] of edgeTris) {
       const a = Math.floor(k / 1e6), b = k % 1e6;
@@ -472,9 +472,13 @@
       if (netKeys.has(k)) netE.push(a, b);
       const p = nodes[a], q = nodes[b], c = Math.hypot(p[0]-q[0], p[1]-q[1], p[2]-q[2]);
       chord += c; cmin = Math.min(cmin, c); cmax = Math.max(cmax, c);
-      lengths.add(c.toFixed(5));
+      lengths.push(c);
     }
     chord /= edgeTris.size;
+    // distinct strut lengths, grouped in full precision (matches Haghnazar et al. 2014, Table 1)
+    lengths.sort((x, y) => x - y);
+    let strutTypes = 1;
+    for (let i = 1; i < lengths.length; i++) if (lengths[i] - lengths[i-1] > 1e-9) strutTypes++;
     const webE = [];
     tris.forEach((t, ti) => webE.push(ti, t[0], ti, t[1], ti, t[2]));
     const outer = new Float32Array(nodes.length * 3), outerFlat = new Float32Array(nodes.length * 3);
@@ -489,7 +493,7 @@
       for (let i = 0; i < nodes.length; i++) { const d = dot(nodes[i], v); if (d > bd) { bd = d; best = i; } }
       return best;
     });
-    const geo = { freq, outer, outerFlat, innerDir, innerFlat, chord, cmin, cmax, strutTypes: lengths.size, poles,
+    const geo = { freq, outer, outerFlat, innerDir, innerFlat, chord, cmin, cmax, strutTypes, poles,
       nNodes: nodes.length, nTris: tris.length,
       outerE: Uint32Array.from(outerE), innerE: Uint32Array.from(innerE),
       webE: Uint32Array.from(webE), netE: Uint32Array.from(netE) };
