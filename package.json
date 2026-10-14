@@ -4,6 +4,7 @@
   "description": "Double-layer geodesic sphere (Fuller / Montreal Biosphere) with a browser studio",
   "private": true,
   "scripts": {
+    "test": "node tools/verify.mjs",
     "gif": "node export-gif.mjs"
   },
   "keywords": [],

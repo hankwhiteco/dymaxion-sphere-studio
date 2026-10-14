@@ -40,6 +40,7 @@
 
   html, body { height: 100%; }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body { margin: 0; background: var(--bg); color: var(--fg); font: 400 13px/1.4 var(--font);
          -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
 
@@ -55,6 +56,7 @@
             background: radial-gradient(circle, var(--fg) 1.1px, transparent 1.4px) 0 0 / 5.6px 5.4px; opacity: .8; }
   h1 { font: 500 17px/1 var(--font); margin: 0; letter-spacing: -0.005em; }
   .hint { color: var(--muted); font-size: 12px; }
+  .hint a { color: var(--fg); text-decoration: none; border-bottom: 1px solid var(--line); }
   .board-wrap { display: grid; place-items: center; min-height: 0; container-type: size; }
   .board { position: relative; width: min(100%, 100cqh); aspect-ratio: 1; max-width: 100%;
            border-radius: 6px; overflow: hidden; touch-action: none; cursor: grab;
@@ -198,6 +200,16 @@
   .exports { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .exports.three { grid-template-columns: 1fr 1fr 84px; }
   .seg.two { grid-template-columns: repeat(2, 1fr); }
+  .seg.four { grid-template-columns: repeat(4, 1fr); }
+  .sub { display: grid; gap: 10px; padding: 0 0 12px 42px; }
+  .sub .seg label { padding-block: 13px 6px; font-size: 11.5px; }
+  .legend { display: grid; gap: 2px; font-size: 11px; }
+  .legend .lg-head, .legend .lg-row { display: grid; grid-template-columns: 1fr 1.5fr 1fr .8fr; gap: 6px; align-items: center; }
+  .legend .lg-head { color: var(--muted); padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+  .legend .lg-row span:not(:first-child), .legend .lg-head span:not(:first-child) { text-align: right; }
+  .legend i { display: inline-block; width: 14px; height: 4px; border-radius: 1px; margin-right: 6px; vertical-align: middle; }
+  .legend .lg-ramp { height: 6px; border-radius: 2px; }
+  .legend .lg-ends { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); }
   .btn:disabled { opacity: .45; cursor: default; transform: none; }
   .btn.busy { background: var(--accent); color: var(--accent-ink); }
   .progress { height: 3px; background: var(--well); border-radius: 2px; overflow: hidden; }
@@ -231,7 +243,7 @@
   <main class="stage">
     <div class="masthead">
       <div class="brand"><span class="grille" aria-hidden="true"></span><h1>Dymaxion Sphere Studio</h1></div>
-      <span class="hint">Drag the sphere to turn it · Space to play or pause</span>
+      <span class="hint">Drag the sphere to turn it · Space to play or pause · <a href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html" target="_blank" rel="noopener">Reference</a></span>
     </div>
     <div class="board-wrap">
       <div class="board" id="board" data-bg="paper"><canvas id="cv" aria-label="Rotating geodesic sphere" role="img"></canvas><span class="phase" id="phase" hidden></span></div>
@@ -280,6 +292,41 @@
         <label class="layer" data-accent><input type="checkbox" id="L_ve">
           <svg viewBox="0 0 34 22"><circle cx="17" cy="11" r="9.5" stroke-width="1.2"/><ellipse cx="17" cy="11" rx="9.5" ry="3.6" stroke-width="1"/><ellipse cx="17" cy="11" rx="3.6" ry="9.5" stroke-width="1"/></svg>
           <span class="meta"><span class="name">Vector equilibrium</span><span class="count">4 great circles</span></span><span class="sw"></span></label>
+        <label class="layer" data-accent><input type="checkbox" id="L_gc">
+          <svg viewBox="0 0 34 22"><circle cx="17" cy="11" r="9.5" stroke-width="1.2"/><ellipse cx="17" cy="11" rx="9.5" ry="4.5" stroke-width=".9" transform="rotate(35 17 11)"/><ellipse cx="17" cy="11" rx="9.5" ry="4.5" stroke-width=".9" transform="rotate(-35 17 11)"/><path d="M17 1.5 V20.5" stroke-width=".7"/></svg>
+          <span class="meta"><span class="name">Great circles</span><span class="count">31 symmetry equators</span></span><span class="sw"></span></label>
+        <div class="sub" id="gcOpts">
+          <div class="seg three" aria-label="Great circle sets">
+            <input type="checkbox" id="gc15"><label for="gc15">15<small>mirror planes</small></label>
+            <input type="checkbox" id="gc10"><label for="gc10">10<small>face axes</small></label>
+            <input type="checkbox" id="gc6"><label for="gc6">6<small>vertex axes</small></label>
+          </div>
+          <label class="check"><input type="checkbox" id="seven"><span>Emphasise the seven axes</span><small>the 3 + 4 circles shared with the vector equilibrium</small></label>
+        </div>
+        <label class="layer" data-accent><input type="checkbox" id="L_lcd">
+          <svg viewBox="0 0 34 22"><path d="M3 19 L17 3 L31 19 Z M17 3 L17 19 M3 19 L24 11 M31 19 L10 11" stroke-width="1"/><path d="M17 3 L17 14 L10 11 Z" stroke-width=".1" style="fill:var(--accent);fill-opacity:.35"/></svg>
+          <span class="meta"><span class="name">LCD triangles</span><span class="count">120 cut by the 15 mirrors</span></span><span class="sw"></span></label>
+        <div class="sub" id="lcdOpts">
+          <div class="seg four" role="radiogroup" aria-label="Colour the LCD triangles by">
+            <input type="radio" name="lcdMode" id="lcd_mirror" value="mirror"><label for="lcd_mirror">Mirror<small>60 + 60</small></label>
+            <input type="radio" name="lcdMode" id="lcd_icosa" value="icosa"><label for="lcd_icosa">Icosa<small>6 per face</small></label>
+            <input type="radio" name="lcdMode" id="lcd_dodeca" value="dodeca"><label for="lcd_dodeca">Dodeca<small>10 per face</small></label>
+            <input type="radio" name="lcdMode" id="lcd_rhomb" value="rhomb"><label for="lcd_rhomb">Rhombs<small>4 per face</small></label>
+          </div>
+        </div>
+        <label class="layer" data-accent><input type="checkbox" id="L_poly">
+          <svg viewBox="0 0 34 22"><path d="M17 2 L26 8.5 L22.5 19 L11.5 19 L8 8.5 Z" stroke-width="1.4"/><circle cx="17" cy="11" r="9.5" stroke-width=".6"/></svg>
+          <span class="meta"><span class="name">Spherical polyhedron</span><span class="count">traced by great-circle arcs</span></span><span class="sw"></span></label>
+        <div class="sub" id="polyOpts">
+          <div class="seg three" role="radiogroup" aria-label="Spherical polyhedron">
+            <input type="radio" name="poly" id="poly_icosa" value="icosa"><label for="poly_icosa">Icosa<small>20 faces</small></label>
+            <input type="radio" name="poly" id="poly_dodeca" value="dodeca"><label for="poly_dodeca">Dodeca<small>12 faces</small></label>
+            <input type="radio" name="poly" id="poly_triaconta" value="triaconta"><label for="poly_triaconta">Triaconta<small>30 rhombs</small></label>
+            <input type="radio" name="poly" id="poly_icosidodeca" value="icosidodeca"><label for="poly_icosidodeca">Icosidodeca<small>32 faces</small></label>
+            <input type="radio" name="poly" id="poly_octa" value="octa"><label for="poly_octa">Octa<small>8 faces</small></label>
+            <input type="radio" name="poly" id="poly_ve" value="ve"><label for="poly_ve">VE<small>14 faces</small></label>
+          </div>
+        </div>
         <label class="layer"><input type="checkbox" id="L_back" checked>
           <svg viewBox="0 0 34 22"><circle cx="17" cy="11" r="9" stroke-width="1.4"/><path d="M8 11 Q17 16 26 11" stroke-width="1" stroke-dasharray="2 2"/></svg>
           <span class="meta"><span class="name">Far side</span><span class="count">see-through hemisphere</span></span><span class="sw"></span></label>
@@ -292,6 +339,20 @@
         <label for="weight">Line weight</label><span class="val" id="weightVal"></span>
         <input type="range" id="weight" min="0.25" max="4" step="0.05" value="1">
       </div>
+    </section>
+
+    <section>
+      <h2>Strut types</h2>
+      <label class="check"><input type="checkbox" id="strutColor"><span>Colour struts by length</span><small>each distinct chord gets its own colour, shortest to longest</small></label>
+      <div class="row">
+        <label for="domeR">Dome radius</label><span class="val" id="domeRVal"></span>
+        <input type="range" id="domeR" min="2" max="60" step="1" value="38">
+      </div>
+      <div class="row">
+        <label for="tolMM">Cutting tolerance</label><span class="val" id="tolVal"></span>
+        <input type="range" id="tolMM" min="0" max="50" step="1" value="0">
+      </div>
+      <div class="legend" id="legend" hidden></div>
     </section>
 
     <section>
@@ -339,17 +400,24 @@
     </section>
 
     <section>
-      <h2>Jitterbug</h2>
+      <h2>Animations</h2>
+      <div class="seg three" role="radiogroup" aria-label="Animation">
+        <input type="radio" name="anim" id="an_jitterbug" value="jitterbug"><label for="an_jitterbug">Jitterbug<small>VE to sphere</small></label>
+        <input type="radio" name="anim" id="an_phases" value="phases"><label for="an_phases">Phases<small>with 7 circles</small></label>
+        <input type="radio" name="anim" id="an_sweep" value="sweep"><label for="an_sweep">Circles<small>sweep in</small></label>
+        <input type="radio" name="anim" id="an_unfold" value="unfold"><label for="an_unfold">Unfold<small>to the net</small></label>
+        <input type="radio" name="anim" id="an_grow" value="grow"><label for="an_grow">Grow<small>frequency</small></label>
+        <input type="radio" name="anim" id="an_build" value="build"><label for="an_build">Build<small>from the crown</small></label>
+      </div>
       <div class="transport">
-        <button class="btn grow" id="jbRun"></button>
+        <button class="btn grow" id="animRun">Run</button>
       </div>
       <div class="row">
-        <label for="jb">Transformation</label><span class="val" id="jbVal"></span>
-        <input type="range" id="jb" min="0" max="1000" step="1" value="1000">
+        <label for="animX">Progress</label><span class="val" id="animVal"></span>
+        <input type="range" id="animX" min="0" max="1000" step="1" value="1000">
       </div>
-      <div class="stages" id="stages">
-        <span>1 · Vector equilibrium</span><span>2 · Twist</span><span>3 · Subdivide</span><span>4 · Inflate</span>
-      </div>
+      <div class="stages" id="stages"></div>
+      <label class="check"><input type="checkbox" id="breathe"><span>Breathe the truss</span><small>depth swings 0–150% and back, one breath every 12.6 s</small></label>
     </section>
 
     <section>
@@ -372,7 +440,7 @@
       <h2>Motion export</h2>
       <div class="seg two" role="radiogroup" aria-label="Clip">
         <input type="radio" name="clip" id="clip_loop" value="loop" checked><label for="clip_loop">Seamless loop<small>one symmetric turn</small></label>
-        <input type="radio" name="clip" id="clip_jb" value="jitterbug"><label for="clip_jb">Jitterbug<small>VE to sphere</small></label>
+        <input type="radio" name="clip" id="clip_anim" value="anim"><label for="clip_anim">Animation<small id="clipAnimSub">jitterbug</small></label>
       </div>
       <div class="row"><span class="lbl">Clip</span><span class="val" id="clipInfo"></span></div>
       <div class="exports three">
@@ -410,22 +478,38 @@
   const len = a => Math.hypot(a[0], a[1], a[2]);
   const norm = a => { const l = len(a); return [a[0]/l, a[1]/l, a[2]/l]; };
   const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+  const sum = (...ps) => ps.reduce((s, p) => [s[0]+p[0], s[1]+p[1], s[2]+p[2]], [0, 0, 0]);
+  const scl = (p, k) => [p[0]*k, p[1]*k, p[2]*k];
   const clamp01 = x => Math.max(0, Math.min(1, x));
   const ease = x => x * x * (3 - 2 * x);
   const seg = (x, a, b) => clamp01((x - a) / (b - a));
+  // rotation matrix about a unit axis (Rodrigues), as rows
+  const rotM = (k, ang) => {
+    const c = Math.cos(ang), s = Math.sin(ang), t = 1 - c, [x, y, z] = k;
+    return [[c + x*x*t, x*y*t - z*s, x*z*t + y*s], [y*x*t + z*s, c + y*y*t, y*z*t - x*s], [z*x*t - y*s, z*y*t + x*s, c + z*z*t]];
+  };
+  const mulMV = (m, p) => [dot(m[0], p), dot(m[1], p), dot(m[2], p)];
+  const mulMM = (a, b) => a.map(row => [0, 1, 2].map(j => row[0]*b[0][j] + row[1]*b[1][j] + row[2]*b[2][j]));
+  const I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
 
+  const adjV = (i, j) => Math.abs(dot(V[i], V[j]) - 1/Math.sqrt(5)) < 1e-6;
   const FACES = (() => {
-    const adj = (i, j) => Math.abs(dot(V[i], V[j]) - 1/Math.sqrt(5)) < 1e-6, F = [];
+    const F = [];
     for (let i = 0; i < 12; i++) for (let j = i+1; j < 12; j++) for (let k = j+1; k < 12; k++)
-      if (adj(i, j) && adj(j, k) && adj(i, k)) F.push([i, j, k]);
+      if (adjV(i, j) && adjV(j, k) && adjV(i, k)) F.push([i, j, k]);
     return F;
   })();
+  const ICO_EDGES = [];
+  for (let i = 0; i < 12; i++) for (let j = i+1; j < 12; j++) if (adjV(i, j)) ICO_EDGES.push([i, j]);
+  const FACE_CEN = FACES.map(f => norm(sum(...f.map(i => V[i]))));      // dodecahedron vertices
+  const MIDS = ICO_EDGES.map(([i, j]) => norm(sum(V[i], V[j])));        // icosidodecahedron vertices
+  const edgeIdx = (i, j) => ICO_EDGES.findIndex(([a, b]) => (a === i && b === j) || (a === j && b === i));
 
   const AXES = {
     polar: [0, 0, 1],
     '5': norm(V[0]),
-    '3': norm(FACES[0].map(i => V[i]).reduce((s, p) => [s[0]+p[0], s[1]+p[1], s[2]+p[2]], [0, 0, 0])),
-    '2': norm([0, 1, 2].map(d => V[FACES[0][0]][d] + V[FACES[0][1]][d])),
+    '3': FACE_CEN[0],
+    '2': norm(sum(V[FACES[0][0]], V[FACES[0][1]])),
   };
 
   const cache = new Map();
@@ -438,13 +522,17 @@
       if (i === undefined) { i = nodes.length; index.set(key, i); nodes.push(p); flat.push(q); }
       return i;
     };
-    const tris = [], netKeys = new Set();
+    const npf = (freq + 1) * (freq + 2) / 2;                          // grid nodes per face
+    const local = (i, j) => i * (freq + 1) - i * (i - 1) / 2 + j;     // (i, j) → index within a face
+    const faceNodes = new Int32Array(20 * npf);
+    const tris = [], triUnf = [], netKeys = new Set();
     const ekey = (u, v) => Math.min(u, v) * 1e6 + Math.max(u, v);
-    for (const [ia, ib, ic] of FACES) {
+    FACES.forEach(([ia, ib, ic], k) => {
       const A = V[ia], B = V[ib], C = V[ic], g = {};
       for (let i = 0; i <= freq; i++) for (let j = 0; j <= freq - i; j++) {
-        const k = freq - i - j;
-        g[i + ',' + j] = node([0, 1, 2].map(d => (A[d]*k + B[d]*i + C[d]*j) / freq));
+        const m = freq - i - j;
+        g[i + ',' + j] = node([0, 1, 2].map(d => (A[d]*m + B[d]*i + C[d]*j) / freq));
+        faceNodes[k * npf + local(i, j)] = g[i + ',' + j];
       }
       // edges lying on the icosahedron's own 30 edges (the Dymaxion net)
       for (let t = 0; t < freq; t++) {
@@ -452,11 +540,16 @@
         netKeys.add(ekey(g['0,' + t], g['0,' + (t+1)]));
         netKeys.add(ekey(g[t + ',' + (freq-t)], g[(t+1) + ',' + (freq-t-1)]));
       }
+      const U = (i, j) => k * npf + local(i, j);
       for (let i = 0; i < freq; i++) for (let j = 0; j < freq - i; j++) {
         tris.push([g[i+','+j], g[(i+1)+','+j], g[i+','+(j+1)]]);
-        if (i + j < freq - 1) tris.push([g[(i+1)+','+j], g[(i+1)+','+(j+1)], g[i+','+(j+1)]]);
+        triUnf.push([U(i, j), U(i+1, j), U(i, j+1)]);
+        if (i + j < freq - 1) {
+          tris.push([g[(i+1)+','+j], g[(i+1)+','+(j+1)], g[i+','+(j+1)]]);
+          triUnf.push([U(i+1, j), U(i+1, j+1), U(i, j+1)]);
+        }
       }
-    }
+    });
     const edgeTris = new Map();
     tris.forEach((t, ti) => {
       for (const [u, v] of [[t[0], t[1]], [t[1], t[2]], [t[2], t[0]]]) {
@@ -464,7 +557,7 @@
         (edgeTris.get(k) || edgeTris.set(k, []).get(k)).push(ti);
       }
     });
-    const outerE = [], innerE = [], netE = [], lengths = [];
+    const outerE = [], innerE = [], netE = [], elen = [];
     let chord = 0, cmin = Infinity, cmax = 0;
     for (const [k, ts] of edgeTris) {
       const a = Math.floor(k / 1e6), b = k % 1e6;
@@ -472,13 +565,13 @@
       if (netKeys.has(k)) netE.push(a, b);
       const p = nodes[a], q = nodes[b], c = Math.hypot(p[0]-q[0], p[1]-q[1], p[2]-q[2]);
       chord += c; cmin = Math.min(cmin, c); cmax = Math.max(cmax, c);
-      lengths.push(c);
+      elen.push(c);
     }
     chord /= edgeTris.size;
     // distinct strut lengths, grouped in full precision (matches Haghnazar et al. 2014, Table 1)
-    lengths.sort((x, y) => x - y);
+    const sorted = [...elen].sort((x, y) => x - y);
     let strutTypes = 1;
-    for (let i = 1; i < lengths.length; i++) if (lengths[i] - lengths[i-1] > 1e-9) strutTypes++;
+    for (let i = 1; i < sorted.length; i++) if (sorted[i] - sorted[i-1] > 1e-9) strutTypes++;
     const webE = [];
     tris.forEach((t, ti) => webE.push(ti, t[0], ti, t[1], ti, t[2]));
     const outer = new Float32Array(nodes.length * 3), outerFlat = new Float32Array(nodes.length * 3);
@@ -493,17 +586,38 @@
       for (let i = 0; i < nodes.length; i++) { const d = dot(nodes[i], v); if (d > bd) { bd = d; best = i; } }
       return best;
     });
+    // per-face copies for unfolding: every face keeps its own nodes and edges
+    const fpt = freq * freq, faceOuterE = [], faceWebE = [], faceInnerE = [];
+    for (let k = 0; k < 20; k++) {
+      const seen = new Set();
+      for (let ti = k * fpt; ti < (k + 1) * fpt; ti++) {
+        const t = triUnf[ti];
+        for (const [u, v] of [[t[0], t[1]], [t[1], t[2]], [t[2], t[0]]]) {
+          const key = Math.min(u, v) * 1e7 + Math.max(u, v);
+          if (!seen.has(key)) { seen.add(key); faceOuterE.push(u, v); }
+        }
+        faceWebE.push(ti, t[0], ti, t[1], ti, t[2]);
+      }
+    }
+    for (let e = 0; e < innerE.length; e += 2)
+      if (Math.floor(innerE[e] / fpt) === Math.floor(innerE[e+1] / fpt)) faceInnerE.push(innerE[e], innerE[e+1]);
+    const faceCorners = [];
+    for (let k = 0; k < 20; k++) faceCorners.push(k*npf + local(0, 0), k*npf + local(freq, 0), k*npf + local(0, freq));
     const geo = { freq, outer, outerFlat, innerDir, innerFlat, chord, cmin, cmax, strutTypes, poles,
-      nNodes: nodes.length, nTris: tris.length,
+      nNodes: nodes.length, nTris: tris.length, elen: Float64Array.from(elen),
       outerE: Uint32Array.from(outerE), innerE: Uint32Array.from(innerE),
-      webE: Uint32Array.from(webE), netE: Uint32Array.from(netE) };
+      webE: Uint32Array.from(webE), netE: Uint32Array.from(netE),
+      npf, local, faceNodes, fpt,
+      faceOuterE: Uint32Array.from(faceOuterE), faceWebE: Uint32Array.from(faceWebE),
+      faceInnerE: Uint32Array.from(faceInnerE), faceCorners: Uint32Array.from(faceCorners) };
     cache.set(freq, geo);
     return geo;
   }
 
   // ───────────────────────── jitterbug ─────────────────────────
   // Fuller's jitterbug as the family of cyclic permutations of (0, ±1, ±t):
-  // t = 1 is the vector equilibrium (cuboctahedron), t = φ the icosahedron.
+  // t = 1 is the vector equilibrium (cuboctahedron), t = φ the icosahedron,
+  // t = 2 Jessen's orthogonal icosahedron, t → ∞ the octahedron.
   // The 8 triangles stay equilateral and rotate about the cube diagonals; the
   // 6 square diagonals keep length 2 and become icosahedron edges at t = φ.
   const jbIdx = (a, s1, s2) => a * 4 + (s1 < 0 ? 2 : 0) + (s2 < 0 ? 1 : 0);
@@ -538,21 +652,203 @@
   // jitterbug vertices at parameter t, scaled so edge length is constant and the
   // icosahedron (t = φ) lands exactly on the unit sphere
   const edgeLen = t => Math.sqrt(2*t*t - 2*t + 2);
-  function jbVerts(t) {
-    const k = 2 / (Math.sqrt(1 + PHI * PHI) * edgeLen(t));
-    return jbRaw(t).map(p => rot(p.map(v => v * k)));
+  const jbScale = t => 2 / (Math.sqrt(1 + PHI * PHI) * edgeLen(t));
+  const jbRadius = t => jbScale(t) * Math.sqrt(1 + t * t);
+  function jbVerts(t) { const k = jbScale(t); return jbRaw(t).map(p => rot(scl(p, k))); }
+  // twist of each triangle about its 3-fold axis, measured from the vector equilibrium
+  function twistDeg(t) {
+    const n = norm([1, 1, 1]), flat = p => norm(p.map((v, d) => v - dot(p, n) * n[d]));
+    const a = flat([0, 1, 1]), b = flat([0, 1, t]);
+    return Math.acos(Math.max(-1, Math.min(1, dot(a, b)))) * 180 / Math.PI;
   }
-  const VE_VERTS = jbRaw(1).map(p => rot(norm(p)));          // VE on the unit sphere
-  const VE_CIRCLES = [[1, 1, 1], [1, 1, -1], [1, -1, 1], [-1, 1, 1]].map(n => {
-    const N = rot(norm(n)), a = norm(cross(N, Math.abs(N[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0])), b = cross(N, a), pts = [];
-    for (let i = 0; i < 144; i++) { const t = i / 144 * 2 * Math.PI; pts.push([0, 1, 2].map(d => Math.cos(t)*a[d] + Math.sin(t)*b[d])); }
-    return pts;
-  });
 
-  // timeline: x in [0, 1]; 1 means "finished" (normal studio rendering)
+  // ───────────────────────── great circles & spherical polyhedra ─────────────────────────
+  const circlePts = (N, n = 144) => {
+    const a = norm(cross(N, Math.abs(N[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0])), b = cross(N, a), pts = [];
+    for (let i = 0; i < n; i++) { const t = i / n * 2 * Math.PI; pts.push([0, 1, 2].map(d => Math.cos(t)*a[d] + Math.sin(t)*b[d])); }
+    return pts;
+  };
+  const uniqAxes = list => {
+    const out = [];
+    for (const a of list.map(norm)) if (!out.some(b => Math.abs(Math.abs(dot(a, b)) - 1) < 1e-9)) out.push(a);
+    return out;
+  };
+  const VE_NORMALS = [[1, 1, 1], [1, 1, -1], [1, -1, 1], [-1, 1, 1]].map(n => rot(norm(n)));   // 4 of the 10
+  const SQ_NORMALS = [[1, 0, 0], [0, 1, 0], [0, 0, 1]].map(rot);                               // 3 of the 15
+  const isAmong = (n, list) => list.some(m => Math.abs(Math.abs(dot(n, m)) - 1) < 1e-9);
+  // the 31 great circles: equators of the 15 two-fold, 10 three-fold and 6 five-fold axes
+  const GC = {
+    15: uniqAxes(MIDS).map(N => ({ N, pts: circlePts(N), seven: isAmong(N, SQ_NORMALS) })),
+    10: uniqAxes(FACE_CEN).map(N => ({ N, pts: circlePts(N), seven: isAmong(N, VE_NORMALS) })),
+    6:  uniqAxes(V).map(N => ({ N, pts: circlePts(N), seven: false })),
+  };
+  const VE_CIRCLES = VE_NORMALS.map(N => circlePts(N));
+  const SQ_CIRCLES = SQ_NORMALS.map(N => circlePts(N));
+  const VE_VERTS = jbRaw(1).map(p => rot(norm(p)));          // VE on the unit sphere
+
+  // arc between two unit vectors, as points
+  const arcPts = (a, b, n) => { const out = []; for (let i = 0; i <= n; i++) out.push(norm(a.map((v, d) => v + (b[d] - v) * i / n))); return out; };
+
+  // spherical polyhedra disclosed by the great circles
+  const OCTA = [...SQ_NORMALS, ...SQ_NORMALS.map(p => scl(p, -1))];
+  const POLY = {
+    icosa:       { name: 'icosahedron', verts: V, edges: ICO_EDGES },
+    dodeca:      { name: 'dodecahedron', verts: FACE_CEN,
+                   edges: (() => { const E = []; for (let a = 0; a < 20; a++) for (let b = a+1; b < 20; b++)
+                     if (FACES[a].filter(v => FACES[b].includes(v)).length === 2) E.push([a, b]); return E; })() },
+    triaconta:   { name: 'rhombic triacontahedron', verts: [...V, ...FACE_CEN],
+                   edges: FACES.flatMap((f, fi) => f.map(v => [v, 12 + fi])) },
+    icosidodeca: { name: 'icosidodecahedron', verts: MIDS,
+                   edges: FACES.flatMap(([a, b, c]) => { const m = [edgeIdx(a, b), edgeIdx(b, c), edgeIdx(c, a)]; return [[m[0], m[1]], [m[1], m[2]], [m[2], m[0]]]; }) },
+    octa:        { name: 'octahedron', verts: OCTA,
+                   edges: (() => { const E = []; for (let a = 0; a < 6; a++) for (let b = a+1; b < 6; b++) if (Math.abs(dot(OCTA[a], OCTA[b])) < 1e-9) E.push([a, b]); return E; })() },
+    ve:          { name: 'vector equilibrium', verts: VE_VERTS, edges: JB_EDGES },
+  };
+  for (const P of Object.values(POLY)) {
+    P.arcs = P.edges.map(([a, b]) => arcPts(P.verts[a], P.verts[b], 18));
+  }
+
+  // the 120 LCD triangles: each icosahedron face splits into 6 (vertex, edge midpoint, face centre)
+  const LCD = [];
+  FACES.forEach((f, fi) => {
+    const C = FACE_CEN[fi];
+    for (const v of f) for (const w of f) if (v !== w) {
+      const ei = edgeIdx(v, w), m = MIDS[ei];
+      const pts = [...arcPts(V[v], m, 8).slice(0, -1), ...arcPts(m, C, 8).slice(0, -1), ...arcPts(C, V[v], 8).slice(0, -1)];
+      LCD.push({ pts, chir: Math.sign(dot(cross(V[v], m), C)), groups: { icosa: fi, dodeca: v, rhomb: ei },
+                 corners: [V[v], m, C].map(p => p.map(x => x.toFixed(6)).join(',')) });
+    }
+  });
+  // colour each grouping so neighbouring groups (sharing an edge of the 15 circles) differ
+  const LCD_COLORS = {};
+  for (const mode of ['icosa', 'dodeca', 'rhomb']) {
+    const groups = new Map();
+    LCD.forEach(t => { const g = t.groups[mode]; if (!groups.has(g)) groups.set(g, new Set()); t.corners.forEach(c => groups.get(g).add(c)); });
+    const keys = [...groups.keys()], color = new Map();
+    for (const g of keys) {
+      const used = new Set();
+      for (const h of keys) if (color.has(h)) {
+        let shared = 0; for (const c of groups.get(g)) if (groups.get(h).has(c)) shared++;
+        if (shared >= 2) used.add(color.get(h));
+      }
+      let c = 0; while (used.has(c)) c++;
+      color.set(g, c);
+    }
+    LCD_COLORS[mode] = color;
+  }
+
+  // ───────────────────────── unfolding: the icosahedral net ─────────────────────────
+  // A spanning tree of the 20 faces: a band of 10 around the equator with 5 caps above and below.
+  const NET = (() => {
+    const north = 0, south = V.findIndex(v => dot(v, V[0]) < -0.999);
+    const share = (a, b) => FACES[a].filter(v => FACES[b].includes(v));
+    const all = FACES.map((_, i) => i);
+    const capN = all.filter(i => FACES[i].includes(north)), capS = all.filter(i => FACES[i].includes(south));
+    const band = all.filter(i => !capN.includes(i) && !capS.includes(i));
+    const order = [band[0]];
+    while (order.length < band.length) {
+      const last = order[order.length - 1];
+      order.push(band.find(b => !order.includes(b) && share(last, b).length === 2));
+    }
+    const root = order[4], parent = new Array(20).fill(-1);
+    order.forEach((b, i) => { if (i < 4) parent[b] = order[i + 1]; else if (i > 4) parent[b] = order[i - 1]; });
+    for (const c of [...capN, ...capS]) parent[c] = band.find(b => share(c, b).length === 2);
+    const topo = [root];
+    for (let k = 0; k < topo.length; k++) for (let i = 0; i < 20; i++) if (parent[i] === topo[k]) topo.push(i);
+    const normal = i => FACE_CEN[i];
+    const hinge = all.map(i => {
+      if (parent[i] < 0) return null;
+      const [h0, h1] = share(i, parent[i]), a = V[h0], axis = norm(V[h1].map((v, d) => v - a[d]));
+      const nc = normal(i), np = normal(parent[i]), ang = Math.acos(Math.max(-1, Math.min(1, dot(nc, np))));
+      const sign = dot(mulMV(rotM(axis, ang), nc), np) > dot(mulMV(rotM(axis, -ang), nc), np) ? 1 : -1;
+      return { a, axis, ang: sign * ang };
+    });
+    return { root, parent, topo, hinge, ends: [order[0], order[9]] };
+  })();
+  const FOLD_DEG = Math.abs(NET.hinge.find(Boolean).ang) * 180 / Math.PI;   // 41.81°, 180° − dihedral
+
+  // rigid transform {R, t} of each face after unfolding by `fold` (0..1)
+  function faceTransforms(fold) {
+    const T = new Array(20);
+    for (const i of NET.topo) {
+      if (NET.parent[i] < 0) { T[i] = { R: I3, t: [0, 0, 0] }; continue; }
+      const h = NET.hinge[i], P = T[NET.parent[i]];
+      const Rh = rotM(h.axis, h.ang * fold), th = h.a.map((v, d) => v - mulMV(Rh, h.a)[d]);
+      T[i] = { R: mulMM(P.R, Rh), t: sum(mulMV(P.R, th), P.t) };
+    }
+    return T;
+  }
+  const FLAT_T = faceTransforms(1);
+  const NET_INFO = (() => {   // centre, width and strip direction of the fully unfolded net
+    const cen = FACES.map((f, i) => sum(mulMV(FLAT_T[i].R, scl(sum(...f.map(v => V[v])), 1/3)), FLAT_T[i].t));
+    const c = scl(sum(...cen), 1/20), n = FACE_CEN[NET.root];
+    let d = cen[NET.ends[1]].map((v, k) => v - cen[NET.ends[0]][k]);
+    d = norm(d.map((v, k) => v - dot(d, n) * n[k]));
+    const w = Math.max(...cen.map(p => Math.abs(dot(p.map((v, k) => v - c[k]), d)))) * 2 + 1.2;
+    return { c, n, d, width: w };
+  })();
+
+  // ───────────────────────── frequency growth ─────────────────────────
+  // grow 1v → … → f by divisor steps; each new grid lies inside the previous one's flat triangles
+  function growChain(f) {
+    const primes = []; let n = f;
+    for (let p = 2; n > 1; p++) while (n % p === 0) { primes.push(p); n /= p; }
+    const chain = [1]; for (const p of primes) chain.push(chain[chain.length - 1] * p);
+    return chain;
+  }
+  const growCache = new Map();
+  function growStart(fg, gg) {   // start positions of the g-grid nodes on the f-grid's chords
+    const key = fg.freq + '>' + gg.freq;
+    if (growCache.has(key)) return growCache.get(key);
+    const f = fg.freq, g = gg.freq, out = new Float32Array(gg.outer.length);
+    const P = (k, i, j) => { const n = fg.faceNodes[k * fg.npf + fg.local(i, j)] * 3; return [fg.outer[n], fg.outer[n+1], fg.outer[n+2]]; };
+    for (let k = 0; k < 20; k++) for (let I = 0; I <= g; I++) for (let J = 0; J <= g - I; J++) {
+      const x = I * f / g, y = J * f / g;
+      let i0 = Math.floor(x + 1e-9), j0 = Math.floor(y + 1e-9);
+      const fx = x - i0, fy = y - j0;
+      let p;
+      if (fx < 1e-9 && fy < 1e-9) p = P(k, i0, j0);
+      else if (fx + fy <= 1 + 1e-9) { const a = P(k, i0, j0), b = P(k, i0 + 1, j0), c = P(k, i0, j0 + 1);
+        p = [0, 1, 2].map(d => a[d] * (1 - fx - fy) + b[d] * fx + c[d] * fy); }
+      else { const a = P(k, i0 + 1, j0 + 1), b = P(k, i0, j0 + 1), c = P(k, i0 + 1, j0);
+        p = [0, 1, 2].map(d => a[d] * (fx + fy - 1) + b[d] * (1 - fx) + c[d] * (1 - fy)); }
+      out.set(p, gg.faceNodes[k * gg.npf + gg.local(I, J)] * 3);
+    }
+    growCache.set(key, out);
+    return out;
+  }
+
+  // ───────────────────────── strut types ─────────────────────────
+  const RAMP = ['#1f5f73', '#4b8f7c', '#9aa83a', '#e0a526', '#ef5a1f', '#a8321e'];
+  const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+  const rampColor = u => {
+    const x = clamp01(u) * (RAMP.length - 1), i = Math.min(RAMP.length - 2, Math.floor(x)), t = x - i;
+    const a = hexRgb(RAMP[i]), b = hexRgb(RAMP[i + 1]);
+    return '#' + a.map((v, d) => Math.round(v + (b[d] - v) * t).toString(16).padStart(2, '0')).join('');
+  };
+  const classCache = new Map();
+  // group outer struts into lengths a builder would cut: gaps up to the tolerance merge
+  function strutClasses(geo) {
+    const tol = Math.max(1e-9, S.tolMM / 1000 / S.domeR), key = geo.freq + '|' + tol;
+    if (classCache.has(key)) return classCache.get(key);
+    const n = geo.elen.length, order = [...Array(n).keys()].sort((a, b) => geo.elen[a] - geo.elen[b]);
+    const cls = new Uint16Array(n), classes = [];
+    let prev = -Infinity;
+    for (const e of order) {
+      const L = geo.elen[e];
+      if (L - prev > tol) classes.push({ min: L, max: L, count: 0 });
+      const c = classes[classes.length - 1]; c.max = L; c.count++; cls[e] = classes.length - 1; prev = L;
+    }
+    classes.forEach((c, i) => { c.color = rampColor(classes.length === 1 ? 0.5 : i / (classes.length - 1)); });
+    const res = { cls, classes };
+    classCache.set(key, res);
+    return res;
+  }
+
+  // ───────────────────────── animations ─────────────────────────
+  // every animation runs x from 0 to 1; x = 1 is the normal studio view
   const JB_DUR = 11;
   function jbState(x) {
-    if (x >= 1) return null;
     const twist = ease(seg(x, 0.12, 0.45));
     const polyPhase = x < 0.55;
     return {
@@ -568,13 +864,75 @@
       stage: x < 0.12 ? 0 : x < 0.55 ? 1 : x < 0.72 ? 2 : 3,
     };
   }
-  function jbLabel(st, freq) {
+  // jitterbug phases: VE → icosahedron → Jessen → octahedron → back, with the seven circles
+  const PHASE_V = { ve: 0, icosa: 1 - 1 / PHI, jessen: 0.5, octa: 0.97 };       // t = 1 / (1 − v)
+  const PHASE_KEYS = [[0, 've'], [0.12, 've'], [0.24, 'icosa'], [0.30, 'icosa'], [0.38, 'jessen'], [0.44, 'jessen'],
+                      [0.56, 'octa'], [0.62, 'octa'], [0.86, 've'], [1, 've']];
+  function phasesState(x) {
+    const u = seg(x, 0.06, 0.92), at = u;
+    let v = 0;
+    for (let i = 1; i < PHASE_KEYS.length; i++) {
+      const [x0, k0] = PHASE_KEYS[i - 1], [x1, k1] = PHASE_KEYS[i];
+      if (at <= x1) { v = PHASE_V[k0] + (PHASE_V[k1] - PHASE_V[k0]) * ease(seg(at, x0, x1)); break; }
+    }
+    const vmax = at < 0.56 ? v : PHASE_V.octa;
+    const t = 1 / (1 - v);
+    const near = Object.entries(PHASE_V).reduce((b, [k, pv]) => Math.abs(pv - v) < Math.abs(PHASE_V[b] - v) ? k : b, 've');
+    return { x, v, vmax, t, fadeIn: ease(seg(x, 0, 0.06)), fadeOut: 1 - ease(seg(x, 0.92, 1)),
+             gridA: 1 - ease(seg(x, 0, 0.06)) * (1 - ease(seg(x, 0.92, 1))),
+             near, at: Math.abs(PHASE_V[near] - v) < 0.004, stage: ['ve', 'icosa', 'jessen', 'octa'].indexOf(near) };
+  }
+  function sweepState(x) { return { x, stage: x < 0.35 ? 0 : x < 0.6 ? 1 : 2 }; }
+  function unfoldState(x) {
+    return { x, inflate: 1 - ease(seg(x, 0, 0.12)) * (1 - ease(seg(x, 0.88, 1))),
+             fold: ease(seg(x, 0.12, 0.40)) * (1 - ease(seg(x, 0.72, 0.88))),
+             align: ease(seg(x, 0.22, 0.48)) * (1 - ease(seg(x, 0.64, 0.84))),
+             stage: x < 0.12 ? 0 : x < 0.40 ? 1 : x < 0.72 ? 2 : 3 };
+  }
+  function growState(x, freq) {
+    const chain = growChain(freq), steps = chain.length - 1, u = seg(x, 0, 0.9) * steps;
+    const i = Math.min(steps - 1, Math.floor(u));
+    return { x, chain, from: chain[Math.max(0, i)], to: chain[Math.max(0, i) + 1] || freq, s: ease(clamp01(u - i)),
+             trussA: ease(seg(x, 0.9, 1)), stage: Math.min(chain.length - 1, Math.round(u)) };
+  }
+  function buildState(x) {
+    const H = 1.15 - 2.6 * ease(seg(x, 0, 0.85));
+    return { x, H, stage: x < 0.3 ? 0 : x < 0.55 ? 1 : x < 0.8 ? 2 : 3 };
+  }
+
+  const ANIMS = {
+    jitterbug: { dur: () => JB_DUR, state: jbState,
+                 stages: () => ['1 · Vector equilibrium', '2 · Twist', '3 · Subdivide', '4 · Inflate'] },
+    phases:    { dur: () => 16, state: phasesState, freezeSpin: false,
+                 stages: () => ['VE · t = 1', 'Icosahedron · φ', 'Jessen · 2', 'Octahedron · ∞'] },
+    sweep:     { dur: () => 9, state: sweepState,
+                 stages: () => ['15 mirror circles', '10 face circles', '6 vertex circles'] },
+    unfold:    { dur: () => 13, state: unfoldState, freezeSpin: true,
+                 stages: () => ['1 · Flatten', '2 · Unfold', '3 · Net', '4 · Refold'] },
+    grow:      { dur: () => 1.4 + 2.6 * (growChain(S.freq).length - 1), state: x => growState(x, S.freq),
+                 stages: () => growChain(S.freq).map(n => n + 'v') },
+    build:     { dur: () => 10, state: buildState,
+                 stages: () => ['1 · Crown', '2 · Shoulder', '3 · Base', '4 · Truss'] },
+  };
+  function animLabel(kind, st, freq) {
     if (!st) return '';
-    if (st.stage === 0) return 'Vector equilibrium · 12 vertices, 8 triangles, 6 squares';
-    if (st.stage === 1) return st.t > PHI - 0.003 ? 'Icosahedron · 20 triangles' :
-      `Jitterbug twist · t = ${st.t.toFixed(3)} → φ`;
-    if (st.stage === 2) return `Subdividing · ${freq}v Class I`;
-    return `Inflating to the sphere · ${Math.round(st.inflate * 100)}%`;
+    if (kind === 'jitterbug') {
+      if (st.stage === 0) return 'Vector equilibrium · 12 vertices, 8 triangles, 6 squares';
+      if (st.stage === 1) return st.t > PHI - 0.003 ? 'Icosahedron · 20 triangles' : `Jitterbug twist · t = ${st.t.toFixed(3)} → φ`;
+      if (st.stage === 2) return `Subdividing · ${freq}v Class I`;
+      return `Inflating to the sphere · ${Math.round(st.inflate * 100)}%`;
+    }
+    if (kind === 'phases') {
+      const names = { ve: 'Vector equilibrium', icosa: 'Icosahedron', jessen: 'Jessen’s orthogonal icosahedron', octa: 'Octahedron (limit)' };
+      const tw = twistDeg(st.t).toFixed(1);
+      return st.at ? `${names[st.near]} · twist ${tw}°` : `Jitterbug · t = ${st.t > 20 ? '∞' : st.t.toFixed(3)} · twist ${tw}°`;
+    }
+    if (kind === 'sweep') return ['15 great circles · the mirror planes', '10 great circles · face axes', '6 great circles · vertex axes'][st.stage];
+    if (kind === 'unfold') return ['Flattening to the icosahedron', `Unfolding · hinges at ${(FOLD_DEG * (1 - st.fold)).toFixed(1)}°`,
+      'The icosahedral net · 20 faces, 19 hinges', 'Folding back to the sphere'][st.stage];
+    if (kind === 'grow') return st.trussA > 0 ? `${freq}v · adding the truss` : `Subdividing ${st.from}v → ${st.to}v`;
+    if (kind === 'build') return ['Building from the crown', 'Working down the shoulder', 'Closing the base', 'Bracing the inner layer'][st.stage];
+    return '';
   }
 
   // ───────────────────────── state ─────────────────────────
@@ -583,12 +941,18 @@
   const DEFAULTS = {
     freq: 16, trueScale: false, depth: 100,
     L_outer: true, L_inner: true, L_web: true, L_net: false, L_poles: false, L_ve: false, L_back: true,
+    L_gc: false, gc15: true, gc10: true, gc6: true, seven: false,
+    L_lcd: false, lcdMode: 'mirror', L_poly: false, poly: 'dodeca',
+    strutColor: false, tolMM: 0, domeR: 38,
     backOp: 28, weight: 1, line: '#1d1b18', accent: '#ff4e02', bg: 'paper',
     playing: true, dir: 1, speed: 3, axis: '5', tilt: 12, wobble: 0, zoom: 94, exportBg: false, clip: 'loop',
+    animKind: 'jitterbug', breathe: false,
   };
   const KEY = 'dymaxion-studio:v1';
   let S = { ...DEFAULTS };
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch {}
+  if (S.clip !== 'loop') S.clip = 'anim';
+  if (!ANIMS[S.animKind]) S.animKind = 'jitterbug';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduced) S.playing = false;
   let saveT;
@@ -597,13 +961,14 @@
 
   let theta = 0;          // spin angle (rad)
   let dragTilt = 0;       // extra tilt from dragging (deg)
-  let clock = 0;          // seconds of motion, for wobble
-  let jb = 1, jbRunning = false;
+  let clock = 0;          // seconds of motion, for wobble and breathing
+  const anim = { x: 1, running: false };
   let exporting = null;   // the running GIF/MP4 job; the stage holds still meanwhile
 
   // ───────────────────────── projection & drawing ─────────────────────────
   // Base widths (px) for a 1000px artboard; tuned so 16v matches the SVG exports.
-  const BASE = { outer: 1.2, inner: 0.65, web: 0.375, net: 2.2, ve: 1.8, circle: 1.1 };
+  const BASE = { outer: 1.2, inner: 0.65, web: 0.375, net: 2.2, circle: 1.1, poly: 1.9 };
+  const GC_W = { 15: 1.25, 10: 0.95, 6: 0.7 };
 
   function camera() {
     const A = AXES[S.axis];
@@ -616,25 +981,48 @@
     const r = norm(cross(A, f)), u = cross(f, r);
     return { f, r, u };
   }
+  const depthNow = () => S.breathe ? 75 * (1 - Math.cos(clock * 0.5)) : S.depth;
+
+  // split a layer's edges into groups by colour and by an alpha level (5 steps)
+  function pushGrouped(layers, base, colorFn, alphaFn) {
+    if (!colorFn && !alphaFn) { layers.push(base); return; }
+    const groups = new Map(), E = base.E;
+    for (let e = 0, k = 0; e < E.length; e += 2, k++) {
+      const al = alphaFn ? alphaFn(k) : 1;
+      if (al <= 0.02) continue;
+      const ab = alphaFn ? Math.ceil(al * 5) / 5 : 1, col = colorFn ? colorFn(k) : base.color, key = col + '|' + ab;
+      let g = groups.get(key); if (!g) groups.set(key, g = { col, ab, list: [] });
+      g.list.push(E[e], E[e + 1]);
+    }
+    let n = 0;
+    for (const g of groups.values())
+      layers.push({ ...base, id: `${base.id}-${++n}`, color: g.col, alpha: base.alpha * g.ab, E: Uint32Array.from(g.list) });
+  }
 
   // Build everything one frame draws as plain data: line layers (index pairs into
-  // projected xyz arrays), filled triangles and dots. paint() and toSVG() share it.
+  // projected xyz arrays), filled polygons and dots. paint() and toSVG() share it.
   function frame(geo, size) {
-    const { f, r, u } = camera();
+    const cam = camera(), { f, r, u } = cam;
     const scale = S.trueScale ? geo.freq / 16 : 1;
     const R = size / 2 * (S.zoom / 100) * scale, c = size / 2;
-    const rIn = 1 - (S.depth / 100) * geo.chord * Math.sqrt(2/3);
-    const jst = jbState(jb);
-    const inflate = jst ? jst.inflate : 1, gridA = jst ? jst.gridA : 1;
+    const rIn = 1 - (depthNow() / 100) * geo.chord * Math.sqrt(2/3);
+    const kind = S.animKind, active = anim.x < 1;
+    const st = active ? ANIMS[kind].state(anim.x) : null;
+    const jst = kind === 'jitterbug' ? st : null, pst = kind === 'phases' ? st : null;
+    const ust = kind === 'unfold' ? st : null, gst = kind === 'grow' ? st : null;
+    const sst = kind === 'sweep' ? st : null, bst = kind === 'build' ? st : null;
+    const inflate = jst ? jst.inflate : ust ? ust.inflate : 1;
+    const gridA = jst ? jst.gridA : pst ? pst.gridA : 1;
+    const overlayA = (pst ? pst.gridA : 1) * (jst ? jst.inflate : 1) * (ust ? inflate * (1 - Math.max(ust.fold, ust.align)) : 1);
 
-    const proj = (src, k, flatSrc) => {
-      const o = new Float32Array(src.length);
+    const projArr = (src, k, flatSrc, mix) => {
+      const o = new Float32Array(src.length), m = mix ?? inflate;
       for (let i = 0; i < src.length; i += 3) {
         let x = src[i], y = src[i+1], z = src[i+2];
-        if (flatSrc && inflate < 1) {
-          x = flatSrc[i] + (x - flatSrc[i]) * inflate;
-          y = flatSrc[i+1] + (y - flatSrc[i+1]) * inflate;
-          z = flatSrc[i+2] + (z - flatSrc[i+2]) * inflate;
+        if (flatSrc && m < 1) {
+          x = flatSrc[i] + (x - flatSrc[i]) * m;
+          y = flatSrc[i+1] + (y - flatSrc[i+1]) * m;
+          z = flatSrc[i+2] + (z - flatSrc[i+2]) * m;
         }
         x *= k; y *= k; z *= k;
         o[i]   = c + (x*r[0] + y*r[1] + z*r[2]) * R;
@@ -643,54 +1031,181 @@
       }
       return o;
     };
-    const projPts = pts => proj(Float32Array.from(pts.flat()), 1);
+    const projPts = (pts, k = 1) => projArr(Float32Array.from(pts.flat()), k);
+    const ring = n => { const E = []; for (let i = 0; i < n; i++) E.push(i, (i + 1) % n); return Uint32Array.from(E); };
+    const polyline = n => { const E = []; for (let i = 0; i < n - 1; i++) E.push(i, i + 1); return Uint32Array.from(E); };
 
-    const po = proj(geo.outer, 1, geo.outerFlat), pi = proj(geo.innerDir, rIn, geo.innerFlat);
     const px = size / 1000 * S.weight;
-    const layers = [], fills = [];
+    const layers = [], fills = [], dots = [];
     const line = S.line, acc = S.accent;
-    if (S.L_web)   layers.push({ id: 'web',   E: geo.webE,   A: pi, B: po, w: BASE.web * px,   color: line, alpha: gridA });
-    if (S.L_inner) layers.push({ id: 'inner', E: geo.innerE, A: pi, B: pi, w: BASE.inner * px, color: line, alpha: gridA });
-    if (S.L_outer) layers.push({ id: 'outer', E: geo.outerE, A: po, B: po, w: BASE.outer * px, color: line, alpha: gridA });
+    let po = null;
 
-    const netA = jst ? jst.netA : (S.L_net ? 1 : 0);
+    const unfolded = ust && (ust.fold > 0 || ust.align > 0);
+    if (unfolded) {
+      // ── the net: every face keeps its own copy of its nodes and moves rigidly ──
+      const T = faceTransforms(ust.fold), w = ust.align;
+      // alignment: turn the root face toward the viewer, the strip to the right, centre and fit it
+      const n0 = NET_INFO.n, d0 = NET_INFO.d, e0 = cross(n0, d0);
+      const Q = [0, 1, 2].map(i => [0, 1, 2].map(j => r[i]*d0[j] + u[i]*e0[j] + f[i]*n0[j]));   // [r u f]·[d e n]ᵀ
+      const tr = (Q[0][0] + Q[1][1] + Q[2][2] - 1) / 2, qa = Math.acos(Math.max(-1, Math.min(1, tr)));
+      let Qw = I3;
+      if (qa > 1e-6) {
+        const ax = [Q[2][1] - Q[1][2], Q[0][2] - Q[2][0], Q[1][0] - Q[0][1]];
+        Qw = len(ax) > 1e-9 ? rotM(norm(ax), qa * w) : Q;
+      }
+      const s = 1 + (2 * 0.96 / NET_INFO.width - 1) * Math.max(Math.sqrt(ust.fold), w);   // zoom out as it opens
+      const G = T.map(Tk => ({ R: mulMM(Qw, Tk.R).map(row => scl(row, s)),
+                               t: scl(mulMV(Qw, Tk.t.map((v, d) => v - NET_INFO.c[d] * w)), s) }));
+      const apply = (p, k) => sum(mulMV(G[k].R, p), G[k].t);
+      const nU = 20 * geo.npf, U = new Float32Array(nU * 3);
+      for (let q = 0; q < nU; q++) {
+        const n = geo.faceNodes[q] * 3, k = Math.floor(q / geo.npf);
+        U.set(apply([geo.outerFlat[n], geo.outerFlat[n+1], geo.outerFlat[n+2]], k), q * 3);
+      }
+      const In = new Float32Array(geo.nTris * 3);
+      for (let t = 0; t < geo.nTris; t++) {
+        const k = Math.floor(t / geo.fpt);
+        In.set(apply([geo.innerFlat[t*3] * rIn, geo.innerFlat[t*3+1] * rIn, geo.innerFlat[t*3+2] * rIn], k), t * 3);
+      }
+      const PU = projArr(U, 1, null, 1), PI = projArr(In, 1, null, 1);
+      if (S.L_web)   layers.push({ id: 'web',   E: geo.faceWebE,   A: PI, B: PU, w: BASE.web * px,   color: line, alpha: 1 });
+      if (S.L_inner) layers.push({ id: 'inner', E: geo.faceInnerE, A: PI, B: PI, w: BASE.inner * px, color: line, alpha: 1 });
+      if (S.L_outer) layers.push({ id: 'outer', E: geo.faceOuterE, A: PU, B: PU, w: BASE.outer * px, color: line, alpha: 1 });
+      const FC = geo.faceCorners, outline = [];
+      for (let k = 0; k < 20; k++) {
+        const a = FC[k*3], b = FC[k*3+1], cc = FC[k*3+2];
+        outline.push(a, b, b, cc, cc, a);
+        fills.push({ pts: [a, b, cc].map(q => PU.subarray(q*3, q*3+3)), color: acc, alpha: 0.07 });
+      }
+      layers.push({ id: 'net-faces', E: Uint32Array.from(outline), A: PU, B: PU, w: BASE.net * px, color: acc, alpha: 1 });
+      return { layers, fills, dots, st, kind };
+    }
+
+    if (gst) {
+      // ── frequency growth: the finer grid starts on the coarser grid's chords and bulges out ──
+      const gf = build(gst.from), gg = build(gst.to), start = growStart(gf, gg);
+      const P = projArr(gg.outer, 1, start, gst.s), Pold = projArr(gf.outer, 1, null, 1);
+      layers.push({ id: 'grow-coarse', E: gf.outerE, A: Pold, B: Pold, w: BASE.outer * px, color: line, alpha: 1 - gst.s });
+      layers.push({ id: 'grow-fine', E: gg.outerE, A: P, B: P, w: BASE.outer * px, color: line, alpha: 0.25 + 0.75 * gst.s });
+      if (gst.trussA > 0) {
+        const pi = projArr(geo.innerDir, rIn, null, 1), poF = projArr(geo.outer, 1, null, 1);
+        if (S.L_web)   layers.push({ id: 'web',   E: geo.webE,   A: pi, B: poF, w: BASE.web * px,   color: line, alpha: gst.trussA });
+        if (S.L_inner) layers.push({ id: 'inner', E: geo.innerE, A: pi, B: pi,  w: BASE.inner * px, color: line, alpha: gst.trussA });
+      }
+      return { layers, fills, dots, st, kind };
+    }
+
+    po = projArr(geo.outer, 1, geo.outerFlat);
+    const pi = projArr(geo.innerDir, rIn, geo.innerFlat);
+
+    // build from the crown: struts appear in rings down the spin axis, the truss trailing behind
+    let alphaOuter = null, alphaWeb = null, alphaInner = null;
+    if (bst) {
+      const A = AXES[S.axis], h = arr => { const H = new Float32Array(arr.length / 3);
+        for (let i = 0; i < H.length; i++) H[i] = arr[i*3]*A[0] + arr[i*3+1]*A[1] + arr[i*3+2]*A[2]; return H; };
+      const ho = h(geo.outer), hi = h(geo.innerDir), band = 0.14;
+      const vis = (hv, lag) => clamp01((hv - bst.H - lag) / band);
+      alphaOuter = k => vis(Math.max(ho[geo.outerE[k*2]], ho[geo.outerE[k*2+1]]), 0);
+      alphaWeb   = k => vis(Math.max(hi[geo.webE[k*2]], ho[geo.webE[k*2+1]]), 0.3);
+      alphaInner = k => vis(Math.max(hi[geo.innerE[k*2]], hi[geo.innerE[k*2+1]]), 0.3);
+    }
+    const typed = S.strutColor ? strutClasses(geo) : null;
+    if (S.L_web)   pushGrouped(layers, { id: 'web',   E: geo.webE,   A: pi, B: po, w: BASE.web * px,   color: line, alpha: gridA }, null, alphaWeb);
+    if (S.L_inner) pushGrouped(layers, { id: 'inner', E: geo.innerE, A: pi, B: pi, w: BASE.inner * px, color: line, alpha: gridA }, null, alphaInner);
+    if (S.L_outer) pushGrouped(layers, { id: 'outer', E: geo.outerE, A: po, B: po, w: BASE.outer * px * (typed ? 1.5 : 1), color: line, alpha: gridA },
+                               typed ? k => typed.classes[typed.cls[k]].color : null, alphaOuter);
+
+    const netA = jst ? jst.netA : (S.L_net ? overlayA : 0);
     if (netA > 0) layers.push({ id: 'net', E: geo.netE, A: po, B: po, w: BASE.net * px, color: acc, alpha: netA });
 
-    // static vector equilibrium overlay: its 4 great circles only
-    const veA = jst ? jst.veA : (S.L_ve ? 1 : 0);
-    if (veA > 0) {
-      VE_CIRCLES.forEach((pts, ci) => {
-        const Q = projPts(pts), E = [];
-        for (let i = 0; i < pts.length; i++) E.push(i, (i + 1) % pts.length);
-        layers.push({ id: 've-circle-' + (ci + 1), E: Uint32Array.from(E), A: Q, B: Q, w: BASE.circle * px,
-                      color: acc, alpha: veA });
+    // ── overlays on the sphere ──
+    if (S.L_lcd && overlayA > 0) {
+      for (const [ti, t] of LCD.entries()) {
+        const P = projPts(t.pts), pts = []; for (let i = 0; i < t.pts.length; i++) pts.push(P.subarray(i*3, i*3+3));
+        let a;
+        if (S.lcdMode === 'mirror') a = t.chir > 0 ? 0.30 : 0.07;
+        else a = [0.08, 0.20, 0.32, 0.44, 0.56][LCD_COLORS[S.lcdMode].get(t.groups[S.lcdMode]) % 5];
+        fills.push({ pts, color: acc, alpha: a * overlayA, id: 'lcd-' + (ti + 1) });
+      }
+    }
+    if (S.L_poly && overlayA > 0) {
+      const P = POLY[S.poly];
+      P.arcs.forEach((pts, i) => {
+        const Q = projPts(pts);
+        layers.push({ id: `poly-${S.poly}-${i + 1}`, E: polyline(pts.length), A: Q, B: Q, w: BASE.poly * px, color: acc, alpha: overlayA });
+      });
+      const Qv = projPts(P.verts);
+      dots.push({ id: `poly-${S.poly}-vertices`, pts: P.verts.map((_, i) => Qv.subarray(i*3, i*3+3)), r: Math.max(2, 3.4 * px), color: acc, alpha: overlayA });
+    }
+    // great circles: the static layer, or the sweep animation drawing them in
+    const sets = [15, 10, 6].filter(n => S['gc' + n]);
+    const sweepSets = sst ? (S.L_gc && sets.length ? sets : [15, 10, 6]) : null;
+    if ((S.L_gc && overlayA > 0) || sweepSets) {
+      const list = (sweepSets || sets).flatMap(n => GC[n].map((g, i) => ({ ...g, set: n, i })));
+      const fadeTemp = sst && !(S.L_gc && sets.length) ? 1 - ease(seg(sst.x, 0.9, 1)) : 1;
+      list.forEach((g, j) => {
+        let frac = 1;
+        if (sst) { const s0 = 0.04 + 0.66 * j / list.length; frac = ease(seg(sst.x, s0, s0 + 0.18)); }
+        if (frac <= 0) return;
+        const n = Math.max(2, Math.round(g.pts.length * frac)), pts = g.pts.slice(0, n);
+        if (frac >= 1) pts.push(g.pts[0]);
+        const Q = projPts(pts), emph = S.seven && g.seven;
+        layers.push({ id: `gc${g.set}-${g.i + 1}`, E: polyline(pts.length), A: Q, B: Q,
+                      w: (emph ? 2 : GC_W[g.set]) * BASE.circle * px, color: acc,
+                      alpha: (sst ? fadeTemp : overlayA) * (S.seven && !g.seven ? 0.4 : 1) });
       });
     }
 
-    // the jitterbug itself
+    // static vector equilibrium overlay: its 4 great circles only
+    const veA = jst ? jst.veA : (S.L_ve ? overlayA : 0);
+    if (veA > 0) VE_CIRCLES.forEach((pts, ci) => {
+      const Q = projPts(pts);
+      layers.push({ id: 've-circle-' + (ci + 1), E: ring(pts.length), A: Q, B: Q, w: BASE.circle * px, color: acc, alpha: veA });
+    });
+
+    // the jitterbug (VE to sphere)
     if (jst && jst.polyA > 0) {
       const P = projPts(jbVerts(jst.t));
       for (const [a, b, cc] of JB_TRIS)
-        fills.push({ pts: [P.subarray(a*3, a*3+3), P.subarray(b*3, b*3+3), P.subarray(cc*3, cc*3+3)], color: acc, alpha: 0.16 * jst.faceA });
+        fills.push({ pts: [a, b, cc].map(q => P.subarray(q*3, q*3+3)), color: acc, alpha: 0.16 * jst.faceA, id: 'jitterbug-face' });
       layers.push({ id: 'jitterbug', E: Uint32Array.from(JB_EDGES.flat()), A: P, B: P, w: BASE.net * px, color: acc, alpha: jst.polyA });
       if (jst.diagA > 0) layers.push({ id: 'jitterbug-diagonals', E: Uint32Array.from(JB_DIAG.flat()), A: P, B: P,
         w: BASE.net * px, color: acc, alpha: jst.diagA, dash: jst.diagA < 1 ? [3 * px, 3 * px] : null });
       if (jst.circA > 0) VE_CIRCLES.forEach((pts, ci) => {
-        const k = 1 / (Math.sqrt(1 + PHI * PHI) / Math.SQRT2 * edgeLen(1) / 2); // VE radius at t = 1
-        const Q = projPts(pts.map(p => p.map(v => v * k))), E = [];
-        for (let i = 0; i < pts.length; i++) E.push(i, (i + 1) % pts.length);
-        layers.push({ id: 'jb-circle-' + (ci + 1), E: Uint32Array.from(E), A: Q, B: Q, w: BASE.circle * px,
-                      color: acc, alpha: jst.circA });
+        const Q = projPts(pts, jbRadius(1));
+        layers.push({ id: 'jb-circle-' + (ci + 1), E: ring(pts.length), A: Q, B: Q, w: BASE.circle * px, color: acc, alpha: jst.circA });
       });
     }
 
-    const poleA = S.L_poles ? gridA : 0;
-    const poles = poleA > 0 ? geo.poles.map(i => [po[i*3], po[i*3+1], po[i*3+2]]) : [];
-    return { layers, fills, poles, poleA, poleR: Math.max(2.5, 4.2 * px), jst };
+    // jitterbug phases: the polyhedron riding on the seven fixed circles, with vertex trails
+    if (pst) {
+      const a = pst.fadeIn * pst.fadeOut, rad = jbRadius(pst.t);
+      const P = projPts(jbVerts(pst.t));
+      for (const [p, q, rr] of JB_TRIS)
+        fills.push({ pts: [p, q, rr].map(k => P.subarray(k*3, k*3+3)), color: acc, alpha: 0.16 * a, id: 'phase-face' });
+      layers.push({ id: 'phase-edges', E: Uint32Array.from(JB_EDGES.flat()), A: P, B: P, w: BASE.net * px, color: acc, alpha: a });
+      layers.push({ id: 'phase-diagonals', E: Uint32Array.from(JB_DIAG.flat()), A: P, B: P, w: BASE.net * 0.6 * px, color: acc, alpha: a * 0.6 });
+      [...VE_CIRCLES, ...SQ_CIRCLES].forEach((pts, ci) => {
+        const Q = projPts(pts, rad);
+        layers.push({ id: 'seven-axes-' + (ci + 1), E: ring(pts.length), A: Q, B: Q, w: BASE.circle * px, color: line, alpha: a * 0.7 });
+      });
+      const N = 48, trails = Array.from({ length: 12 }, () => []);
+      for (let s = 0; s <= N; s++) jbVerts(1 / (1 - pst.vmax * s / N)).forEach((p, i) => trails[i].push(p));
+      trails.forEach((pts, i) => {
+        const Q = projPts(pts);
+        layers.push({ id: 'trail-' + (i + 1), E: polyline(pts.length), A: Q, B: Q, w: BASE.circle * 0.8 * px, color: acc, alpha: a * 0.55 });
+      });
+      dots.push({ id: 'phase-vertices', pts: P.length ? Array.from({ length: 12 }, (_, i) => P.subarray(i*3, i*3+3)) : [], r: Math.max(2.4, 3.8 * px), color: acc, alpha: a });
+    }
+
+    if (S.L_poles && gridA > 0)
+      dots.push({ id: 'poles', pts: geo.poles.map(i => po.subarray(i*3, i*3+3)), r: Math.max(2.5, 4.2 * px), color: acc, alpha: gridA });
+    return { layers, fills, dots, st, kind };
   }
 
   const sides = () => S.L_back ? [false, true] : [true];
   const isFront = z => z >= 0;
+  const polyZ = F => { let z = 0; for (const p of F.pts) z += p[2]; return z / F.pts.length; };
 
   function paint(ctx, size, geo, withBg) {
     const fr = frame(geo, size);
@@ -700,10 +1215,9 @@
     for (const front of sides()) {
       const sideA = front ? 1 : S.backOp / 100;
       for (const F of fr.fills) {
-        const z = (F.pts[0][2] + F.pts[1][2] + F.pts[2][2]) / 3;
-        if (isFront(z) !== front || F.alpha <= 0) continue;
+        if (isFront(polyZ(F)) !== front || F.alpha <= 0) continue;
         ctx.globalAlpha = sideA * F.alpha; ctx.fillStyle = F.color; ctx.beginPath();
-        ctx.moveTo(F.pts[0][0], F.pts[0][1]); ctx.lineTo(F.pts[1][0], F.pts[1][1]); ctx.lineTo(F.pts[2][0], F.pts[2][1]);
+        F.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
         ctx.closePath(); ctx.fill();
       }
       for (const L of fr.layers) {
@@ -719,9 +1233,10 @@
         ctx.stroke();
       }
       ctx.setLineDash([]);
-      if (fr.poles.length) {
-        ctx.globalAlpha = sideA * fr.poleA; ctx.fillStyle = S.accent; ctx.beginPath();
-        for (const [x, y, z] of fr.poles) if (isFront(z) === front) { ctx.moveTo(x + fr.poleR, y); ctx.arc(x, y, fr.poleR, 0, Math.PI * 2); }
+      for (const D of fr.dots) {
+        if (D.alpha <= 0.001) continue;
+        ctx.globalAlpha = sideA * D.alpha; ctx.fillStyle = D.color; ctx.beginPath();
+        for (const p of D.pts) if (isFront(p[2]) === front) { ctx.moveTo(p[0] + D.r, p[1]); ctx.arc(p[0], p[1], D.r, 0, Math.PI * 2); }
         ctx.fill();
       }
     }
@@ -738,9 +1253,9 @@
     for (const front of sides()) {
       const side = front ? 'front' : 'back';
       out.push(`<g id="${side}"${front ? '' : ` opacity="${S.backOp / 100}"`}>`);
-      const tris = fr.fills.filter(F => F.alpha > 0 && isFront((F.pts[0][2] + F.pts[1][2] + F.pts[2][2]) / 3) === front);
-      if (tris.length) out.push(`<g id="${side}-jitterbug-faces" fill="${tris[0].color}" fill-opacity="${tris[0].alpha.toFixed(3)}" stroke="none">` +
-        tris.map(F => `<polygon points="${F.pts.map(p => n(p[0]) + ',' + n(p[1])).join(' ')}"/>`).join('') + '</g>');
+      const fills = fr.fills.filter(F => F.alpha > 0 && isFront(polyZ(F)) === front);
+      if (fills.length) out.push(`<g id="${side}-fills" stroke="none">` + fills.map(F =>
+        `<polygon fill="${F.color}" fill-opacity="${F.alpha.toFixed(3)}" points="${F.pts.map(p => n(p[0]) + ',' + n(p[1])).join(' ')}"/>`).join('') + '</g>');
       for (const L of fr.layers) {
         if (L.alpha <= 0.001) continue;
         let d = '';
@@ -754,9 +1269,12 @@
                       (L.dash ? ` stroke-dasharray="${L.dash.map(v => v.toFixed(2)).join(' ')}"` : '');
         out.push(`<path id="${side}-${L.id}" stroke="${L.color}" stroke-width="${L.w.toFixed(3)}"${extra} d="${d}"/>`);
       }
-      const dots = fr.poles.filter(p => isFront(p[2]) === front);
-      if (dots.length) out.push(`<g id="${side}-poles" fill="${S.accent}"${fr.poleA < 1 ? ` fill-opacity="${fr.poleA.toFixed(3)}"` : ''}>` +
-        dots.map(([x, y]) => `<circle cx="${n(x)}" cy="${n(y)}" r="${fr.poleR.toFixed(2)}"/>`).join('') + '</g>');
+      for (const D of fr.dots) {
+        const pts = D.pts.filter(p => isFront(p[2]) === front);
+        if (!pts.length || D.alpha <= 0.001) continue;
+        out.push(`<g id="${side}-${D.id}" fill="${D.color}"${D.alpha < 1 ? ` fill-opacity="${D.alpha.toFixed(3)}"` : ''}>` +
+          pts.map(p => `<circle cx="${n(p[0])}" cy="${n(p[1])}" r="${D.r.toFixed(2)}"/>`).join('') + '</g>');
+      }
       out.push('</g>');
     }
     out.push('</g></svg>');
@@ -782,7 +1300,7 @@
     const geo = build(S.freq);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const fr = paint(ctx, boardSize, geo, false);
-    const label = jbLabel(fr.jst, S.freq);
+    const label = animLabel(fr.kind, fr.st, S.freq);
     if (label !== lastLabel) {
       lastLabel = label;
       $('phase').hidden = !label; $('phase').textContent = label;
@@ -793,14 +1311,13 @@
   function tick(now) {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
     if (exporting) { requestAnimationFrame(tick); return; }
-    if (S.playing && !dragging) {
-      theta += S.dir * S.speed * Math.PI / 180 * dt;
-      clock += dt;
-    }
-    if (jbRunning) {
-      jb = Math.min(1, jb + dt / JB_DUR);
-      if (jb >= 1) jbRunning = false;
-      syncJb();
+    const frozen = anim.x < 1 && ANIMS[S.animKind].freezeSpin;
+    if (S.playing && !dragging && !frozen) theta += S.dir * S.speed * Math.PI / 180 * dt;
+    if (S.playing && !dragging) clock += dt;
+    if (anim.running) {
+      anim.x = Math.min(1, anim.x + dt / ANIMS[S.animKind].dur());
+      if (anim.x >= 1) anim.running = false;
+      syncAnim();
     }
     draw();
     requestAnimationFrame(tick);
@@ -834,15 +1351,17 @@
   const fmtTime = s => { if (!isFinite(s)) return '—'; const m = Math.floor(s / 60), r = Math.round(s % 60);
     return m ? `${m}:${String(r).padStart(2, '0')}` : `${r}s`; };
   const nf = new Intl.NumberFormat('en-US');
+  const letter = i => i < 26 ? String.fromCharCode(65 + i) : String.fromCharCode(65 + Math.floor(i / 26) - 1) + String.fromCharCode(65 + i % 26);
 
   function readout() {
     const g = build(S.freq);
     const struts = g.outerE.length/2 + g.innerE.length/2 + g.webE.length/2;
+    const types = S.strutColor && S.tolMM > 0 ? strutClasses(g).classes.length : g.strutTypes;
     $('readout').innerHTML = [
       `<span><b>${S.freq}v</b> Class I</span>`,
       `<span><b>${nf.format(g.nNodes + g.nTris)}</b> nodes</span>`,
       `<span><b>${nf.format(struts)}</b> struts</span>`,
-      `<span><b>${g.strutTypes}</b> outer strut lengths</span>`,
+      `<span><b>${types}</b> outer strut lengths${S.strutColor && S.tolMM > 0 ? ` at ±${S.tolMM} mm` : ''}</span>`,
       `<span>chord <b>${(g.cmin).toFixed(4)}–${(g.cmax).toFixed(4)}</b> r</span>`,
       `<span>depth <b>${((S.depth/100) * g.chord * Math.sqrt(2/3)).toFixed(4)}</b> r</span>`,
     ].join('');
@@ -853,23 +1372,55 @@
     $('freqNote').textContent = S.freq === 16 ? 'Biosphere density' : `${+ratio.toFixed(4)}× Biosphere scale`;
   }
 
-  function syncJb() {
-    $('jb').value = Math.round(jb * 1000);
-    const st = jbState(jb);
-    $('jbVal').textContent = st ? `${Math.round(jb * 100)}%` : 'complete';
-    $('jbRun').textContent = jbRunning ? 'Pause jitterbug' : (jb < 1 ? 'Resume jitterbug' : 'Run the jitterbug');
-    const stage = st ? st.stage : 4;
-    $('stages').querySelectorAll('span').forEach((s, i) => s.classList.toggle('on', i <= stage && (st || i <= 3)));
+  function legend() {
+    const host = $('legend');
+    if (!S.strutColor) { host.hidden = true; return; }
+    host.hidden = false;
+    const { classes } = strutClasses(build(S.freq)), m = S.domeR;
+    if (classes.length <= 16) {
+      host.innerHTML = '<div class="lg-head"><span>type</span><span>chord factor</span><span>length</span><span>count</span></div>' +
+        classes.map((c, i) => `<div class="lg-row"><span><i style="background:${c.color}"></i>${letter(i)}</span>` +
+          `<span>${c.max - c.min < 5e-6 ? c.min.toFixed(5) : c.min.toFixed(4) + '–' + c.max.toFixed(4)}</span>` +
+          `<span>${(c.max * m).toFixed(3)} m</span><span>${nf.format(c.count)}</span></div>`).join('');
+    } else {
+      host.innerHTML = `<div class="lg-ramp" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>` +
+        `<div class="lg-ends"><span>${classes[0].min.toFixed(5)} · ${(classes[0].min * m).toFixed(3)} m</span>` +
+        `<span>${classes.length} lengths</span><span>${classes[classes.length-1].max.toFixed(5)} · ${(classes[classes.length-1].max * m).toFixed(3)} m</span></div>`;
+    }
+  }
+
+  function syncAnim() {
+    const A = ANIMS[S.animKind], st = anim.x < 1 ? A.state(anim.x) : null;
+    document.querySelector(`input[name="anim"][value="${S.animKind}"]`).checked = true;
+    $('animX').value = Math.round(anim.x * 1000);
+    $('animVal').textContent = st ? `${Math.round(anim.x * 100)}% · ${A.dur().toFixed(0)} s` : `complete · ${A.dur().toFixed(0)} s`;
+    $('animRun').textContent = anim.running ? 'Pause' : (anim.x < 1 ? 'Resume' : 'Run');
+    const names = A.stages(), host = $('stages');
+    if (host.dataset.kind !== S.animKind + names.length) {
+      host.dataset.kind = S.animKind + names.length;
+      host.style.gridTemplateColumns = `repeat(${names.length}, 1fr)`;
+      host.innerHTML = names.map(n => `<span>${n}</span>`).join('');
+    }
+    const stage = st ? st.stage : names.length;
+    host.querySelectorAll('span').forEach((s, i) => s.classList.toggle('on', i <= stage));
   }
 
   function sync() {
     $('freq').value = S.freq; $('freqNum').innerHTML = `${S.freq}<small>v</small>`;
     $('trueScale').checked = S.trueScale;
-    $('depth').value = S.depth; $('depthVal').textContent = S.depth === 100 ? 'octet · 100%' : `${S.depth}%`;
-    for (const k of ['L_outer', 'L_inner', 'L_web', 'L_net', 'L_poles', 'L_ve', 'L_back']) $(k).checked = S[k];
+    $('depth').value = S.depth; $('depthVal').textContent = S.breathe ? 'breathing' : S.depth === 100 ? 'octet · 100%' : `${S.depth}%`;
+    for (const k of ['L_outer', 'L_inner', 'L_web', 'L_net', 'L_poles', 'L_ve', 'L_back', 'L_gc', 'L_lcd', 'L_poly',
+                     'gc15', 'gc10', 'gc6', 'seven', 'strutColor', 'breathe']) $(k).checked = S[k];
+    $('gcOpts').hidden = !S.L_gc; $('lcdOpts').hidden = !S.L_lcd; $('polyOpts').hidden = !S.L_poly;
+    document.querySelector(`input[name="lcdMode"][value="${S.lcdMode}"]`).checked = true;
+    document.querySelector(`input[name="poly"][value="${S.poly}"]`).checked = true;
     $('backOp').value = S.backOp; $('backVal').textContent = `${S.backOp}%`;
     $('backOp').closest('.row').classList.toggle('dim', !S.L_back);
     $('weight').value = S.weight; $('weightVal').textContent = `${(+S.weight).toFixed(2)}×`;
+    $('domeR').value = S.domeR; $('domeRVal').textContent = `${S.domeR} m${S.domeR === 38 ? ' · Biosphere' : ''}`;
+    $('tolMM').value = S.tolMM; $('tolVal').textContent = S.tolMM ? `±${S.tolMM} mm` : 'exact';
+    $('domeR').closest('.row').classList.toggle('dim', !S.strutColor);
+    $('tolMM').closest('.row').classList.toggle('dim', !S.strutColor);
     $('speed').value = S.speed;
     $('speedVal').textContent = S.speed > 0 ? `${(+S.speed).toFixed(1)}°/s · turn ${fmtTime(360 / S.speed)}` : 'still';
     $('tilt').value = S.tilt; $('tiltVal').textContent = `${S.tilt}°`;
@@ -891,7 +1442,7 @@
     for (const [id, key] of [['sw_line', 'line'], ['sw_accent', 'accent']])
       $(id).querySelectorAll('.swatch').forEach(b => b.setAttribute('aria-pressed', b.dataset.c.toLowerCase() === S[key].toLowerCase()));
     $('pick_line').value = S.line; $('pick_accent').value = S.accent;
-    readout(); syncJb(); syncClip();
+    readout(); legend(); syncAnim(); syncClip();
   }
 
   function swatches(id, list, key) {
@@ -914,14 +1465,19 @@
 
   const num = (id, key, f = Number) => $(id).addEventListener('input', e => set(key, f(e.target.value)));
   num('freq', 'freq', v => parseInt(v, 10));
-  num('depth', 'depth'); num('weight', 'weight');
+  num('depth', 'depth'); num('weight', 'weight'); num('domeR', 'domeR'); num('tolMM', 'tolMM');
   // moving the far-side slider always works: it switches the far side back on
   $('backOp').addEventListener('input', e => { S.L_back = true; set('backOp', +e.target.value); });
   num('speed', 'speed'); num('tilt', 'tilt'); num('wobble', 'wobble'); num('zoom', 'zoom');
   $('freqDown').addEventListener('click', () => set('freq', Math.max(2, S.freq - 1)));
   $('freqUp').addEventListener('click', () => set('freq', Math.min(16, S.freq + 1)));
-  for (const k of ['trueScale', 'L_outer', 'L_inner', 'L_web', 'L_net', 'L_poles', 'L_ve', 'L_back', 'exportBg'])
+  for (const k of ['trueScale', 'L_outer', 'L_inner', 'L_web', 'L_net', 'L_poles', 'L_ve', 'L_back', 'L_gc', 'L_lcd', 'L_poly',
+                   'gc15', 'gc10', 'gc6', 'seven', 'strutColor', 'breathe', 'exportBg'])
     $(k).addEventListener('change', e => set(k, e.target.checked));
+  // moving the strut sliders switches strut colouring on
+  for (const id of ['domeR', 'tolMM']) $(id).addEventListener('input', () => { if (!S.strutColor) set('strutColor', true); });
+  for (const name of ['lcdMode', 'poly'])
+    document.querySelectorAll(`input[name="${name}"]`).forEach(r => r.addEventListener('change', () => set(name, r.value)));
   document.querySelectorAll('input[name="axis"]').forEach(r => r.addEventListener('change', () => { theta = 0; set('axis', r.value); }));
   document.querySelectorAll('input[name="bg"]').forEach(r => r.addEventListener('change', () => {
     const v = r.value;
@@ -933,12 +1489,15 @@
   $('play').addEventListener('click', () => set('playing', !S.playing));
   $('reverse').addEventListener('click', () => set('dir', -S.dir));
   $('reset').addEventListener('click', () => { theta = 0; clock = 0; dragTilt = 0; S.tilt = DEFAULTS.tilt; sync(); persist(); });
-  $('jbRun').addEventListener('click', () => {
-    if (jbRunning) jbRunning = false;
-    else { if (jb >= 1) jb = 0; jbRunning = true; }
-    syncJb();
+  document.querySelectorAll('input[name="anim"]').forEach(r => r.addEventListener('change', () => {
+    anim.x = 1; anim.running = false; set('animKind', r.value);
+  }));
+  $('animRun').addEventListener('click', () => {
+    if (anim.running) anim.running = false;
+    else { if (anim.x >= 1) anim.x = 0; anim.running = true; }
+    syncAnim();
   });
-  $('jb').addEventListener('input', e => { jbRunning = false; jb = +e.target.value / 1000; syncJb(); });
+  $('animX').addEventListener('input', e => { anim.running = false; anim.x = +e.target.value / 1000; syncAnim(); });
   addEventListener('keydown', e => {
     if (e.code !== 'Space' || /INPUT|SELECT|BUTTON|TEXTAREA/.test(document.activeElement?.tagName || '')) return;
     e.preventDefault(); set('playing', !S.playing);
@@ -967,8 +1526,7 @@
   }
 
   const baseName = () => {
-    const st = jbState(jb);
-    const tag = !st ? '' : st.stage === 0 ? '_ve' : st.stage === 1 ? '_jitterbug' : st.stage === 2 ? '_subdivide' : '_inflate';
+    const tag = anim.x < 1 ? `_${S.animKind}${Math.round(anim.x * 100)}` : '';
     return `geodesic_${S.freq}v${tag}${S.bg === 'clear' || !S.exportBg ? '' : '_' + S.bg}`;
   };
   $('exSvg').addEventListener('click', () => {
@@ -985,7 +1543,8 @@
   // ───────────────────────── motion export (GIF / MP4) ─────────────────────────
   const GIF_FPS = 20, MP4_FPS = 30;
   // smallest turn that maps the whole drawing onto itself
-  const loopAngle = () => S.L_ve ? 360 : ({ polar: 360, '5': 72, '3': 120, '2': 180 })[S.axis];
+  const loopAngle = () => (S.L_ve || (S.L_poly && ['octa', 've'].includes(S.poly)) ||
+    (S.L_gc && S.seven)) ? 360 : ({ polar: 360, '5': 72, '3': 120, '2': 180 })[S.axis];
 
   // a clip is n frames and a function giving the stage values for frame i
   function clipPlan(kind, fps) {
@@ -993,30 +1552,31 @@
     if (kind === 'loop') {
       if (!(S.speed > 0)) return null;
       const sym = loopAngle(), T = sym / S.speed, n = Math.max(2, Math.round(T * fps));
-      // wobble runs sin(clock / 2): fit a whole number of cycles into the loop
-      const wobCycles = S.wobble ? Math.max(1, Math.round(T / (4 * Math.PI))) : 0;
+      // wobble and breathing run on sin(clock / 2): fit a whole number of cycles into the loop
+      const cycles = (S.wobble || S.breathe) ? Math.max(1, Math.round(T / (4 * Math.PI))) : 0;
       return { kind, n, T, sym, at: i => {
         const u = i / n;
         return { theta: theta0 + S.dir * sym * u * Math.PI / 180,
-                 clock: wobCycles ? u * wobCycles * 4 * Math.PI : clock0, jb: 1 };
+                 clock: cycles ? u * cycles * 4 * Math.PI : clock0, x: 1 };
       } };
     }
-    const T = JB_DUR + 1.5, n = Math.round(T * fps);
+    const A = ANIMS[S.animKind], T = A.dur() + 1.5, n = Math.round(T * fps);
     return { kind, n, T, at: i => {
       const t = i / fps;
-      return { theta: theta0 + S.dir * S.speed * Math.PI / 180 * t, clock: clock0 + t, jb: Math.min(1, t / JB_DUR) };
+      return { theta: theta0 + (A.freezeSpin ? 0 : S.dir * S.speed * Math.PI / 180 * t), clock: clock0 + t, x: Math.min(1, t / A.dur()) };
     } };
   }
 
   function syncClip() {
     document.querySelector(`input[name="clip"][value="${S.clip}"]`).checked = true;
+    $('clipAnimSub').textContent = S.animKind;
     const p = clipPlan(S.clip, MP4_FPS);
     const busy = !!exporting;
     if (!p) {
       $('clipInfo').textContent = 'set a speed above 0';
     } else {
       const secs = `${p.T.toFixed(p.T < 10 ? 1 : 0)} s`;
-      $('clipInfo').textContent = p.kind === 'loop' ? `${p.sym}° turn · ${secs}` : `jitterbug · ${secs}`;
+      $('clipInfo').textContent = p.kind === 'loop' ? `${p.sym}° turn · ${secs}` : `${S.animKind} · ${secs}`;
     }
     $('exGif').disabled = !p || (busy && exporting.kind !== 'gif');
     $('exMp4').disabled = !p || (busy && exporting.kind !== 'mp4');
@@ -1035,7 +1595,6 @@
     document.head.append(sc);
   });
 
-  const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
   const luma = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
   // background for formats that need one: the artboard, or for Clear whichever suits the lines
   const solidBg = () => S.bg !== 'clear' ? BG_COLORS[S.bg] : (luma(hexRgb(S.line)) > 128 ? BG_COLORS.ink : BG_COLORS.paper);
@@ -1060,9 +1619,9 @@
       toast('MP4 export needs a browser with video encoding: Chrome, Edge or Safari 16.4 and later.'); return;
     }
     const size = +$('motionSize').value;
-    const saved = { theta, clock, jb, jbRunning };
+    const saved = { theta, clock, x: anim.x, running: anim.running };
     exporting = { kind, cancel: false };
-    jbRunning = false;
+    anim.running = false;
     const btn = kind === 'gif' ? $('exGif') : $('exMp4');
     btn.classList.add('busy');
     syncClip();
@@ -1072,14 +1631,14 @@
       const c = document.createElement('canvas'); c.width = c.height = size;
       const cx = c.getContext('2d', { willReadFrequently: kind === 'gif' });
       const geo = build(S.freq);
-      const frameAt = i => { const v = plan.at(i); theta = v.theta; clock = v.clock; jb = v.jb; };
+      const frameAt = i => { const v = plan.at(i); theta = v.theta; clock = v.clock; anim.x = v.x; };
       blob = kind === 'gif' ? await encodeGif(plan, c, cx, geo, frameAt, fps)
                             : await encodeMp4(plan, c, cx, geo, frameAt, fps);
     } catch (e) { failed = e; console.error(e); }
-    theta = saved.theta; clock = saved.clock; jb = saved.jb; jbRunning = saved.jbRunning;
+    theta = saved.theta; clock = saved.clock; anim.x = saved.x; anim.running = saved.running;
     const cancelled = exporting.cancel;
     btn.classList.remove('busy'); btn.textContent = kind === 'gif' ? 'GIF' : 'MP4';
-    exporting = null; setProgress(null); syncClip(); syncJb();
+    exporting = null; setProgress(null); syncClip(); syncAnim();
     if (cancelled) { toast('Export cancelled.'); return; }
     if (failed) {
       toast(failed.message === 'load' || failed instanceof TypeError
@@ -1087,7 +1646,7 @@
         : `Couldn’t encode the ${kind.toUpperCase()}: ${failed.message || 'unknown error'}.`);
       return;
     }
-    if (blob) offer(`geodesic_${S.freq}v_${plan.kind}_${size}.${kind}`, blob);
+    if (blob) offer(`geodesic_${S.freq}v_${plan.kind === 'loop' ? 'loop' : S.animKind}_${size}.${kind}`, blob);
   }
 
   async function encodeGif(plan, c, cx, geo, frameAt, fps) {
@@ -1174,7 +1733,9 @@
   $('exMp4').addEventListener('click', () => runExport('mp4'));
 
   // test hook for the studio's own checks (no effect on the page)
-  window.__studio = { jbVerts, VE_VERTS, PHI, V, edgeLen, setJb: v => { jb = v; jbRunning = false; syncJb(); }, toSVG: () => toSVG(build(S.freq), 2000) };
+  window.__studio = { build, V, PHI, FACES, GC, LCD, POLY, NET, FOLD_DEG, jbVerts, jbRadius, twistDeg, growChain, strutClasses,
+    setAnim: (kind, x) => { S.animKind = kind; anim.x = x; anim.running = false; syncAnim(); },
+    toSVG: () => toSVG(build(S.freq), 2000) };
 
   sync();
 })();

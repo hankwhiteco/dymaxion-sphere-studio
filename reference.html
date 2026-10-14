@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Studio Reference · Dymaxion Sphere</title>
+<style>
+  /* Layout: one reading column on the studio's off-white face, set in Helvetica; tables and
+     figures carry the numbers, prose stays short. */
+  :root {
+    --bg: #e4e2dd; --panel: #f2f1ed; --well: #e3e1dc; --fg: #1d1d1c; --muted: #6f6d68;
+    --line: rgba(29, 29, 28, 0.12); --accent: #ef5a1f; --pass: #4b7a3a;
+    --font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #141413; --panel: #1f1f1e; --well: #2a2a28; --fg: #e8e6e0; --muted: #9a9892;
+      --line: rgba(232, 230, 224, 0.12); --accent: #f26a2c; --pass: #8fbf6a; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bg: #141413; --panel: #1f1f1e; --well: #2a2a28; --fg: #e8e6e0; --muted: #9a9892;
+    --line: rgba(232, 230, 224, 0.12); --accent: #f26a2c; --pass: #8fbf6a; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 400 15px/1.6 var(--font);
+         -webkit-font-smoothing: antialiased; padding-inline: 16px; padding-block: 0 64px; }
+  .sheet { max-width: 820px; margin: 0 auto; background: var(--panel); padding: 40px clamp(20px, 5vw, 56px) 56px;
+           box-shadow: 0 0 0 1px var(--line); }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+           padding-block: 18px; max-width: 820px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 500; }
+  .grille { width: 34px; height: 16px; background: radial-gradient(circle, var(--fg) 1.1px, transparent 1.4px) 0 0 / 5.6px 5.4px; opacity: .8; }
+  header a { color: var(--fg); font-size: 13px; text-decoration: none; border-bottom: 1px solid var(--line); }
+  h1 { font: 300 40px/1.1 var(--font); letter-spacing: -0.02em; margin: 0 0 12px; text-wrap: balance; }
+  .lede { font-size: 17px; color: var(--muted); margin: 0 0 8px; max-width: 62ch; }
+  h2 { font: 500 12px/1 var(--font); color: var(--muted); text-transform: lowercase; letter-spacing: .02em;
+       margin: 48px 0 6px; padding-top: 18px; border-top: 1px solid var(--line); }
+  h3 { font: 500 22px/1.25 var(--font); margin: 0 0 12px; letter-spacing: -0.01em; text-wrap: balance; }
+  p, li { max-width: 66ch; }
+  p { margin: 0 0 14px; }
+  ul { padding-left: 18px; margin: 0 0 14px; }
+  li { margin-bottom: 6px; }
+  code, .num { font-variant-numeric: tabular-nums; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; background: var(--well); padding: 1px 5px; border-radius: 3px; }
+  .formula { font-size: 16px; padding: 12px 16px; background: var(--well); border-radius: 4px; margin: 0 0 16px;
+             font-variant-numeric: tabular-nums; overflow-x: auto; }
+  .table { overflow-x: auto; margin: 4px 0 18px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font-weight: 500; color: var(--muted); padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.r, th.r { text-align: right; }
+  .ok { color: var(--pass); font-weight: 500; white-space: nowrap; }
+  .ok::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 6px; vertical-align: 1px; }
+  figure { margin: 8px 0 22px; }
+  figure svg { width: 100%; height: auto; display: block; background: var(--bg); border-radius: 4px; }
+  figcaption { font-size: 12.5px; color: var(--muted); margin-top: 8px; max-width: 66ch; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .two > * { min-width: 0; }
+  .note { font-size: 13.5px; color: var(--muted); border-left: 2px solid var(--accent); padding-left: 12px; }
+  .refs li { font-size: 13.5px; }
+  a { color: inherit; }
+  @media (max-width: 640px) { .two { grid-template-columns: 1fr; } h1 { font-size: 32px; } }
+</style>
+</head>
+<body>
+<header>
+  <span class="brand"><span class="grille" aria-hidden="true"></span>Dymaxion Sphere Studio</span>
+  <a href="studio.html">Open the studio →</a>
+</header>
+<main class="sheet">
+  <h1>The geometry behind the studio</h1>
+  <p class="lede">What the studio draws, the mathematics each layer and animation rests on, and how every reference value was checked against published sources.</p>
+
+  <h2>1 · the sphere</h2>
+  <h3>An icosahedron, subdivided and pushed out to a sphere</h3>
+  <p>The studio models the double-layer frame of Buckminster Fuller's United States Pavilion at Expo 67, now the Montreal Biosphere. Everything starts from the regular icosahedron: 12 vertices, 30 edges and 20 equilateral faces. Of the Platonic solids it is the closest to a sphere, so its subdivisions are the most even.</p>
+  <p><b>Orientation.</b> The icosahedron sits where Fuller placed it for the Dymaxion (Airocean) map. The vertex coordinates are Robert W. Gray's, with vertex 0 at 64.7°N, 10.536°E. Fuller chose this placement so the 12 vertices and the face seams fall mostly in the ocean.</p>
+  <p><b>Breakdown.</b> Each face is cut on a 60° grid. A grid is named by the pair (b, c), the steps between neighbouring vertices of the original face, and each face holds T triangles:</p>
+  <p class="formula">T = b² + bc + c² &nbsp;·&nbsp; Class I: c = 0, T = f² &nbsp;·&nbsp; Class II: b = c, T = 3b² &nbsp;·&nbsp; Class III: any other pair (chiral)</p>
+  <p>The studio uses <b>Class I</b>, the "alternate" breakdown, where grid lines run parallel to the face edges. Each grid point is placed on the flat face by barycentric coordinates and then projected radially onto the sphere. This is "method 1", the chord-factor method, which Haghnazar et al. call normal projection. For frequency f:</p>
+  <p class="formula">vertices V = 10f² + 2 &nbsp;·&nbsp; edges E = 30f² &nbsp;·&nbsp; faces F = 20f² &nbsp;·&nbsp; V − E + F = 2</p>
+  <p>Exactly 12 vertices, the original icosahedron's, meet 5 struts. Every other vertex meets 6. Pushing points out radially is what creates different strut lengths: points near a face centre travel further than points near its vertices. Only the 30 original edges stay on true great circles; the other grid lines become chains of chords that are not great circles.</p>
+
+  <figure>
+    <svg id="figFace" viewBox="0 0 560 400" role="img" aria-label="One face of a 4v Class I sphere, struts coloured by length type A to F"></svg>
+    <figcaption>One face of the 4v sphere, flattened, with each strut coloured by its length type A–F. The shortest struts, A, meet at the three corners, the sphere's five-strut joints. The longest, F, form the small triangle at the centre, the part pushed furthest out. The same colouring is the studio's <i>Colour struts by length</i>.</figcaption>
+  </figure>
+
+  <h3>Chord factors</h3>
+  <p>A chord factor is a strut length on a sphere of radius 1. Multiply by the dome's radius to get real lengths. The table below is computed by the studio and agrees with the standard Class I tables to five decimals.</p>
+  <div class="table"><table>
+    <thead><tr><th>Frequency</th><th>Type</th><th class="r">Chord factor</th><th class="r">Count</th><th class="r">On a 38 m radius</th></tr></thead>
+    <tbody id="cfRows"></tbody>
+  </table></div>
+  <p>Distinct strut lengths grow quickly with frequency. Haghnazar, Nooshin &amp; Golabchi (2014) give a closed form: F(F + 3)/6 when 3 divides F, otherwise round(F(F + 2)/4). Grouped at full precision, the studio's grid matches their Table 1 at every frequency from 2v to 16v:</p>
+  <div class="table"><table>
+    <thead><tr><th>f</th><th class="r">2</th><th class="r">3</th><th class="r">4</th><th class="r">5</th><th class="r">6</th><th class="r">7</th><th class="r">8</th><th class="r">9</th><th class="r">10</th><th class="r">11</th><th class="r">12</th><th class="r">13</th><th class="r">14</th><th class="r">15</th><th class="r">16</th></tr></thead>
+    <tbody><tr><td>lengths</td><td class="r">2</td><td class="r">3</td><td class="r">6</td><td class="r">9</td><td class="r">9</td><td class="r">16</td><td class="r">20</td><td class="r">18</td><td class="r">30</td><td class="r">36</td><td class="r">30</td><td class="r">49</td><td class="r">56</td><td class="r">45</td><td class="r">72</td></tr>
+    <tr><td>shortest / longest</td><td class="r">.884</td><td class="r">.845</td><td class="r">.779</td><td class="r">.757</td><td class="r">.750</td><td class="r">.733</td><td class="r">.726</td><td class="r">.723</td><td class="r">.715</td><td class="r">.712</td><td class="r">.710</td><td class="r">.706</td><td class="r">.704</td><td class="r">.703</td><td class="r">.700</td></tr></tbody>
+  </table></div>
+  <p>Multiples of 3 have fewer lengths because the face's central hexagon adds a local mirror. The <i>Cutting tolerance</i> slider merges lengths a builder would cut the same. The same paper reports 16v dropping from 54 to 24 lengths at ±1 mm on a dome with 1.5 m struts.</p>
+
+  <h2>2 · the double layer</h2>
+  <h3>Triangles outside, hexagons inside, braced by a web</h3>
+  <ul>
+    <li><b>Outer layer:</b> the Class I triangles described above.</li>
+    <li><b>Inner layer:</b> one node under the centre of every outer triangle, joined to its neighbours. That is the dual net: 10f² − 10 hexagons and 12 pentagons.</li>
+    <li><b>Web:</b> each inner node is strutted to its triangle's three corners.</li>
+  </ul>
+  <p>At 100% truss depth the inner layer sits a·√(2/3) inside the outer, where a is the mean outer strut. That is the height of a regular tetrahedron, the depth of a flat octet truss. On the sphere the tetrahedra are only near-regular: at 16v the web struts run 0.908–1.022 × the outer strut. The curve also pulls the inner layer together, so its hexagon edges (0.40–0.60 ×) are shorter than a flat octet truss's 0.577.</p>
+  <p class="note">Not verified: none of the sources consulted gives the Biosphere's actual frequency or layer depth. The studio's 16v (strut ≈ 0.075 r) was matched to the photograph that started the project. Pilarska (2020) on double-layer geodesic grids and Clinton's 1971 NASA report are the references to check.</p>
+
+  <h2>3 · symmetry</h2>
+  <h3>Thirty-one axes, thirty-one great circles</h3>
+  <p>The icosahedron's 60 rotations turn about 31 axes: 6 through opposite vertices (five-fold), 10 through opposite faces (three-fold) and 15 through opposite edge midpoints (two-fold). Each axis has an equator, giving Fuller's 31 great circles (<i>Synergetics</i> 457):</p>
+  <div class="table"><table>
+    <thead><tr><th>Set</th><th>Equator of</th><th>Passes through</th><th>Discloses on the sphere</th></tr></thead>
+    <tbody>
+      <tr><td class="num">15</td><td>2-fold axes</td><td>4 vertices each; every edge lies on one</td><td>Icosahedron, dodecahedron, rhombic triacontahedron, octahedra; the 120 LCD triangles</td></tr>
+      <tr><td class="num">10</td><td>3-fold axes</td><td>6 edge midpoints each, no vertices</td><td>Spherical vector equilibrium</td></tr>
+      <tr><td class="num">6</td><td>5-fold axes</td><td>10 edge midpoints each, no vertices</td><td>Spherical icosidodecahedron</td></tr>
+    </tbody>
+  </table></div>
+  <p>The 15 circles are the icosahedron's mirror planes. They cut the sphere into 120 identical triangles, 60 of each hand: Fuller's <b>LCD triangles</b> (<i>Synergetics</i> 901.18). The studio checks that its LCD triangles have these corners and arcs:</p>
+  <div class="two">
+    <figure>
+      <svg viewBox="0 0 300 220" role="img" aria-label="LCD triangle with corners of 36, 90 and 60 degrees">
+        <path d="M30 190 L250 190 L250 40 Z" fill="var(--accent)" fill-opacity=".14" stroke="var(--accent)" stroke-width="1.6"/>
+        <path d="M232 190 V172 H250" fill="none" stroke="var(--fg)" stroke-width="1"/>
+        <text x="40" y="182" font-size="12" fill="var(--fg)">36°</text>
+        <text x="216" y="166" font-size="12" fill="var(--fg)">90°</text>
+        <text x="228" y="66" font-size="12" fill="var(--fg)">60°</text>
+        <text x="20" y="208" font-size="11" fill="var(--muted)">vertex</text>
+        <text x="212" y="208" font-size="11" fill="var(--muted)">edge midpoint</text>
+        <text x="200" y="30" font-size="11" fill="var(--muted)">face centre</text>
+        <text x="122" y="205" font-size="11" fill="var(--fg)" text-anchor="middle">31.717°</text>
+        <text x="262" y="120" font-size="11" fill="var(--fg)">20.905°</text>
+        <text x="118" y="104" font-size="11" fill="var(--fg)" text-anchor="end" transform="rotate(-34 118 104)">37.377°</text>
+      </svg>
+      <figcaption>One LCD triangle (schematic). Its corner angles sum to 186°, a spherical excess of 6°, and 120 × 6° = 720°, the excess of the whole sphere.</figcaption>
+    </figure>
+    <div>
+      <div class="table"><table>
+        <thead><tr><th>Arc</th><th class="r">Degrees</th><th class="r">Closed form</th></tr></thead>
+        <tbody>
+          <tr><td>vertex → edge midpoint</td><td class="r">31.717474</td><td class="r">atan(1/φ)</td></tr>
+          <tr><td>edge midpoint → face centre</td><td class="r">20.905157</td><td class="r">atan(1/φ²)</td></tr>
+          <tr><td>face centre → vertex</td><td class="r">37.377368</td><td class="r">atan(2/φ²)</td></tr>
+        </tbody>
+      </table></div>
+      <p>The LCD layer's colourings group these triangles into the faces of the solids they tile: 6 per icosahedron face, 10 per dodecahedron face, 4 per triacontahedron rhombus.</p>
+    </div>
+  </div>
+  <p><b>Seamless loops.</b> The Class I grid keeps the full symmetry. A turn of 72° about a vertex, 120° about a face centre or 180° about an edge maps every node onto another node, within 10⁻⁷. That is why the studio's loop exports repeat with no visible jump. Overlays without that symmetry (the VE, the octahedron, the seven axes) need a full 360°.</p>
+
+  <h2>4 · the vector equilibrium &amp; the jitterbug</h2>
+  <h3>From twelve spheres around one to the icosahedron</h3>
+  <p>Fuller's <b>vector equilibrium</b> (VE) is the cuboctahedron: 12 vertices, as far from the centre as from each other, so radial and circumferential vectors balance. Its 12 vertices are the centres of 12 spheres closest-packed around a thirteenth. The VE has 25 great circles in sets of 3, 4, 6 and 12 (<i>Synergetics</i> 452.02). The studio's VE layer draws its 4 hexagonal equators.</p>
+  <p>The <b>jitterbug</b> is the VE built from rigid struts with hinged corners. Its 6 squares cannot hold, so the 8 triangles twist and draw inward. The studio models it as the cyclic permutations of (0, ±1, ±t), scaled to hold the edge length constant:</p>
+  <div class="table"><table>
+    <thead><tr><th>Phase</th><th class="r">t</th><th class="r">Twist of each triangle</th><th>What happens</th></tr></thead>
+    <tbody>
+      <tr><td>Vector equilibrium</td><td class="r">1</td><td class="r">0°</td><td>8 triangles, 6 squares</td></tr>
+      <tr><td>Icosahedron</td><td class="r">φ = 1.618</td><td class="r">22.239°</td><td>square diagonals reach edge length: 20 triangles</td></tr>
+      <tr><td>Jessen's orthogonal icosahedron</td><td class="r">2</td><td class="r">30°</td><td>right-angled dihedral angles</td></tr>
+      <tr><td>Octahedron</td><td class="r">→ ∞</td><td class="r">60°</td><td>vertices meet in pairs</td></tr>
+    </tbody>
+  </table></div>
+  <p>The 8 triangles turn about the 4 three-fold axes, and the vertices stay in the 3 coordinate planes throughout. Those 4 + 3 planes are the <b>seven axes of symmetry</b>: the circles the VE and the icosahedron share. In the studio's 31, they are 4 of the 10 and 3 of the 15. The studio aligns its jitterbug so that t = φ lands on the Dymaxion vertices, within 10⁻¹⁶.</p>
+
+  <h2>5 · animations</h2>
+  <h3>What each one shows</h3>
+  <div class="table"><table>
+    <thead><tr><th>Animation</th><th>Geometry</th></tr></thead>
+    <tbody>
+      <tr><td>Jitterbug</td><td>VE → icosahedron → subdivided faces → inflated to the sphere. The inflation interpolates each node from its flat-face position to its projected one.</td></tr>
+      <tr><td>Phases</td><td>The full jitterbug path, VE → icosahedron → Jessen → octahedron and back, riding on the seven fixed circles, with each vertex's path traced.</td></tr>
+      <tr><td>Circles</td><td>The great-circle sets drawn in one after another: 15, then 10, then 6.</td></tr>
+      <tr><td>Unfold</td><td>The sphere deflates to the icosahedron, then 19 hinges open by 41.810° each (180° − the dihedral 138.190°) into a flat net that turns to face you. The net is a band of 10 faces with 5 caps above and below. It is not Fuller's Airocean layout, which splits two faces to keep the continents whole.</td></tr>
+      <tr><td>Grow</td><td>Frequency rises through its divisors (1v → 2v → 4v → 8v → 16v). A coarser Class I grid's nodes are a subset of a finer one's whenever its frequency divides the finer frequency, so each new node starts on an old flat triangle and bulges out.</td></tr>
+      <tr><td>Build</td><td>Struts appear in rings down the spin axis, the inner layer and web trailing the outer.</td></tr>
+      <tr><td>Breathe</td><td>Truss depth swings 0–150% on a 4π-second cycle, so loop exports can fit a whole number of breaths.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Stepping projection (Haghnazar et al.) builds 16v as four rounds of 2v, projecting after each round. That gives a different, more even sphere with 51 strut lengths instead of 72. The Grow animation uses the studio's single-projection grid, so its final state matches the rest of the studio.</p>
+
+  <h2>6 · verification</h2>
+  <h3>Every reference value, checked</h3>
+  <p><code>npm test</code> runs <code>tools/verify.mjs</code>. It pulls the geometry code straight out of <code>studio.html</code>, so it checks exactly what the page draws.</p>
+  <div class="table"><table>
+    <thead><tr><th>Check</th><th>Reference</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Dymaxion vertex 0 at 64.7°N, 10.536°E; regular icosahedron</td><td>Gray</td><td class="ok">pass</td></tr>
+      <tr><td>V = 10f² + 2, E = 30f², F = 20f², Euler, 1v–16v</td><td>standard</td><td class="ok">pass</td></tr>
+      <tr><td>Chord factors 2v, 3v, 4v (11 values, 5 decimals)</td><td>Class I tables</td><td class="ok">pass</td></tr>
+      <tr><td>Distinct strut lengths 2v–16v</td><td>Haghnazar et al. 2014, Table 1</td><td class="ok">pass</td></tr>
+      <tr><td>Grid symmetric under 72° / 120° / 180° turns</td><td>icosahedral group</td><td class="ok">pass</td></tr>
+      <tr><td>31 circles = 15 + 10 + 6; seven axes = 3 + 4; every edge on a mirror circle</td><td>Geometry of Thinking; <i>Synergetics</i></td><td class="ok">pass</td></tr>
+      <tr><td>120 LCD triangles (60 + 60); angles 36/90/60; arcs</td><td><i>Synergetics</i> 901.18</td><td class="ok">pass</td></tr>
+      <tr><td>Jitterbug: constant edge; lands on Dymaxion vertices; twists 22.239° / 30° / 60°</td><td>Geometry of Thinking</td><td class="ok">pass</td></tr>
+      <tr><td>Spherical polyhedra vertex and edge counts</td><td>standard</td><td class="ok">pass</td></tr>
+      <tr><td>Hinge 41.810°; unfolded net is planar</td><td>dihedral arccos(−√5/3)</td><td class="ok">pass</td></tr>
+    </tbody>
+  </table></div>
+  <p><b>Corrections made during verification.</b></p>
+  <ul>
+    <li>The strut-length readout grouped lengths after rounding to 5 decimals. That under-counted at 13v, 14v and 16v (46, 54 and 69 instead of 49, 56 and 72). It now groups at full precision.</li>
+    <li>An earlier description of the web as "regular tetrahedra" now reads "near-regular".</li>
+  </ul>
+
+  <h2>sources</h2>
+  <ul class="refs">
+    <li>Haghnazar, R., Nooshin, H. &amp; Golabchi, M. (2014). Improving the regularity of geodesic domes using the concept of stepping projection. <i>International Journal of Space Structures</i> 29(2), 81–95. Normal vs stepping projection; Table 1 of distinct lengths, length ratios and shape ratios.</li>
+    <li>Bysiec, D., Jaszczyński, S. &amp; Maleska, T. (2024). Analysis of lightweight structure mesh topology of geodesic domes. <i>Applied Sciences</i> 14, 132. Octahedral domes; methods 1 and 2, the Class I and Class II analogues; structural comparison.</li>
+    <li>Bysiec, D. (2024). Constructions of innovative geodesic domes in terms of the sustainable and efficient cross-sections. <i>Scientific Reports</i> 14, 20444. Radial projection as the standard construction; section optimisation.</li>
+    <li>Sujatha, A. (2014). Geodesic domes and its applications. <i>Indian Journal of Science and Technology</i> 7(3S), 5–6. General overview.</li>
+    <li>Frederick, G. <i>Geometry of Thinking</i>: <a href="https://geometryofthinking.com/2024/02/01/geodesics/">Geodesics</a>; <a href="https://geometryofthinking.com/2023/08/27/the-31-great-circles-of-the-icosahedron/">The 31 great circles of the icosahedron</a>; companion posts on the LCD triangle and the VE's 25 great circles.</li>
+    <li>Fuller, R. B. <i>Synergetics</i> (1975) and <i>Synergetics 2</i> (1979). Sections 452.02, 457, 901.18 and 1132.02 as cited by Geometry of Thinking.</li>
+    <li>Gray, R. W. Exact transformation equations for Fuller's world map; the source of the Dymaxion icosahedron vertices.</li>
+  </ul>
+  <p class="note">Not yet consulted, for further checking: Clinton (1971), NASA CR-1734, on subdivision methods; Kitrick (1990) on a unified approach to Class I, II and III; Pilarska (2020) on single- and double-layer octahedral domes; Tarnai (1987), <i>Spherical Grid Structures</i>.</p>
+</main>
+
+<script>
+(() => {
+  // Figure 1 and the chord-factor table, computed from the same Class I construction as the studio.
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  const norm = p => { const l = Math.hypot(...p); return p.map(v => v / l); };
+  const A = norm([0, 1, PHI]), B = norm([0, -1, PHI]), C = norm([PHI, 0, 1]);   // one icosahedron face
+  const RAMP = ['#1f5f73', '#4b8f7c', '#9aa83a', '#e0a526', '#ef5a1f', '#a8321e'];
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const ramp = u => { const x = u * (RAMP.length - 1), i = Math.min(RAMP.length - 2, Math.floor(x)), t = x - i, a = hex(RAMP[i]), b = hex(RAMP[i + 1]);
+    return '#' + a.map((v, d) => Math.round(v + (b[d] - v) * t).toString(16).padStart(2, '0')).join(''); };
+
+  function faceStruts(f) {
+    const P = (i, j) => norm([0, 1, 2].map(d => (A[d] * (f - i - j) + B[d] * i + C[d] * j) / f));
+    const out = [];
+    for (let i = 0; i < f; i++) for (let j = 0; j < f - i; j++) {
+      const tris = [[[i, j], [i + 1, j], [i, j + 1]]];
+      if (i + j < f - 1) tris.push([[i + 1, j], [i + 1, j + 1], [i, j + 1]]);
+      for (const t of tris) for (let k = 0; k < 3; k++) {
+        const a = t[k], b = t[(k + 1) % 3], key = [a, b].map(String).sort().join('|');
+        if (!out.some(s => s.key === key)) {
+          const p = P(...a), q = P(...b);
+          out.push({ key, a, b, L: Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) });
+        }
+      }
+    }
+    return out;
+  }
+  const classesOf = struts => { const L = [...new Set(struts.map(s => s.L.toFixed(6)))].map(Number).sort((x, y) => x - y); return L; };
+
+  // figure: flattened 4v face
+  const f = 4, struts = faceStruts(f), types = classesOf(struts);
+  const W = 560, H = 400, s = 100, ox = W / 2 - s * f / 2, oy = H - 28;
+  const XY = ([i, j]) => [ox + s * (i + j / 2), oy - s * j * Math.sqrt(3) / 2];
+  const svg = document.getElementById('figFace');
+  let html = '';
+  for (const t of struts) {
+    const k = types.findIndex(L => Math.abs(L - t.L) < 5e-6), [x1, y1] = XY(t.a), [x2, y2] = XY(t.b);
+    const [mx, my] = [(x1 + x2) / 2, (y1 + y2) / 2];
+    html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${ramp(k / (types.length - 1))}" stroke-width="5" stroke-linecap="round"/>`;
+    html += `<text x="${mx}" y="${my + 4}" font-size="11" font-weight="500" text-anchor="middle" fill="var(--fg)" paint-order="stroke" stroke="var(--bg)" stroke-width="4">${'ABCDEF'[k]}</text>`;
+  }
+  svg.innerHTML = html;
+
+  // table: chord factors for 2v, 3v, 4v over the whole sphere (60 face-symmetric copies scale each count by 20)
+  const rows = [];
+  for (const fr of [2, 3, 4]) {
+    const st = faceStruts(fr), L = classesOf(st);
+    L.forEach((len, k) => {
+      // each edge on a face boundary is shared by two faces
+      const n = st.filter(x => Math.abs(x.L - len) < 5e-6).reduce((c, x) => {
+        const onEdge = [x.a, x.b].every(([i, j]) => i === 0) || [x.a, x.b].every(([i, j]) => j === 0) || [x.a, x.b].every(([i, j]) => i + j === fr);
+        return c + (onEdge ? 0.5 : 1);
+      }, 0) * 20;
+      rows.push(`<tr><td>${k === 0 ? fr + 'v' : ''}</td><td>${'ABCDEF'[k]}</td><td class="r">${len.toFixed(5)}</td><td class="r">${n}</td><td class="r">${(len * 38).toFixed(3)} m</td></tr>`);
+    });
+  }
+  document.getElementById('cfRows').innerHTML = rows.join('');
+})();
+</script>
+</body>
+</html>

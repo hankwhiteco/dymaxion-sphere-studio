@@ -21,10 +21,11 @@ python3 -m http.server 8143
 then visit `http://localhost:8143/studio.html`.
 
 - **Frequency** 2v–16v, with an option to keep strut size constant so the sphere scales with frequency.
-- **Layers**: outer triangles, inner hexagons, web diagonals, the 20-face icosahedron net, the 12 five-fold nodes, the vector equilibrium's 4 great circles, and the far side (with opacity).
+- **Layers**: outer triangles, inner hexagons, web diagonals, the 20-face icosahedron net, the 12 five-fold nodes, the vector equilibrium's 4 great circles, the icosahedron's 31 great circles (6 / 10 / 15, with the seven axes), the 120 LCD triangles, spherical polyhedra traced in great-circle arcs, and the far side (with opacity).
+- **Strut types**: colour every strut by its length, with a chord-factor legend in metres for any dome radius and a cutting tolerance that merges near-equal lengths.
 - **Color**: strut and highlight colors; Paper, Ink or Clear artboard.
 - **Motion**: speed, direction, spin axis (polar, or the 5-, 3- or 2-fold symmetry axes), tilt, wobble, and drag to orbit.
-- **Jitterbug**: Fuller's transformation of the vector equilibrium (cuboctahedron) into the icosahedron, then subdivision and inflation to the sphere. Run it or scrub it.
+- **Animations**: the jitterbug (VE to sphere), the jitterbug's phases on the seven circles (VE, icosahedron, Jessen, octahedron), great circles sweeping in, unfolding to the icosahedral net, frequency growth by divisors, building from the crown, and a breathing truss. Run or scrub any of them.
 - **Export**: SVG and PNG of the current frame (transparent by default), plus GIF and MP4 clips. Loops turn by the drawing's own symmetry angle, so they repeat seamlessly.
 
 GIF and MP4 export load [gifenc](https://github.com/mattdesl/gifenc) and [mp4-muxer](https://github.com/Vanilagy/mp4-muxer) from jsDelivr on first use. MP4 needs WebCodecs (Chrome, Edge, Safari 16.4+).
@@ -38,6 +39,10 @@ GIF and MP4 export load [gifenc](https://github.com/mattdesl/gifenc) and [mp4-mu
 | `index.html` | Demo of the web component: 16v and 8v side by side at the same strut scale. |
 | `export-gif.mjs` | Node script for a seamless looping GIF (`npm install`, then `node export-gif.mjs --freq 8 --size 1200`). |
 | `geodesic_16v.svg`, `geodesic_8v_1000.svg` | Example exports. |
+
+## Reference and verification
+
+[reference.html](https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html) explains the mathematics behind every layer and animation, with sources. `npm test` runs `tools/verify.mjs`, which checks the studio's geometry, pulled straight out of `studio.html`, against the published reference values.
 
 ## Geometry notes
 
