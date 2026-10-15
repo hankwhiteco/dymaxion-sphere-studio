@@ -26,7 +26,7 @@ then visit `http://localhost:8143/studio.html`.
 - **Color**: strut and highlight colors; Paper, Ink or Clear artboard.
 - **Motion**: speed, direction, spin axis (polar, or the 5-, 3- or 2-fold symmetry axes), tilt, wobble, and drag to orbit.
 - **Animations**: the jitterbug (VE to sphere), the jitterbug's phases on the seven circles (VE, icosahedron, Jessen, octahedron), great circles sweeping in, unfolding to the icosahedral net, frequency growth by divisors, building from the crown, and a breathing truss. Run or scrub any of them.
-- **Export**: SVG and PNG of the current frame (transparent by default), plus GIF and MP4 clips. Loops turn by the drawing's own symmetry angle, so they repeat seamlessly.
+- **Export**: SVG and PNG of the current frame (transparent by default), plus GIF and MP4 clips at 720, 1080 or 1600 square or as a 1080×1920 Reel, with Standard, High or Max video quality. Loops turn by the drawing's own symmetry angle, so they repeat seamlessly.
 
 GIF and MP4 export load [gifenc](https://github.com/mattdesl/gifenc) and [mp4-muxer](https://github.com/Vanilagy/mp4-muxer) from jsDelivr on first use. MP4 needs WebCodecs (Chrome, Edge, Safari 16.4+).
 

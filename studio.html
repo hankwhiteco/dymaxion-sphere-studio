@@ -446,10 +446,16 @@
       <div class="exports three">
         <button class="btn primary" id="exGif">GIF</button>
         <button class="btn primary" id="exMp4">MP4</button>
-        <select id="motionSize" aria-label="Clip size"><option value="720" selected>720</option><option value="1080">1080</option><option value="1600">1600</option></select>
+        <select id="motionSize" aria-label="Clip size and format"><option value="720">720 ■</option><option value="1080">1080 ■</option><option value="1600">1600 ■</option><option value="reel">Reel 9:16</option></select>
+      </div>
+      <div class="row"><span class="lbl">Video quality</span><span class="val" id="qualityVal"></span></div>
+      <div class="seg three" role="radiogroup" aria-label="Video quality">
+        <input type="radio" name="quality" id="q_standard" value="standard"><label for="q_standard">Standard<small>small file</small></label>
+        <input type="radio" name="quality" id="q_high" value="high"><label for="q_high">High<small>fine lines</small></label>
+        <input type="radio" name="quality" id="q_max" value="max"><label for="q_max">Max<small>for editing</small></label>
       </div>
       <div class="progress" id="progress" hidden><span id="progressBar"></span></div>
-      <p class="note" id="clipNote">GIF is transparent unless the artboard background is included; its soft edges are blended for the artboard color, so set the artboard to match where the GIF will sit. MP4 always has a background: the artboard color, or Ink or Paper for Clear, whichever suits the line color.</p>
+      <p class="note" id="clipNote">Reel is 1080×1920 with the sphere centred, ready for Instagram without rescaling. For the crispest video, raise Line weight to 1.5× or more. GIF is transparent unless the artboard background is included; its soft edges are blended for the artboard color, so set the artboard to match where the GIF will sit. MP4 always has a background: the artboard color, or Ink or Paper for Clear, whichever suits the line color.</p>
     </section>
   </aside>
 </div>
@@ -946,7 +952,7 @@
     strutColor: false, tolMM: 0, domeR: 38,
     backOp: 28, weight: 1, line: '#1d1b18', accent: '#ff4e02', bg: 'paper',
     playing: true, dir: 1, speed: 3, axis: '5', tilt: 12, wobble: 0, zoom: 94, exportBg: false, clip: 'loop',
-    animKind: 'jitterbug', breathe: false,
+    animKind: 'jitterbug', breathe: false, quality: 'high', motionSize: '1080',
   };
   const KEY = 'dymaxion-studio:v1';
   let S = { ...DEFAULTS };
@@ -1567,6 +1573,22 @@
     } };
   }
 
+  // video bits per pixel: line art moving every frame needs far more than camera footage
+  const BPP = { standard: 0.3, high: 1.0, max: 1.6 };
+  // output frame: square, or a 9:16 Reel with the square sphere frame centred
+  const frameDims = () => {
+    if (S.motionSize === 'reel') return { W: 1080, H: 1920, side: 1080, offY: 420, tag: 'reel' };
+    const n = +S.motionSize; return { W: n, H: n, side: n, offY: 0, tag: String(n) };
+  };
+  const mp4Bitrate = () => { const d = frameDims(); return Math.round(d.W * d.H * MP4_FPS * BPP[S.quality]); };
+  // draw one frame on a canvas of any shape: clear it all, then paint the square sphere frame
+  function drawFrame(cx, d, geo) {
+    cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, d.W, d.H);
+    cx.setTransform(1, 0, 0, 1, 0, d.offY);
+    paint(cx, d.side, geo, false);
+    cx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
   function syncClip() {
     document.querySelector(`input[name="clip"][value="${S.clip}"]`).checked = true;
     $('clipAnimSub').textContent = S.animKind;
@@ -1576,11 +1598,16 @@
       $('clipInfo').textContent = 'set a speed above 0';
     } else {
       const secs = `${p.T.toFixed(p.T < 10 ? 1 : 0)} s`;
-      $('clipInfo').textContent = p.kind === 'loop' ? `${p.sym}° turn · ${secs}` : `${S.animKind} · ${secs}`;
+      const mb = Math.max(1, Math.round(mp4Bitrate() * 1.05 * p.T / 8 / 1e6));
+      $('clipInfo').textContent = (p.kind === 'loop' ? `${p.sym}° turn · ${secs}` : `${S.animKind} · ${secs}`) + ` · MP4 ≈ ${mb} MB`;
     }
     $('exGif').disabled = !p || (busy && exporting.kind !== 'gif');
     $('exMp4').disabled = !p || (busy && exporting.kind !== 'mp4');
     $('motionSize').disabled = busy;
+    $('motionSize').value = S.motionSize;
+    document.querySelector(`input[name="quality"][value="${S.quality}"]`).checked = true;
+    document.querySelectorAll('input[name="quality"]').forEach(r => { r.disabled = busy; });
+    $('qualityVal').textContent = `${Math.round(mp4Bitrate() / 1e6)} Mbps`;
   }
 
   const libs = {};
@@ -1618,7 +1645,7 @@
     if (kind === 'mp4' && typeof VideoEncoder === 'undefined') {
       toast('MP4 export needs a browser with video encoding: Chrome, Edge or Safari 16.4 and later.'); return;
     }
-    const size = +$('motionSize').value;
+    const dims = frameDims();
     const saved = { theta, clock, x: anim.x, running: anim.running };
     exporting = { kind, cancel: false };
     anim.running = false;
@@ -1628,12 +1655,12 @@
     setProgress(0, 'Loading…');
     let blob = null, failed = null;
     try {
-      const c = document.createElement('canvas'); c.width = c.height = size;
+      const c = document.createElement('canvas'); c.width = dims.W; c.height = dims.H;
       const cx = c.getContext('2d', { willReadFrequently: kind === 'gif' });
       const geo = build(S.freq);
       const frameAt = i => { const v = plan.at(i); theta = v.theta; clock = v.clock; anim.x = v.x; };
-      blob = kind === 'gif' ? await encodeGif(plan, c, cx, geo, frameAt, fps)
-                            : await encodeMp4(plan, c, cx, geo, frameAt, fps);
+      blob = kind === 'gif' ? await encodeGif(plan, c, cx, geo, frameAt, fps, dims)
+                            : await encodeMp4(plan, c, cx, geo, frameAt, fps, dims);
     } catch (e) { failed = e; console.error(e); }
     theta = saved.theta; clock = saved.clock; anim.x = saved.x; anim.running = saved.running;
     const cancelled = exporting.cancel;
@@ -1646,10 +1673,10 @@
         : `Couldn’t encode the ${kind.toUpperCase()}: ${failed.message || 'unknown error'}.`);
       return;
     }
-    if (blob) offer(`geodesic_${S.freq}v_${plan.kind === 'loop' ? 'loop' : S.animKind}_${size}.${kind}`, blob);
+    if (blob) offer(`geodesic_${S.freq}v_${plan.kind === 'loop' ? 'loop' : S.animKind}_${dims.tag}.${kind}`, blob);
   }
 
-  async function encodeGif(plan, c, cx, geo, frameAt, fps) {
+  async function encodeGif(plan, c, cx, geo, frameAt, fps, dims) {
     const { GIFEncoder } = await loadGif();
     const L = 6;                                    // coverage levels per ink
     const transparent = !(S.exportBg && S.bg !== 'clear');
@@ -1665,7 +1692,7 @@
     for (let i = 0; i < plan.n; i++) {
       if (exporting.cancel) return null;
       frameAt(i);
-      paint(cx, c.width, geo, false);               // always draw on transparent, then map coverage
+      drawFrame(cx, dims, geo);                     // always draw on transparent, then map coverage
       const d = cx.getImageData(0, 0, c.width, c.height).data;
       for (let p = 0, q = 0; p < npx; p++, q += 4) {
         const a = d[q + 3] / 255;
@@ -1689,13 +1716,13 @@
     return new Blob([gif.bytes()], { type: 'image/gif' });
   }
 
-  async function encodeMp4(plan, c, cx, geo, frameAt, fps) {
+  async function encodeMp4(plan, c, cx, geo, frameAt, fps, dims) {
     const Mp4Muxer = await loadMp4();
     const W = c.width, H = c.height;
-    const bitrate = Math.round(W * H * fps * 0.3);
+    const bitrate = mp4Bitrate();
     let config = null;
     for (const codec of ['avc1.640033', 'avc1.4d0033', 'avc1.42003e']) {
-      const cand = { codec, width: W, height: H, bitrate, framerate: fps, avc: { format: 'avc' } };
+      const cand = { codec, width: W, height: H, bitrate, framerate: fps, bitrateMode: 'variable', latencyMode: 'quality', avc: { format: 'avc' } };
       try { if ((await VideoEncoder.isConfigSupported(cand)).supported) { config = cand; break; } } catch {}
     }
     if (!config) throw new Error(`this browser can’t encode H.264 video at ${W}×${H}`);
@@ -1709,7 +1736,7 @@
       if (exporting.cancel) { try { enc.close(); } catch {} return null; }
       if (encErr) throw encErr;
       frameAt(i);
-      paint(cx, W, geo, false);
+      drawFrame(cx, dims, geo);
       cx.globalCompositeOperation = 'destination-over';   // video has no alpha: lay the background underneath
       cx.fillStyle = bg; cx.fillRect(0, 0, W, H);
       cx.globalCompositeOperation = 'source-over';
@@ -1729,6 +1756,8 @@
   }
 
   document.querySelectorAll('input[name="clip"]').forEach(r => r.addEventListener('change', () => set('clip', r.value)));
+  $('motionSize').addEventListener('change', e => set('motionSize', e.target.value));
+  document.querySelectorAll('input[name="quality"]').forEach(r => r.addEventListener('change', () => set('quality', r.value)));
   $('exGif').addEventListener('click', () => runExport('gif'));
   $('exMp4').addEventListener('click', () => runExport('mp4'));
 
