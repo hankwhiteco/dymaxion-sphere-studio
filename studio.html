@@ -442,6 +442,8 @@
         <input type="radio" name="clip" id="clip_loop" value="loop" checked><label for="clip_loop">Seamless loop<small>one symmetric turn</small></label>
         <input type="radio" name="clip" id="clip_anim" value="anim"><label for="clip_anim">Animation<small id="clipAnimSub">jitterbug</small></label>
       </div>
+      <div class="row"><label for="loops">Loops</label>
+        <select id="loops" aria-label="Number of loops in the clip"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option><option value="5">5×</option><option value="6">6×</option><option value="8">8×</option><option value="10">10×</option></select></div>
       <div class="row"><span class="lbl">Clip</span><span class="val" id="clipInfo"></span></div>
       <div class="exports three">
         <button class="btn primary" id="exGif">GIF</button>
@@ -952,7 +954,7 @@
     strutColor: false, tolMM: 0, domeR: 38,
     backOp: 28, weight: 1, line: '#1d1b18', accent: '#ff4e02', bg: 'paper',
     playing: true, dir: 1, speed: 3, axis: '5', tilt: 12, wobble: 0, zoom: 94, exportBg: false, clip: 'loop',
-    animKind: 'jitterbug', breathe: false, quality: 'high', motionSize: '1080',
+    animKind: 'jitterbug', breathe: false, quality: 'high', motionSize: '1080', loops: 1,
   };
   const KEY = 'dymaxion-studio:v1';
   let S = { ...DEFAULTS };
@@ -1557,11 +1559,12 @@
     const theta0 = theta, clock0 = clock;
     if (kind === 'loop') {
       if (!(S.speed > 0)) return null;
-      const sym = loopAngle(), T = sym / S.speed, n = Math.max(2, Math.round(T * fps));
-      // wobble and breathing run on sin(clock / 2): fit a whole number of cycles into the loop
+      const sym = loopAngle(), T = sym / S.speed, per = Math.max(2, Math.round(T * fps)), k = S.loops || 1;
+      // wobble and breathing run on sin(clock / 2): fit a whole number of cycles into each loop
       const cycles = (S.wobble || S.breathe) ? Math.max(1, Math.round(T / (4 * Math.PI))) : 0;
-      return { kind, n, T, sym, at: i => {
-        const u = i / n;
+      // k loops render as one continuous turn of k × the symmetry angle, so every repeat joins seamlessly
+      return { kind, n: per * k, T: T * k, sym, loops: k, at: i => {
+        const u = i / per;
         return { theta: theta0 + S.dir * sym * u * Math.PI / 180,
                  clock: cycles ? u * cycles * 4 * Math.PI : clock0, x: 1 };
       } };
@@ -1599,12 +1602,14 @@
     } else {
       const secs = `${p.T.toFixed(p.T < 10 ? 1 : 0)} s`;
       const mb = Math.max(1, Math.round(mp4Bitrate() * 1.05 * p.T / 8 / 1e6));
-      $('clipInfo').textContent = (p.kind === 'loop' ? `${p.sym}° turn · ${secs}` : `${S.animKind} · ${secs}`) + ` · MP4 ≈ ${mb} MB`;
+      $('clipInfo').textContent = (p.kind === 'loop' ? `${p.sym}° turn${p.loops > 1 ? ` × ${p.loops}` : ''} · ${secs}` : `${S.animKind} · ${secs}`) + ` · MP4 ≈ ${mb} MB`;
     }
     $('exGif').disabled = !p || (busy && exporting.kind !== 'gif');
     $('exMp4').disabled = !p || (busy && exporting.kind !== 'mp4');
     $('motionSize').disabled = busy;
     $('motionSize').value = S.motionSize;
+    $('loops').value = String(S.loops); $('loops').disabled = busy || S.clip !== 'loop';
+    $('loops').closest('.row').classList.toggle('dim', S.clip !== 'loop');
     document.querySelector(`input[name="quality"][value="${S.quality}"]`).checked = true;
     document.querySelectorAll('input[name="quality"]').forEach(r => { r.disabled = busy; });
     $('qualityVal').textContent = `${Math.round(mp4Bitrate() / 1e6)} Mbps`;
@@ -1673,7 +1678,7 @@
         : `Couldn’t encode the ${kind.toUpperCase()}: ${failed.message || 'unknown error'}.`);
       return;
     }
-    if (blob) offer(`geodesic_${S.freq}v_${plan.kind === 'loop' ? 'loop' : S.animKind}_${dims.tag}.${kind}`, blob);
+    if (blob) offer(`geodesic_${S.freq}v_${plan.kind === 'loop' ? 'loop' + (plan.loops > 1 ? 'x' + plan.loops : '') : S.animKind}_${dims.tag}.${kind}`, blob);
   }
 
   async function encodeGif(plan, c, cx, geo, frameAt, fps, dims) {
@@ -1757,6 +1762,7 @@
 
   document.querySelectorAll('input[name="clip"]').forEach(r => r.addEventListener('change', () => set('clip', r.value)));
   $('motionSize').addEventListener('change', e => set('motionSize', e.target.value));
+  $('loops').addEventListener('change', e => set('loops', parseInt(e.target.value, 10)));
   document.querySelectorAll('input[name="quality"]').forEach(r => r.addEventListener('change', () => set('quality', r.value)));
   $('exGif').addEventListener('click', () => runExport('gif'));
   $('exMp4').addEventListener('click', () => runExport('mp4'));
