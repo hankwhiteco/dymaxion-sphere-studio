@@ -170,6 +170,20 @@
   input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
   input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 
+  .layer-colors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .lc { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 3px; background: var(--well);
+        box-shadow: inset 0 -1px 0 var(--line); cursor: pointer; font-weight: 500; font-size: 12px; min-width: 0; }
+  .lc { position: relative; }
+  .lc input[type="color"] { position: absolute; left: 8px; top: 50%; width: 20px; height: 20px; margin-top: -10px; opacity: 0; }
+  .lc .chip { flex: none; width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--line); }
+  .lc:has(input:focus-visible) .chip { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .lc span:not(.chip) { display: grid; line-height: 1.2; min-width: 0; }
+  .lc small { font-size: 10px; font-weight: 400; color: var(--muted); }
+  .linkbtn { border: 0; background: none; padding: 0; color: var(--muted); font: 400 12px var(--font); cursor: pointer;
+             border-bottom: 1px solid var(--line); }
+  .linkbtn:hover { color: var(--fg); }
+  .linkbtn:disabled { opacity: .4; cursor: default; }
+  .linkbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .check { display: grid; grid-template-columns: 14px 1fr; align-items: center; gap: 2px 10px; cursor: pointer; font-weight: 500; }
   .check input { accent-color: var(--cap); width: 14px; height: 14px; margin: 0; }
   .check small { grid-column: 2; color: var(--muted); font-weight: 400; font-size: 11.5px; }
@@ -362,6 +376,12 @@
           <div class="swatches" id="sw_line"></div></div>
         <div class="color"><span class="lbl">Highlights</span>
           <div class="swatches" id="sw_accent"></div></div>
+      </div>
+      <div class="row"><span class="lbl">Each layer</span><button class="linkbtn" id="matchStruts" type="button">Match struts</button></div>
+      <div class="layer-colors">
+        <label class="lc"><span class="chip" id="c_outer_chip"></span><input type="color" id="c_outer" aria-label="Outer colour"><span>Outer<small id="c_outer_v"></small></span></label>
+        <label class="lc"><span class="chip" id="c_inner_chip"></span><input type="color" id="c_inner" aria-label="Inner colour"><span>Inner<small id="c_inner_v"></small></span></label>
+        <label class="lc"><span class="chip" id="c_web_chip"></span><input type="color" id="c_web" aria-label="Diagonals colour"><span>Diagonals<small id="c_web_v"></small></span></label>
       </div>
       <div class="row"><span class="lbl">Artboard</span></div>
       <div class="seg three" role="radiogroup" aria-label="Artboard background">
@@ -955,6 +975,7 @@
     backOp: 28, weight: 1, line: '#1d1b18', accent: '#ff4e02', bg: 'paper',
     playing: true, dir: 1, speed: 3, axis: '5', tilt: 12, wobble: 0, zoom: 94, exportBg: false, clip: 'loop',
     animKind: 'jitterbug', breathe: false, quality: 'high', motionSize: '1080', loops: 1,
+    cOuter: null, cInner: null, cWeb: null,   // per-layer colours; null follows the strut colour
   };
   const KEY = 'dymaxion-studio:v1';
   let S = { ...DEFAULTS };
@@ -989,6 +1010,8 @@
     const r = norm(cross(A, f)), u = cross(f, r);
     return { f, r, u };
   }
+  // each layer's colour: its own override, or the strut colour
+  const layerColors = () => ({ outer: S.cOuter || S.line, inner: S.cInner || S.line, web: S.cWeb || S.line });
   const depthNow = () => S.breathe ? 75 * (1 - Math.cos(clock * 0.5)) : S.depth;
 
   // split a layer's edges into groups by colour and by an alpha level (5 steps)
@@ -1046,6 +1069,7 @@
     const px = size / 1000 * S.weight;
     const layers = [], fills = [], dots = [];
     const line = S.line, acc = S.accent;
+    const { outer: cOut, inner: cIn, web: cWeb } = layerColors();
     let po = null;
 
     const unfolded = ust && (ust.fold > 0 || ust.align > 0);
@@ -1076,9 +1100,9 @@
         In.set(apply([geo.innerFlat[t*3] * rIn, geo.innerFlat[t*3+1] * rIn, geo.innerFlat[t*3+2] * rIn], k), t * 3);
       }
       const PU = projArr(U, 1, null, 1), PI = projArr(In, 1, null, 1);
-      if (S.L_web)   layers.push({ id: 'web',   E: geo.faceWebE,   A: PI, B: PU, w: BASE.web * px,   color: line, alpha: 1 });
-      if (S.L_inner) layers.push({ id: 'inner', E: geo.faceInnerE, A: PI, B: PI, w: BASE.inner * px, color: line, alpha: 1 });
-      if (S.L_outer) layers.push({ id: 'outer', E: geo.faceOuterE, A: PU, B: PU, w: BASE.outer * px, color: line, alpha: 1 });
+      if (S.L_web)   layers.push({ id: 'web',   E: geo.faceWebE,   A: PI, B: PU, w: BASE.web * px,   color: cWeb, alpha: 1 });
+      if (S.L_inner) layers.push({ id: 'inner', E: geo.faceInnerE, A: PI, B: PI, w: BASE.inner * px, color: cIn, alpha: 1 });
+      if (S.L_outer) layers.push({ id: 'outer', E: geo.faceOuterE, A: PU, B: PU, w: BASE.outer * px, color: cOut, alpha: 1 });
       const FC = geo.faceCorners, outline = [];
       for (let k = 0; k < 20; k++) {
         const a = FC[k*3], b = FC[k*3+1], cc = FC[k*3+2];
@@ -1093,12 +1117,12 @@
       // ── frequency growth: the finer grid starts on the coarser grid's chords and bulges out ──
       const gf = build(gst.from), gg = build(gst.to), start = growStart(gf, gg);
       const P = projArr(gg.outer, 1, start, gst.s), Pold = projArr(gf.outer, 1, null, 1);
-      layers.push({ id: 'grow-coarse', E: gf.outerE, A: Pold, B: Pold, w: BASE.outer * px, color: line, alpha: 1 - gst.s });
-      layers.push({ id: 'grow-fine', E: gg.outerE, A: P, B: P, w: BASE.outer * px, color: line, alpha: 0.25 + 0.75 * gst.s });
+      layers.push({ id: 'grow-coarse', E: gf.outerE, A: Pold, B: Pold, w: BASE.outer * px, color: cOut, alpha: 1 - gst.s });
+      layers.push({ id: 'grow-fine', E: gg.outerE, A: P, B: P, w: BASE.outer * px, color: cOut, alpha: 0.25 + 0.75 * gst.s });
       if (gst.trussA > 0) {
         const pi = projArr(geo.innerDir, rIn, null, 1), poF = projArr(geo.outer, 1, null, 1);
-        if (S.L_web)   layers.push({ id: 'web',   E: geo.webE,   A: pi, B: poF, w: BASE.web * px,   color: line, alpha: gst.trussA });
-        if (S.L_inner) layers.push({ id: 'inner', E: geo.innerE, A: pi, B: pi,  w: BASE.inner * px, color: line, alpha: gst.trussA });
+        if (S.L_web)   layers.push({ id: 'web',   E: geo.webE,   A: pi, B: poF, w: BASE.web * px,   color: cWeb, alpha: gst.trussA });
+        if (S.L_inner) layers.push({ id: 'inner', E: geo.innerE, A: pi, B: pi,  w: BASE.inner * px, color: cIn, alpha: gst.trussA });
       }
       return { layers, fills, dots, st, kind };
     }
@@ -1118,9 +1142,9 @@
       alphaInner = k => vis(Math.max(hi[geo.innerE[k*2]], hi[geo.innerE[k*2+1]]), 0.3);
     }
     const typed = S.strutColor ? strutClasses(geo) : null;
-    if (S.L_web)   pushGrouped(layers, { id: 'web',   E: geo.webE,   A: pi, B: po, w: BASE.web * px,   color: line, alpha: gridA }, null, alphaWeb);
-    if (S.L_inner) pushGrouped(layers, { id: 'inner', E: geo.innerE, A: pi, B: pi, w: BASE.inner * px, color: line, alpha: gridA }, null, alphaInner);
-    if (S.L_outer) pushGrouped(layers, { id: 'outer', E: geo.outerE, A: po, B: po, w: BASE.outer * px * (typed ? 1.5 : 1), color: line, alpha: gridA },
+    if (S.L_web)   pushGrouped(layers, { id: 'web',   E: geo.webE,   A: pi, B: po, w: BASE.web * px,   color: cWeb, alpha: gridA }, null, alphaWeb);
+    if (S.L_inner) pushGrouped(layers, { id: 'inner', E: geo.innerE, A: pi, B: pi, w: BASE.inner * px, color: cIn, alpha: gridA }, null, alphaInner);
+    if (S.L_outer) pushGrouped(layers, { id: 'outer', E: geo.outerE, A: po, B: po, w: BASE.outer * px * (typed ? 1.5 : 1), color: cOut, alpha: gridA },
                                typed ? k => typed.classes[typed.cls[k]].color : null, alphaOuter);
 
     const netA = jst ? jst.netA : (S.L_net ? overlayA : 0);
@@ -1450,6 +1474,11 @@
     for (const [id, key] of [['sw_line', 'line'], ['sw_accent', 'accent']])
       $(id).querySelectorAll('.swatch').forEach(b => b.setAttribute('aria-pressed', b.dataset.c.toLowerCase() === S[key].toLowerCase()));
     $('pick_line').value = S.line; $('pick_accent').value = S.accent;
+    const lc = layerColors();
+    for (const [id, key, v] of [['c_outer', 'cOuter', lc.outer], ['c_inner', 'cInner', lc.inner], ['c_web', 'cWeb', lc.web]]) {
+      $(id).value = v; $(id + '_chip').style.background = v; $(id + '_v').textContent = S[key] ? v.toUpperCase() : 'as struts';
+    }
+    $('matchStruts').disabled = !(S.cOuter || S.cInner || S.cWeb);
     readout(); legend(); syncAnim(); syncClip();
   }
 
@@ -1458,16 +1487,19 @@
     for (const [name, c] of list) {
       const b = document.createElement('button');
       b.className = 'swatch'; b.style.background = c; b.dataset.c = c; b.title = name; b.setAttribute('aria-label', name);
-      b.addEventListener('click', () => set(key, c));
+      b.addEventListener('click', () => { if (key === 'line') S.cOuter = S.cInner = S.cWeb = null; set(key, c); });
       host.append(b);
     }
     const pick = document.createElement('input');
     pick.type = 'color'; pick.id = 'pick_' + key; pick.title = 'Custom color'; pick.setAttribute('aria-label', 'Custom color');
-    pick.addEventListener('input', () => set(key, pick.value));
+    pick.addEventListener('input', () => { if (key === 'line') S.cOuter = S.cInner = S.cWeb = null; set(key, pick.value); });
     host.append(pick);
   }
   swatches('sw_line', LINE_SW, 'line');
   swatches('sw_accent', ACC_SW, 'accent');
+  for (const [id, key] of [['c_outer', 'cOuter'], ['c_inner', 'cInner'], ['c_web', 'cWeb']])
+    $(id).addEventListener('input', e => set(key, e.target.value));
+  $('matchStruts').addEventListener('click', () => { S.cOuter = S.cInner = S.cWeb = null; sync(); persist(); });
 
   function set(key, v) { S[key] = v; sync(); persist(); }
 
@@ -1683,10 +1715,12 @@
 
   async function encodeGif(plan, c, cx, geo, frameAt, fps, dims) {
     const { GIFEncoder } = await loadGif();
-    const L = 6;                                    // coverage levels per ink
     const transparent = !(S.exportBg && S.bg !== 'clear');
     const matte = hexRgb(transparent ? solidBg() : BG_COLORS[S.bg]);
-    const inks = [...new Set([S.line.toLowerCase(), S.accent.toLowerCase()])].map(hexRgb);
+    // every colour the frame can draw: the three layers, the highlight, and strut-type colours
+    const lc = layerColors(), typedInks = S.strutColor ? strutClasses(geo).classes.map(c => c.color) : [];
+    const inks = [...new Set([lc.outer, lc.inner, lc.web, S.accent, ...typedInks].map(c => c.toLowerCase()))].map(hexRgb);
+    const L = Math.max(2, Math.min(6, Math.floor(255 / inks.length)));   // coverage levels per ink
     // index 0 = transparent (or the solid background); then L tints per ink over the matte
     const palette = [matte];
     for (const ink of inks) for (let l = 1; l <= L; l++)
@@ -1704,10 +1738,12 @@
         if (a < cutoff) { idx[p] = 0; continue; }
         let k = 0;
         if (inks.length > 1) {
-          const r = d[q], g = d[q + 1], b = d[q + 2], i0 = inks[0], i1 = inks[1];
-          const d0 = (r - i0[0]) ** 2 + (g - i0[1]) ** 2 + (b - i0[2]) ** 2;
-          const d1 = (r - i1[0]) ** 2 + (g - i1[1]) ** 2 + (b - i1[2]) ** 2;
-          k = d1 < d0 ? 1 : 0;
+          const r = d[q], g = d[q + 1], b = d[q + 2];
+          let best = Infinity;
+          for (let n = 0; n < inks.length; n++) {
+            const ink = inks[n], dd = (r - ink[0]) ** 2 + (g - ink[1]) ** 2 + (b - ink[2]) ** 2;
+            if (dd < best) { best = dd; k = n; }
+          }
         }
         idx[p] = 1 + k * L + Math.min(L, Math.max(1, Math.round(a * L))) - 1;
       }

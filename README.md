@@ -23,7 +23,7 @@ then visit `http://localhost:8143/studio.html`.
 - **Frequency** 2v–16v, with an option to keep strut size constant so the sphere scales with frequency.
 - **Layers**: outer triangles, inner hexagons, web diagonals, the 20-face icosahedron net, the 12 five-fold nodes, the vector equilibrium's 4 great circles, the icosahedron's 31 great circles (6 / 10 / 15, with the seven axes), the 120 LCD triangles, spherical polyhedra traced in great-circle arcs, and the far side (with opacity).
 - **Strut types**: colour every strut by its length, with a chord-factor legend in metres for any dome radius and a cutting tolerance that merges near-equal lengths.
-- **Color**: strut and highlight colors; Paper, Ink or Clear artboard.
+- **Color**: strut and highlight colors, with separate colours for the outer, inner and diagonal layers; Paper, Ink or Clear artboard.
 - **Motion**: speed, direction, spin axis (polar, or the 5-, 3- or 2-fold symmetry axes), tilt, wobble, and drag to orbit.
 - **Animations**: the jitterbug (VE to sphere), the jitterbug's phases on the seven circles (VE, icosahedron, Jessen, octahedron), great circles sweeping in, unfolding to the icosahedral net, frequency growth by divisors, building from the crown, and a breathing truss. Run or scrub any of them.
 - **Export**: SVG and PNG of the current frame (transparent by default), plus GIF and MP4 clips at 720, 1080 or 1600 square or as a 1080×1920 Reel, with Standard, High or Max video quality. Loops turn by the drawing's own symmetry angle, so they repeat seamlessly, and a loop clip can run 1–10 loops in a row.
