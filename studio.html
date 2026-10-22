@@ -17,8 +17,6 @@
     --cap: #2b2b2a;         /* slider caps, switch tongues */
     --accent: #ef5a1f;      /* Braun orange */
     --accent-ink: #ffffff;
-    --checker-a: #dddbd5;
-    --checker-b: #ecebe6;
     --font: "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
@@ -26,7 +24,6 @@
       --bg: #141413; --panel: #1f1f1e; --well: #2a2a28; --fg: #e8e6e0; --muted: #8d8b85;
       --line: rgba(232, 230, 224, 0.1); --track: rgba(232, 230, 224, 0.24);
       --key: #3a3a38; --key-fg: #e8e6e0; --cap: #d8d6d0; --accent: #f26a2c; --accent-ink: #141413;
-      --checker-a: #262624; --checker-b: #1d1d1c;
       color-scheme: dark;
     }
   }
@@ -34,7 +31,6 @@
     --bg: #141413; --panel: #1f1f1e; --well: #2a2a28; --fg: #e8e6e0; --muted: #8d8b85;
     --line: rgba(232, 230, 224, 0.1); --track: rgba(232, 230, 224, 0.24);
     --key: #3a3a38; --key-fg: #e8e6e0; --cap: #d8d6d0; --accent: #f26a2c; --accent-ink: #141413;
-    --checker-a: #262624; --checker-b: #1d1d1c;
     color-scheme: dark;
   }
 
@@ -56,28 +52,36 @@
             background: radial-gradient(circle, var(--fg) 1.1px, transparent 1.4px) 0 0 / 5.6px 5.4px; opacity: .8; }
   h1 { font: 500 17px/1 var(--font); margin: 0; letter-spacing: -0.005em; }
   .hint { color: var(--muted); font-size: 12px; }
-  .hint a { color: var(--fg); text-decoration: none; border-bottom: 1px solid var(--line); }
+  .mast-right { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  /* the reference opens in a new tab, so the studio keeps its state */
+  .notes-key { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border-radius: 3px;
+               background: var(--panel); color: var(--fg); font: 500 12px var(--font); text-decoration: none;
+               box-shadow: inset 0 0 0 1px var(--line), inset 0 -1px 0 var(--line); }
+  .notes-key:hover { background: var(--well); }
+  .notes-key:focus-visible, .notes:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .notes-key svg, .notes svg { width: 9px; height: 9px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .notes { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); text-decoration: none; }
+  .notes:hover { color: var(--fg); }
   .board-wrap { display: grid; place-items: center; min-height: 0; container-type: size; }
   .board { position: relative; width: min(100%, 100cqh); aspect-ratio: 1; max-width: 100%;
            border-radius: 6px; overflow: hidden; touch-action: none; cursor: grab;
            box-shadow: inset 0 0 0 1px var(--line); }
   .board.dragging { cursor: grabbing; }
-  .board[data-bg="paper"] { background: #f2f1ed; }
-  .board[data-bg="ink"] { background: #141413; }
-  .board[data-bg="clear"] {
-    background: repeating-conic-gradient(var(--checker-a) 0 25%, var(--checker-b) 0 50%) 0 0 / 20px 20px;
-  }
+  .board { background: #f2f1ed; }   /* replaced by the Background colour */
   .board canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
   .phase { position: absolute; left: 12px; bottom: 12px; font: 500 11px/1 var(--font);
            padding: 7px 9px; border-radius: 3px; background: rgba(242, 241, 237, 0.92); color: #1d1d1c;
            pointer-events: none; }
-  .board[data-bg="ink"] .phase { background: rgba(20, 20, 19, 0.85); color: #e8e6e0; }
+  .board[data-tone="dark"] .phase { background: rgba(20, 20, 19, 0.85); color: #e8e6e0; }
 
   .readout { display: flex; flex-wrap: wrap; gap: 6px 24px; font: 400 11.5px/1.4 var(--font); color: var(--muted); }
   .readout b { color: var(--fg); font-weight: 500; }
 
   /* ── control face ── */
-  .panel { background: var(--panel); box-shadow: -1px 0 0 var(--line); overflow-y: auto;
+  /* position: relative keeps the hidden inputs inside the panel; without it they hang off the page,
+     stretch it far below the window, and focusing one scrolls the page to it */
+  .panel { position: relative; background: var(--panel); box-shadow: -1px 0 0 var(--line); overflow-y: auto;
            padding-block: 6px 28px; padding-inline: 22px; }
   section { display: grid; gap: 12px; padding-block: 18px; border-bottom: 1px solid var(--line); }
   section:last-child { border-bottom: 0; }
@@ -119,7 +123,7 @@
 
   /* layer switches */
   .layers { display: grid; gap: 0; }
-  .layer { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 12px;
+  .layer { position: relative; display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 12px;
            padding: 8px 0; cursor: pointer; border-top: 1px solid var(--line); }
   .layer:first-child { border-top: 0; }
   .layer input { position: absolute; opacity: 0; pointer-events: none; }
@@ -140,7 +144,7 @@
   .layer[data-accent] svg * { stroke: var(--accent); }
 
   /* push-button rows with indicator lamps */
-  .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .seg { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
   .seg.three { grid-template-columns: repeat(3, 1fr); }
   .seg label { position: relative; display: grid; justify-items: center; gap: 2px; padding: 15px 4px 8px; cursor: pointer;
                text-align: center; font-weight: 500; font-size: 12px; border-radius: 3px; background: var(--well);
@@ -156,14 +160,19 @@
   .seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* colors */
-  .colors { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .color { display: grid; gap: 8px; }
+  .colors { display: grid; gap: 8px; }
+  .color { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; }
   .color .lbl { font-weight: 500; }
-  .swatches { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
-  .swatch { width: 20px; height: 20px; border-radius: 50%; border: 0; cursor: pointer; padding: 0;
-            box-shadow: inset 0 0 0 1px var(--line); }
-  .swatch[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--line), 0 0 0 2px var(--panel), 0 0 0 3.5px var(--fg); }
-  .swatch:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .swatches { display: flex; gap: 4px; }
+  /* White / Black / Custom keys, each with its colour chip */
+  .ckey { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 9px 0 7px;
+          border: 0; border-radius: 3px; background: var(--well); color: var(--fg); font: 500 11.5px var(--font);
+          cursor: pointer; box-shadow: inset 0 -1px 0 var(--line); }
+  .ckey:hover { background: var(--line); }
+  .ckey .dot { width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--track); }
+  .ckey.on { background: var(--key); color: var(--key-fg); box-shadow: none; }
+  .ckey input[type="color"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border-radius: 3px; }
+  .ckey:focus-visible, .ckey:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
   input[type="color"] { width: 20px; height: 20px; border: 0; border-radius: 50%; padding: 0; background: none; cursor: pointer;
                         box-shadow: inset 0 0 0 1px var(--line); }
   input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
@@ -215,6 +224,18 @@
   .exports.three { grid-template-columns: 1fr 1fr 84px; }
   .seg.two { grid-template-columns: repeat(2, 1fr); }
   .seg.four { grid-template-columns: repeat(4, 1fr); }
+  .seg.five { grid-template-columns: repeat(5, 1fr); }
+  .seg.five label { padding-inline: 2px; }
+  /* blend keys: hover or focus previews a mode on the artboard, a click keeps it */
+  .blends { display: grid; gap: 4px; }
+  .blend-row { display: grid; grid-template-columns: 54px repeat(4, 1fr); gap: 4px; align-items: center; }
+  .blend-row > span { font-size: 10.5px; color: var(--muted); }
+  .bkey { height: 26px; padding: 0 2px; border: 0; border-radius: 3px; background: var(--well); color: var(--fg);
+          font: 500 11px var(--font); cursor: pointer; box-shadow: inset 0 -1px 0 var(--line); white-space: nowrap; overflow: hidden; }
+  .bkey:hover, .bkey:focus-visible { background: var(--line); outline: none; box-shadow: inset 0 0 0 1px var(--accent); }
+  .bkey.on { background: var(--key); color: var(--key-fg); box-shadow: none; }
+  .tune { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+  .tune select { height: 30px; }
   .sub { display: grid; gap: 10px; padding: 0 0 12px 42px; }
   .sub .seg label { padding-block: 13px 6px; font-size: 11.5px; }
   .legend { display: grid; gap: 2px; font-size: 11px; }
@@ -257,17 +278,20 @@
   <main class="stage">
     <div class="masthead">
       <div class="brand"><span class="grille" aria-hidden="true"></span><h1>Dymaxion Sphere Studio</h1></div>
-      <span class="hint">Drag the sphere to turn it · Space to play or pause · <a href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html" target="_blank" rel="noopener">Reference</a></span>
+      <div class="mast-right">
+        <span class="hint">Drag the sphere to turn it · Space to play or pause</span>
+        <a class="notes-key" href="reference.html" target="_blank" rel="noopener">Geometry notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a>
+      </div>
     </div>
     <div class="board-wrap">
-      <div class="board" id="board" data-bg="paper"><canvas id="cv" aria-label="Rotating geodesic sphere" role="img"></canvas><span class="phase" id="phase" hidden></span></div>
+      <div class="board" id="board" data-tone="light"><canvas id="cv" aria-label="Rotating geodesic sphere" role="img"></canvas><span class="phase" id="phase" hidden></span></div>
     </div>
     <div class="readout" id="readout"></div>
   </main>
 
   <aside class="panel">
     <section>
-      <h2>Frequency</h2>
+      <div class="sec-head"><h2>Frequency</h2><a class="notes" href="reference.html#sphere" target="_blank" rel="noopener" aria-label="Geometry notes on the sphere">notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a></div>
       <div class="freq-head">
         <span class="freq-num" id="freqNum">16<small>v</small></span>
         <span class="val" id="freqNote"></span>
@@ -286,7 +310,7 @@
     </section>
 
     <section>
-      <h2>Layers</h2>
+      <div class="sec-head"><h2>Layers</h2><a class="notes" href="reference.html#double-layer" target="_blank" rel="noopener" aria-label="Geometry notes on the double layer">notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a></div>
       <div class="layers">
         <label class="layer"><input type="checkbox" id="L_outer" checked>
           <svg viewBox="0 0 34 22"><path d="M2 20 L11 3 L20 20 Z M11 3 L29 3 L20 20 M29 3 L32 9" stroke-width="1.6"/></svg>
@@ -356,7 +380,7 @@
     </section>
 
     <section>
-      <h2>Strut types</h2>
+      <div class="sec-head"><h2>Strut types</h2><a class="notes" href="reference.html#chord-factors" target="_blank" rel="noopener" aria-label="Geometry notes on chord factors">notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a></div>
       <label class="check"><input type="checkbox" id="strutColor"><span>Colour struts by length</span><small>each distinct chord gets its own colour, shortest to longest</small></label>
       <div class="row">
         <label for="domeR">Dome radius</label><span class="val" id="domeRVal"></span>
@@ -376,19 +400,26 @@
           <div class="swatches" id="sw_line"></div></div>
         <div class="color"><span class="lbl">Highlights</span>
           <div class="swatches" id="sw_accent"></div></div>
+        <div class="color"><span class="lbl">Background</span>
+          <div class="swatches" id="sw_bg"></div></div>
       </div>
       <div class="row"><span class="lbl">Each layer</span><button class="linkbtn" id="matchStruts" type="button">Match struts</button></div>
       <div class="layer-colors">
-        <label class="lc"><span class="chip" id="c_outer_chip"></span><input type="color" id="c_outer" aria-label="Outer colour"><span>Outer<small id="c_outer_v"></small></span></label>
-        <label class="lc"><span class="chip" id="c_inner_chip"></span><input type="color" id="c_inner" aria-label="Inner colour"><span>Inner<small id="c_inner_v"></small></span></label>
-        <label class="lc"><span class="chip" id="c_web_chip"></span><input type="color" id="c_web" aria-label="Diagonals colour"><span>Diagonals<small id="c_web_v"></small></span></label>
+        <label class="lc"><span class="chip" id="col_outer_chip"></span><input type="color" id="col_outer" aria-label="Outer colour"><span>Outer<small id="col_outer_v"></small></span></label>
+        <label class="lc"><span class="chip" id="col_inner_chip"></span><input type="color" id="col_inner" aria-label="Inner colour"><span>Inner<small id="col_inner_v"></small></span></label>
+        <label class="lc"><span class="chip" id="col_web_chip"></span><input type="color" id="col_web" aria-label="Diagonals colour"><span>Diagonals<small id="col_web_v"></small></span></label>
       </div>
-      <div class="row"><span class="lbl">Artboard</span></div>
-      <div class="seg three" role="radiogroup" aria-label="Artboard background">
-        <input type="radio" name="bg" id="bg_paper" value="paper" checked><label for="bg_paper">Paper</label>
-        <input type="radio" name="bg" id="bg_ink" value="ink"><label for="bg_ink">Ink</label>
-        <input type="radio" name="bg" id="bg_clear" value="clear"><label for="bg_clear">Clear</label>
+    </section>
+
+    <section>
+      <h2>Texture</h2>
+      <div class="row"><span class="lbl">Blend</span><span class="val" id="blendVal"></span></div>
+      <div class="blends" id="blends" role="radiogroup" aria-label="Blend mode"></div>
+      <div class="row">
+        <label for="grain">Grain</label><span class="val" id="grainVal"></span>
+        <input type="range" id="grain" min="0" max="100" step="1" value="0">
       </div>
+      <p class="note">Blend sets how lines mix where they cross and with the background. Overlay, soft light and the dodge and burn modes barely show on pure white or black; try a custom background. Grain is a fixed noise layer over everything, scaled with the image so exports match the view. GIFs leave it out; SVGs keep the blend but not the grain.</p>
     </section>
 
     <section>
@@ -420,7 +451,7 @@
     </section>
 
     <section>
-      <h2>Animations</h2>
+      <div class="sec-head"><h2>Animations</h2><a class="notes" href="reference.html#animations" target="_blank" rel="noopener" aria-label="Geometry notes on the animations">notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a></div>
       <div class="seg three" role="radiogroup" aria-label="Animation">
         <input type="radio" name="anim" id="an_jitterbug" value="jitterbug"><label for="an_jitterbug">Jitterbug<small>VE to sphere</small></label>
         <input type="radio" name="anim" id="an_phases" value="phases"><label for="an_phases">Phases<small>with 7 circles</small></label>
@@ -429,6 +460,16 @@
         <input type="radio" name="anim" id="an_grow" value="grow"><label for="an_grow">Grow<small>frequency</small></label>
         <input type="radio" name="anim" id="an_build" value="build"><label for="an_build">Build<small>from the crown</small></label>
       </div>
+      <div class="row"><span class="lbl">Studies</span></div>
+      <div class="seg five" role="radiogroup" aria-label="Studies">
+        <input type="radio" name="anim" id="an_ripple" value="ripple"><label for="an_ripple">Ripple<small>waves</small></label>
+        <input type="radio" name="anim" id="an_moire" value="moire"><label for="an_moire">Moiré<small>two shells</small></label>
+        <input type="radio" name="anim" id="an_slice" value="slice"><label for="an_slice">Scan<small>a band</small></label>
+        <input type="radio" name="anim" id="an_scatter" value="scatter"><label for="an_scatter">Scatter<small>lift off</small></label>
+        <input type="radio" name="anim" id="an_tune" value="tune"><label for="an_tune">Tune<small id="tuneSub">3v ↔ 14v</small></label>
+      </div>
+      <div class="row" id="tuneRow" hidden><span class="lbl">Range</span>
+        <span class="tune"><select id="tuneLo" aria-label="Lowest frequency"></select>to<select id="tuneHi" aria-label="Highest frequency"></select></span></div>
       <div class="transport">
         <button class="btn grow" id="animRun">Run</button>
       </div>
@@ -446,7 +487,7 @@
         <label for="zoom">Size in frame</label><span class="val" id="zoomVal"></span>
         <input type="range" id="zoom" min="30" max="100" step="1" value="94">
       </div>
-      <label class="check"><input type="checkbox" id="exportBg"><span>Include artboard background</span><small>off = transparent</small></label>
+      <label class="check"><input type="checkbox" id="exportBg"><span>Include background</span><small>off = transparent</small></label>
       <div class="exports">
         <button class="btn primary" id="exSvg">Export SVG</button>
         <div class="transport">
@@ -462,7 +503,9 @@
         <input type="radio" name="clip" id="clip_loop" value="loop" checked><label for="clip_loop">Seamless loop<small>one symmetric turn</small></label>
         <input type="radio" name="clip" id="clip_anim" value="anim"><label for="clip_anim">Animation<small id="clipAnimSub">jitterbug</small></label>
       </div>
-      <div class="row"><label for="loops">Loops</label>
+      <div class="row" id="afterRow"><label for="after">Then loop</label>
+        <select id="after" aria-label="Seamless loops after the animation"><option value="0">no</option><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option><option value="5">5×</option><option value="6">6×</option><option value="8">8×</option><option value="10">10×</option></select></div>
+      <div class="row" id="loopsRow"><label for="loops">Loops</label>
         <select id="loops" aria-label="Number of loops in the clip"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option><option value="5">5×</option><option value="6">6×</option><option value="8">8×</option><option value="10">10×</option></select></div>
       <div class="row"><span class="lbl">Clip</span><span class="val" id="clipInfo"></span></div>
       <div class="exports three">
@@ -510,6 +553,7 @@
   const scl = (p, k) => [p[0]*k, p[1]*k, p[2]*k];
   const clamp01 = x => Math.max(0, Math.min(1, x));
   const ease = x => x * x * (3 - 2 * x);
+  const easeSine = x => (1 - Math.cos(Math.PI * x)) / 2;
   const seg = (x, a, b) => clamp01((x - a) / (b - a));
   // rotation matrix about a unit axis (Rodrigues), as rows
   const rotM = (k, ang) => {
@@ -796,12 +840,16 @@
   const FOLD_DEG = Math.abs(NET.hinge.find(Boolean).ang) * 180 / Math.PI;   // 41.81°, 180° − dihedral
 
   // rigid transform {R, t} of each face after unfolding by `fold` (0..1)
-  function faceTransforms(fold) {
-    const T = new Array(20);
+  // with `roll`, hinges open in turn from the root face outward (and close in reverse), so the net rolls open
+  const NET_DEPTH = (() => { const d = new Array(20).fill(0); for (const i of NET.topo) if (NET.parent[i] >= 0) d[i] = d[NET.parent[i]] + 1; return d; })();
+  const NET_D = Math.max(...NET_DEPTH);
+  function faceTransforms(fold, roll = false) {
+    const T = new Array(20), w = 1 / (NET_D - 1 + 1.8);
     for (const i of NET.topo) {
       if (NET.parent[i] < 0) { T[i] = { R: I3, t: [0, 0, 0] }; continue; }
       const h = NET.hinge[i], P = T[NET.parent[i]];
-      const Rh = rotM(h.axis, h.ang * fold), th = h.a.map((v, d) => v - mulMV(Rh, h.a)[d]);
+      const a = roll ? ease(clamp01((fold - (NET_DEPTH[i] - 1) * w) / (1.8 * w))) : fold;
+      const Rh = rotM(h.axis, h.ang * a), th = h.a.map((v, d) => v - mulMV(Rh, h.a)[d]);
       T[i] = { R: mulMM(P.R, Rh), t: sum(mulMV(P.R, th), P.t) };
     }
     return T;
@@ -845,10 +893,32 @@
     growCache.set(key, out);
     return out;
   }
+  // every outer strut in face terms: direction (0 along i, 1 along j, 2 across), the grid line it lies on
+  // (0, or f across, is an icosahedron edge), its step along that line, and whether outerE lists it backwards
+  const edgeCache = new Map();
+  function edgeTable(g) {
+    if (edgeCache.has(g.freq)) return edgeCache.get(g.freq);
+    const f = g.freq, nE = g.outerE.length / 2, at = new Map();
+    for (let k = 0; k < nE; k++) { const a = g.outerE[2*k], b = g.outerE[2*k+1]; at.set(Math.min(a, b) * 1e6 + Math.max(a, b), k); }
+    const T = { dir: new Uint8Array(nE), line: new Uint16Array(nE), step: new Uint16Array(nE), len: new Uint16Array(nE), rev: new Uint8Array(nE) };
+    const N = (k, i, j) => g.faceNodes[k * g.npf + g.local(i, j)];
+    const put = (a, b, d, line, step, len) => {
+      const k = at.get(Math.min(a, b) * 1e6 + Math.max(a, b));
+      T.dir[k] = d; T.line[k] = line; T.step[k] = step; T.len[k] = len; T.rev[k] = g.outerE[2*k] === a ? 0 : 1;
+    };
+    for (let k = 0; k < 20; k++) for (let i = 0; i < f; i++) for (let j = 0; j < f - i; j++) {
+      put(N(k, i, j), N(k, i + 1, j), 0, j, i, f - j);
+      put(N(k, i, j), N(k, i, j + 1), 1, i, j, f - i);
+      put(N(k, i + 1, j), N(k, i, j + 1), 2, i + j + 1, j, i + j + 1);
+    }
+    edgeCache.set(g.freq, T);
+    return T;
+  }
 
   // ───────────────────────── strut types ─────────────────────────
   const RAMP = ['#1f5f73', '#4b8f7c', '#9aa83a', '#e0a526', '#ef5a1f', '#a8321e'];
   const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+  const luma = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
   const rampColor = u => {
     const x = clamp01(u) * (RAMP.length - 1), i = Math.min(RAMP.length - 2, Math.floor(x)), t = x - i;
     const a = hexRgb(RAMP[i]), b = hexRgb(RAMP[i + 1]);
@@ -875,21 +945,22 @@
 
   // ───────────────────────── animations ─────────────────────────
   // every animation runs x from 0 to 1; x = 1 is the normal studio view
-  const JB_DUR = 11;
+  const JB_DUR = 14;
   function jbState(x) {
-    const twist = ease(seg(x, 0.12, 0.45));
-    const polyPhase = x < 0.55;
+    const polyPhase = x < 0.46;
     return {
-      x, t: 1 + (PHI - 1) * twist,
+      x, t: 1 + (PHI - 1) * easeSine(seg(x, 0.10, 0.40)),
       polyA: polyPhase ? 1 : 0,
-      diagA: ease(seg(x, 0.22, 0.45)),
-      faceA: 1 - seg(x, 0.48, 0.58),
-      circA: 1 - ease(seg(x, 0.10, 0.24)),
-      gridA: ease(seg(x, 0.55, 0.72)),
-      inflate: ease(seg(x, 0.72, 0.92)),
-      netA: polyPhase ? 0 : (S.L_net ? 1 : 1 - ease(seg(x, 0.92, 1))),
+      diag: seg(x, 0.16, 0.40),            // the square diagonals are drawn in as they become edges
+      faceA: 1 - ease(seg(x, 0.34, 0.46)),
+      circA: 1 - ease(seg(x, 0.05, 0.16)),
+      sub: seg(x, 0.44, 0.68),             // the subdivision, ruled across each flat face
+      truss: seg(x, 0.64, 0.80),           // then the truss drawn in underneath
+      inflate: easeSine(seg(x, 0.78, 0.96)),
+      gridA: 1,
+      netA: polyPhase ? 0 : (S.L_net ? 1 : 1 - ease(seg(x, 0.90, 1))),
       veA: S.L_ve ? ease(seg(x, 0.92, 1)) : 0,
-      stage: x < 0.12 ? 0 : x < 0.55 ? 1 : x < 0.72 ? 2 : 3,
+      stage: x < 0.10 ? 0 : x < 0.44 ? 1 : x < 0.78 ? 2 : 3,
     };
   }
   // jitterbug phases: VE → icosahedron → Jessen → octahedron → back, with the seven circles
@@ -912,16 +983,41 @@
   }
   function sweepState(x) { return { x, stage: x < 0.35 ? 0 : x < 0.6 ? 1 : 2 }; }
   function unfoldState(x) {
-    return { x, inflate: 1 - ease(seg(x, 0, 0.12)) * (1 - ease(seg(x, 0.88, 1))),
-             fold: ease(seg(x, 0.12, 0.40)) * (1 - ease(seg(x, 0.72, 0.88))),
-             align: ease(seg(x, 0.22, 0.48)) * (1 - ease(seg(x, 0.64, 0.84))),
-             stage: x < 0.12 ? 0 : x < 0.40 ? 1 : x < 0.72 ? 2 : 3 };
+    return { x, inflate: 1 - easeSine(seg(x, 0.02, 0.14)) * (1 - easeSine(seg(x, 0.86, 0.98))),
+             fold: ease(seg(x, 0.12, 0.44)) * (1 - ease(seg(x, 0.62, 0.88))),
+             align: easeSine(seg(x, 0.18, 0.46)) * (1 - easeSine(seg(x, 0.62, 0.86))),
+             trussA: 1 - ease(seg(x, 0, 0.08)) * (1 - ease(seg(x, 0.92, 1))),   // the truss folds away while flat
+             stage: x < 0.12 ? 0 : x < 0.44 ? 1 : x < 0.62 ? 2 : 3 };
   }
   function growState(x, freq) {
-    const chain = growChain(freq), steps = chain.length - 1, u = seg(x, 0, 0.9) * steps;
-    const i = Math.min(steps - 1, Math.floor(u));
-    return { x, chain, from: chain[Math.max(0, i)], to: chain[Math.max(0, i) + 1] || freq, s: ease(clamp01(u - i)),
-             trussA: ease(seg(x, 0.9, 1)), stage: Math.min(chain.length - 1, Math.round(u)) };
+    const chain = growChain(freq), steps = chain.length - 1, u = seg(x, 0, 0.86) * steps;
+    const i = Math.max(0, Math.min(steps - 1, Math.floor(u)));
+    return { x, chain, from: chain[i], to: chain[i + 1] || freq, u: clamp01(u - i),
+             truss: seg(x, 0.84, 1), stage: Math.min(chain.length - 1, Math.round(u)) };
+  }
+  // studies: each starts and ends on the plain sphere, so a clip of one loops cleanly
+  const envelope = (x, a = 0.12) => easeSine(seg(x, 0, a)) * (1 - easeSine(seg(x, 1 - a, 1)));
+  const rippleState = x => ({ x, amp: 0.045 * Math.sin(Math.PI * x) ** 2, phase: 3 * x, stage: x < 0.2 ? 0 : x < 0.8 ? 1 : 2 });
+  const moireState = x => ({ x, a: envelope(x), turn: 4.5 * Math.sin(2 * Math.PI * x), stage: x < 0.12 ? 0 : x < 0.88 ? 1 : 2 });
+  const sliceState = x => ({ x, ghost: 1 - 0.9 * envelope(x, 0.1), H: 1.12 - 2.24 * easeSine(seg(x, 0.08, 0.92)),
+                             stage: x < 0.08 ? 0 : x < 0.92 ? 1 : 2 });
+  const scatterState = x => ({ x, stage: x < 0.3 ? 0 : x < 0.7 ? 1 : 2 });
+  // tune: from the first frequency of the range to the second and back, easing to a stop at each turn.
+  // Selecting or running it sets the studio to the first, so the finished sphere is where the animation ends
+  function tunePath() {
+    const a = S.tuneLo, b = S.tuneHi;
+    return { f0: a, legs: a === b ? [] : [[a, b], [b, a]], D: 2 * Math.abs(b - a) };
+  }
+  const tuneHome = () => { if (S.animKind === 'tune') S.freq = S.tuneLo; };
+  function tuneState(x) {
+    const P = tunePath(), target = x * P.D;
+    let F = P.f0, done = 0, stage = 0;
+    for (let i = 0; i < P.legs.length; i++) {
+      const [a, b] = P.legs[i], L = Math.abs(b - a);
+      if (target <= done + L || i === P.legs.length - 1) { F = a + (b - a) * easeSine(clamp01((target - done) / L)); stage = i; break; }
+      done += L;
+    }
+    return { x, F, stage };
   }
   function buildState(x) {
     const H = 1.15 - 2.6 * ease(seg(x, 0, 0.85));
@@ -937,10 +1033,16 @@
                  stages: () => ['15 mirror circles', '10 face circles', '6 vertex circles'] },
     unfold:    { dur: () => 13, state: unfoldState, freezeSpin: true,
                  stages: () => ['1 · Flatten', '2 · Unfold', '3 · Net', '4 · Refold'] },
-    grow:      { dur: () => 1.4 + 2.6 * (growChain(S.freq).length - 1), state: x => growState(x, S.freq),
+    grow:      { dur: () => 2 + 2.8 * (growChain(S.freq).length - 1), state: x => growState(x, S.freq),
                  stages: () => growChain(S.freq).map(n => n + 'v') },
     build:     { dur: () => 10, state: buildState,
                  stages: () => ['1 · Crown', '2 · Shoulder', '3 · Base', '4 · Truss'] },
+    ripple:    { dur: () => 12, state: rippleState, stages: () => ['1 · Still', '2 · Waves', '3 · Settle'] },
+    moire:     { dur: () => 14, state: moireState, stages: () => ['1 · Second shell', '2 · Turning', '3 · Aligned'] },
+    slice:     { dur: () => 10, state: sliceState, stages: () => ['1 · Dim', '2 · Scan', '3 · Restore'] },
+    scatter:   { dur: () => 12, state: scatterState, stages: () => ['1 · Crown lifts', '2 · Scattered', '3 · Settling'] },
+    tune:      { dur: () => 2 + 0.75 * tunePath().D, state: tuneState,
+                 stages: () => { const P = tunePath(); return [P.f0, ...P.legs.map(l => l[1])].map(n => n + 'v'); } },
   };
   function animLabel(kind, st, freq) {
     if (!st) return '';
@@ -958,21 +1060,33 @@
     if (kind === 'sweep') return ['15 great circles · the mirror planes', '10 great circles · face axes', '6 great circles · vertex axes'][st.stage];
     if (kind === 'unfold') return ['Flattening to the icosahedron', `Unfolding · hinges at ${(FOLD_DEG * (1 - st.fold)).toFixed(1)}°`,
       'The icosahedral net · 20 faces, 19 hinges', 'Folding back to the sphere'][st.stage];
-    if (kind === 'grow') return st.trussA > 0 ? `${freq}v · adding the truss` : `Subdividing ${st.from}v → ${st.to}v`;
+    if (kind === 'grow') return st.truss > 0 ? `${freq}v · drawing the truss` : `Subdividing ${st.from}v → ${st.to}v`;
+    if (kind === 'ripple') return 'Waves across the shell';
+    if (kind === 'moire') return `Two shells · ${Math.abs(st.turn).toFixed(1)}° apart`;
+    if (kind === 'slice') return 'Scanning the shell';
+    if (kind === 'tune') return `Tuning · ${st.F.toFixed(1)}v`;
+    if (kind === 'scatter') return ['Cells lifting from the crown', 'The shell scattered', 'Settling back'][st.stage];
     if (kind === 'build') return ['Building from the crown', 'Working down the shoulder', 'Closing the base', 'Bracing the inner layer'][st.stage];
     return '';
   }
 
   // ───────────────────────── state ─────────────────────────
-  const LINE_SW = [['Ink', '#1d1b18'], ['White', '#ffffff'], ['Signal', '#ff4e02'], ['Olive', '#7a711e']];
-  const ACC_SW  = [['Signal', '#ff4e02'], ['Olive', '#7a711e'], ['Ink', '#1d1b18'], ['White', '#ffffff']];
+  const WHITE = '#ffffff', BLACK = '#000000';
+  const BLENDS = [['', [['source-over', 'Normal']]],
+    ['darken', [['darken', 'Darken'], ['multiply', 'Multiply'], ['color-burn', 'Burn']]],
+    ['lighten', [['lighten', 'Lighten'], ['screen', 'Screen'], ['color-dodge', 'Dodge'], ['lighter', 'Add']]],
+    ['contrast', [['overlay', 'Overlay'], ['soft-light', 'Soft light'], ['hard-light', 'Hard light']]],
+    ['invert', [['difference', 'Difference'], ['exclusion', 'Exclusion']]],
+    ['colour', [['hue', 'Hue'], ['saturation', 'Saturation'], ['color', 'Colour'], ['luminosity', 'Luminosity']]]];
+  const BLEND_NAME = Object.fromEntries(BLENDS.flatMap(([, m]) => m));
   const DEFAULTS = {
     freq: 16, trueScale: false, depth: 100,
     L_outer: true, L_inner: true, L_web: true, L_net: false, L_poles: false, L_ve: false, L_back: true,
     L_gc: false, gc15: true, gc10: true, gc6: true, seven: false,
     L_lcd: false, lcdMode: 'mirror', L_poly: false, poly: 'dodeca',
     strutColor: false, tolMM: 0, domeR: 38,
-    backOp: 28, weight: 1, line: '#1d1b18', accent: '#ff4e02', bg: 'paper',
+    backOp: 28, weight: 1, line: BLACK, accent: '#ff4e02', bg: WHITE, blend: 'source-over', grain: 0, after: 0, tuneLo: 3, tuneHi: 14,
+    custom: { line: '#7a711e', accent: '#ff4e02', bg: '#f2f1ed' },   // last custom colour per role
     playing: true, dir: 1, speed: 3, axis: '5', tilt: 12, wobble: 0, zoom: 94, exportBg: false, clip: 'loop',
     animKind: 'jitterbug', breathe: false, quality: 'high', motionSize: '1080', loops: 1,
     cOuter: null, cInner: null, cWeb: null,   // per-layer colours; null follows the strut colour
@@ -981,6 +1095,11 @@
   let S = { ...DEFAULTS };
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch {}
   if (S.clip !== 'loop') S.clip = 'anim';
+  // older saves named the artboard (paper, ink, clear); it is a colour now
+  if (!/^#[0-9a-f]{6}$/i.test(S.bg)) S.bg = S.bg === 'ink' ? '#141413' : '#f2f1ed';
+  S.custom = { ...DEFAULTS.custom, ...S.custom };
+  for (const k of ['line', 'accent', 'bg']) if (![WHITE, BLACK].includes(S[k].toLowerCase())) S.custom[k] = S[k];
+  if (!BLEND_NAME[S.blend]) S.blend = 'source-over';
   if (!ANIMS[S.animKind]) S.animKind = 'jitterbug';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduced) S.playing = false;
@@ -992,12 +1111,11 @@
   let dragTilt = 0;       // extra tilt from dragging (deg)
   let clock = 0;          // seconds of motion, for wobble and breathing
   const anim = { x: 1, running: false };
+  let previewBlend = null;   // a blend mode under the pointer, shown on the artboard but not kept
   let exporting = null;   // the running GIF/MP4 job; the stage holds still meanwhile
 
   // ───────────────────────── projection & drawing ─────────────────────────
   // Base widths (px) for a 1000px artboard; tuned so 16v matches the SVG exports.
-  const BASE = { outer: 1.2, inner: 0.65, web: 0.375, net: 2.2, circle: 1.1, poly: 1.9 };
-  const GC_W = { 15: 1.25, 10: 0.95, 6: 0.7 };
 
   function camera() {
     const A = AXES[S.axis];
@@ -1021,7 +1139,7 @@
     for (let e = 0, k = 0; e < E.length; e += 2, k++) {
       const al = alphaFn ? alphaFn(k) : 1;
       if (al <= 0.02) continue;
-      const ab = alphaFn ? Math.ceil(al * 5) / 5 : 1, col = colorFn ? colorFn(k) : base.color, key = col + '|' + ab;
+      const ab = alphaFn ? Math.ceil(al * 10) / 10 : 1, col = colorFn ? colorFn(k) : base.color, key = col + '|' + ab;
       let g = groups.get(key); if (!g) groups.set(key, g = { col, ab, list: [] });
       g.list.push(E[e], E[e + 1]);
     }
@@ -1034,7 +1152,7 @@
   // projected xyz arrays), filled polygons and dots. paint() and toSVG() share it.
   function frame(geo, size) {
     const cam = camera(), { f, r, u } = cam;
-    const scale = S.trueScale ? geo.freq / 16 : 1;
+    const scale = S.trueScale ? (tst ? tst.F : geo.freq) / 16 : 1;   // with constant struts, tune breathes the size too
     const R = size / 2 * (S.zoom / 100) * scale, c = size / 2;
     const rIn = 1 - (depthNow() / 100) * geo.chord * Math.sqrt(2/3);
     const kind = S.animKind, active = anim.x < 1;
@@ -1042,11 +1160,13 @@
     const jst = kind === 'jitterbug' ? st : null, pst = kind === 'phases' ? st : null;
     const ust = kind === 'unfold' ? st : null, gst = kind === 'grow' ? st : null;
     const sst = kind === 'sweep' ? st : null, bst = kind === 'build' ? st : null;
+    const rst = kind === 'ripple' ? st : null, mst = kind === 'moire' ? st : null;
+    const lst = kind === 'slice' ? st : null, xst = kind === 'scatter' ? st : null, tst = kind === 'tune' ? st : null;
     const inflate = jst ? jst.inflate : ust ? ust.inflate : 1;
     const gridA = jst ? jst.gridA : pst ? pst.gridA : 1;
     const overlayA = (pst ? pst.gridA : 1) * (jst ? jst.inflate : 1) * (ust ? inflate * (1 - Math.max(ust.fold, ust.align)) : 1);
 
-    const projArr = (src, k, flatSrc, mix) => {
+    const projArr = (src, k, flatSrc, mix, rad) => {
       const o = new Float32Array(src.length), m = mix ?? inflate;
       for (let i = 0; i < src.length; i += 3) {
         let x = src[i], y = src[i+1], z = src[i+2];
@@ -1055,6 +1175,7 @@
           y = flatSrc[i+1] + (y - flatSrc[i+1]) * m;
           z = flatSrc[i+2] + (z - flatSrc[i+2]) * m;
         }
+        if (rad) { const q = rad(x, y, z); x *= q; y *= q; z *= q; }   // radial displacement (ripple)
         x *= k; y *= k; z *= k;
         o[i]   = c + (x*r[0] + y*r[1] + z*r[2]) * R;
         o[i+1] = c - (x*u[0] + y*u[1] + z*u[2]) * R;
@@ -1067,15 +1188,36 @@
     const polyline = n => { const E = []; for (let i = 0; i < n - 1; i++) E.push(i, i + 1); return Uint32Array.from(E); };
 
     const px = size / 1000 * S.weight;
+    const lw = px;   // every stroke is the same width, set by Line weight
     const layers = [], fills = [], dots = [];
     const line = S.line, acc = S.accent;
     const { outer: cOut, inner: cIn, web: cWeb } = layerColors();
     let po = null;
+    // draw-on: edge k shows from its first end to a fraction p of its length (p < 0: from its second end)
+    const pushDrawn = (id, E, A, B, color, prog, alpha = 1) => {
+      const full = [], PA = [], PB = [];
+      for (let e = 0, k = 0; e < E.length; e += 2, k++) {
+        let p = prog(k); const rev = p < 0; p = Math.abs(p);
+        if (p < 0.002) continue;
+        if (p > 0.998) { full.push(E[e], E[e+1]); continue; }
+        let a = E[e] * 3, b = E[e+1] * 3, P0 = A, P1 = B;
+        if (rev) { [a, b] = [b, a]; [P0, P1] = [B, A]; }
+        PA.push(P0[a], P0[a+1], P0[a+2]);
+        PB.push(P0[a] + (P1[b] - P0[a]) * p, P0[a+1] + (P1[b+1] - P0[a+1]) * p, P0[a+2] + (P1[b+2] - P0[a+2]) * p);
+      }
+      if (full.length) layers.push({ id, E: Uint32Array.from(full), A, B, w: lw, color, alpha });
+      if (PA.length) {
+        const n = PA.length / 3, I = new Uint32Array(2 * n);
+        for (let i = 0; i < n; i++) I[2*i] = I[2*i+1] = i;
+        layers.push({ id: id + '-drawing', E: I, A: Float32Array.from(PA), B: Float32Array.from(PB), w: lw, color, alpha });
+      }
+    };
+    const golden = k => (k * 0.6180339887) % 1;
 
     const unfolded = ust && (ust.fold > 0 || ust.align > 0);
     if (unfolded) {
       // ── the net: every face keeps its own copy of its nodes and moves rigidly ──
-      const T = faceTransforms(ust.fold), w = ust.align;
+      const T = faceTransforms(ust.fold, true), w = ust.align;
       // alignment: turn the root face toward the viewer, the strip to the right, centre and fit it
       const n0 = NET_INFO.n, d0 = NET_INFO.d, e0 = cross(n0, d0);
       const Q = [0, 1, 2].map(i => [0, 1, 2].map(j => r[i]*d0[j] + u[i]*e0[j] + f[i]*n0[j]));   // [r u f]·[d e n]ᵀ
@@ -1099,36 +1241,55 @@
         const k = Math.floor(t / geo.fpt);
         In.set(apply([geo.innerFlat[t*3] * rIn, geo.innerFlat[t*3+1] * rIn, geo.innerFlat[t*3+2] * rIn], k), t * 3);
       }
-      const PU = projArr(U, 1, null, 1), PI = projArr(In, 1, null, 1);
-      if (S.L_web)   layers.push({ id: 'web',   E: geo.faceWebE,   A: PI, B: PU, w: BASE.web * px,   color: cWeb, alpha: 1 });
-      if (S.L_inner) layers.push({ id: 'inner', E: geo.faceInnerE, A: PI, B: PI, w: BASE.inner * px, color: cIn, alpha: 1 });
-      if (S.L_outer) layers.push({ id: 'outer', E: geo.faceOuterE, A: PU, B: PU, w: BASE.outer * px, color: cOut, alpha: 1 });
+      const PU = projArr(U, 1, null, 1);   // the net shows the outer triangles only; the truss is folded away
+      // keep the whole net in frame while it rolls open, easing its centre to the middle of the board
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (let i = 0; i < PU.length; i += 3) { x0 = Math.min(x0, PU[i]); x1 = Math.max(x1, PU[i]); y0 = Math.min(y0, PU[i+1]); y1 = Math.max(y1, PU[i+1]); }
+      const fit = Math.min(1, 0.94 * size / Math.max(x1 - x0, y1 - y0)), wc = Math.max(ust.fold, w);
+      const mx = (x0 + x1) / 2 * wc + c * (1 - wc), my = (y0 + y1) / 2 * wc + c * (1 - wc);
+      for (let i = 0; i < PU.length; i += 3) { PU[i] = c + (PU[i] - mx) * fit; PU[i+1] = c + (PU[i+1] - my) * fit; }
+      if (S.L_outer) layers.push({ id: 'outer', E: geo.faceOuterE, A: PU, B: PU, w: lw, color: cOut, alpha: 1 });
       const FC = geo.faceCorners, outline = [];
       for (let k = 0; k < 20; k++) {
         const a = FC[k*3], b = FC[k*3+1], cc = FC[k*3+2];
         outline.push(a, b, b, cc, cc, a);
         fills.push({ pts: [a, b, cc].map(q => PU.subarray(q*3, q*3+3)), color: acc, alpha: 0.07 });
       }
-      layers.push({ id: 'net-faces', E: Uint32Array.from(outline), A: PU, B: PU, w: BASE.net * px, color: acc, alpha: 1 });
+      layers.push({ id: 'net-faces', E: Uint32Array.from(outline), A: PU, B: PU, w: lw, color: acc, alpha: 1 });
       return { layers, fills, dots, st, kind };
     }
 
     if (gst) {
-      // ── frequency growth: the finer grid starts on the coarser grid's chords and bulges out ──
-      const gf = build(gst.from), gg = build(gst.to), start = growStart(gf, gg);
-      const P = projArr(gg.outer, 1, start, gst.s), Pold = projArr(gf.outer, 1, null, 1);
-      layers.push({ id: 'grow-coarse', E: gf.outerE, A: Pold, B: Pold, w: BASE.outer * px, color: cOut, alpha: 1 - gst.s });
-      layers.push({ id: 'grow-fine', E: gg.outerE, A: P, B: P, w: BASE.outer * px, color: cOut, alpha: 0.25 + 0.75 * gst.s });
-      if (gst.trussA > 0) {
-        const pi = projArr(geo.innerDir, rIn, null, 1), poF = projArr(geo.outer, 1, null, 1);
-        if (S.L_web)   layers.push({ id: 'web',   E: geo.webE,   A: pi, B: poF, w: BASE.web * px,   color: cWeb, alpha: gst.trussA });
-        if (S.L_inner) layers.push({ id: 'inner', E: geo.innerE, A: pi, B: pi,  w: BASE.inner * px, color: cIn, alpha: gst.trussA });
+      // ── frequency growth: the finer grid starts on the coarser one's struts (so nothing crossfades), its new
+      //    struts are drawn in as a wave runs down from the crown, and behind the wave the nodes ease onto the sphere ──
+      const gf = build(gst.from), gg = build(gst.to), start = growStart(gf, gg), T = edgeTable(gg);
+      const Ax = AXES[S.axis], u = gst.u, ratio = gst.from / gst.to, o = gg.outer, n = o.length / 3;
+      const mixed = new Float32Array(o.length), hN = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const h = o[3*i]*Ax[0] + o[3*i+1]*Ax[1] + o[3*i+2]*Ax[2], s = ease(clamp01((u - 0.3 - 0.2 * (1 - h)) / 0.3));
+        hN[i] = h;
+        for (let d = 0; d < 3; d++) mixed[3*i+d] = start[3*i+d] + (o[3*i+d] - start[3*i+d]) * s;
+      }
+      const P = projArr(mixed, 1, null, 1), whole = v => Math.abs(v - Math.round(v)) < 1e-6;
+      pushDrawn('grow', gg.outerE, P, P, cOut, k => {
+        if (whole(T.line[k] * ratio)) return 1;   // lies along a coarser strut: already there
+        const h = (hN[gg.outerE[2*k]] + hN[gg.outerE[2*k+1]]) / 2, p = ease(clamp01((u - 0.2 * (1 - h)) / 0.3));
+        return T.rev[k] ? -p : p;
+      });
+      if (gst.truss > 0) {
+        const tr = gst.truss, pi = projArr(geo.innerDir, rIn, null, 1), poF = projArr(geo.outer, 1, null, 1);
+        const dI = t => 0.25 * (1 - (geo.innerDir[3*t]*Ax[0] + geo.innerDir[3*t+1]*Ax[1] + geo.innerDir[3*t+2]*Ax[2]));
+        if (S.L_web)   pushDrawn('web', geo.webE, pi, poF, cWeb, k => -ease(clamp01((tr - dI(geo.webE[2*k])) / 0.5)));
+        if (S.L_inner) pushDrawn('inner', geo.innerE, pi, pi, cIn, k => ease(clamp01((tr - 0.1 - dI(geo.innerE[2*k])) / 0.4)));
       }
       return { layers, fills, dots, st, kind };
     }
 
-    po = projArr(geo.outer, 1, geo.outerFlat);
-    const pi = projArr(geo.innerDir, rIn, geo.innerFlat);
+    // ripple: a radial wave runs from the crown to the base, scaled by an envelope that starts and ends at rest
+    const rad = rst ? (x, y, z) => { const A = AXES[S.axis], c0 = Math.max(-1, Math.min(1, x*A[0] + y*A[1] + z*A[2]));
+      return 1 + rst.amp * Math.sin(5 * Math.acos(c0) - 2 * Math.PI * rst.phase); } : null;
+    po = projArr(geo.outer, 1, geo.outerFlat, undefined, rad);
+    const pi = projArr(geo.innerDir, rIn, geo.innerFlat, undefined, rad);
 
     // build from the crown: struts appear in rings down the spin axis, the truss trailing behind
     let alphaOuter = null, alphaWeb = null, alphaInner = null;
@@ -1140,15 +1301,158 @@
       alphaOuter = k => vis(Math.max(ho[geo.outerE[k*2]], ho[geo.outerE[k*2+1]]), 0);
       alphaWeb   = k => vis(Math.max(hi[geo.webE[k*2]], ho[geo.webE[k*2+1]]), 0.3);
       alphaInner = k => vis(Math.max(hi[geo.innerE[k*2]], hi[geo.innerE[k*2+1]]), 0.3);
+    } else if (lst) {
+      // scan: everything dims, and a band of full-strength struts travels down the spin axis
+      const A = AXES[S.axis], h = arr => { const H = new Float32Array(arr.length / 3);
+        for (let i = 0; i < H.length; i++) H[i] = arr[i*3]*A[0] + arr[i*3+1]*A[1] + arr[i*3+2]*A[2]; return H; };
+      const ho = h(geo.outer), hi = h(geo.innerDir);
+      const vis = hv => Math.max(lst.ghost, 1 - clamp01((Math.abs(hv - lst.H) - 0.07) / 0.06));
+      alphaOuter = k => vis((ho[geo.outerE[k*2]] + ho[geo.outerE[k*2+1]]) / 2);
+      alphaWeb   = k => vis((hi[geo.webE[k*2]] + ho[geo.webE[k*2+1]]) / 2);
+      alphaInner = k => vis((hi[geo.innerE[k*2]] + hi[geo.innerE[k*2+1]]) / 2);
     }
     const typed = S.strutColor ? strutClasses(geo) : null;
-    if (S.L_web)   pushGrouped(layers, { id: 'web',   E: geo.webE,   A: pi, B: po, w: BASE.web * px,   color: cWeb, alpha: gridA }, null, alphaWeb);
-    if (S.L_inner) pushGrouped(layers, { id: 'inner', E: geo.innerE, A: pi, B: pi, w: BASE.inner * px, color: cIn, alpha: gridA }, null, alphaInner);
-    if (S.L_outer) pushGrouped(layers, { id: 'outer', E: geo.outerE, A: po, B: po, w: BASE.outer * px * (typed ? 1.5 : 1), color: cOut, alpha: gridA },
-                               typed ? k => typed.classes[typed.cls[k]].color : null, alphaOuter);
+    if (xst) {
+      // scatter: each outer triangle and its pyramid of web struts lifts off along its own normal, crown first
+      const Ax = AXES[S.axis], nT = geo.nTris, W = geo.webE, D = geo.innerDir;
+      const C = new Float32Array(nT * 9), In = new Float32Array(nT * 3), lift = new Float32Array(nT);
+      // lift in proportion to the cells' size, so coarse and fine spheres scatter alike; the shell eases inward
+      // as it scatters, so the cloud stays inside the sphere's outline
+      const reach = Math.min(0.22, 0.04 + 0.9 * geo.chord), k0 = 1 / (1 + reach * Math.sin(Math.PI * xst.x) ** 2);
+      for (let t = 0; t < nT; t++) {
+        const nx = D[3*t], ny = D[3*t+1], nz = D[3*t+2], h = nx*Ax[0] + ny*Ax[1] + nz*Ax[2];
+        const l = Math.sin(Math.PI * clamp01((xst.x - 0.2 * (1 - h)) / 0.6)) ** 2, off = reach * l * (0.55 + 0.45 * golden(t));
+        lift[t] = l;
+        for (let j = 0; j < 3; j++) { const v = W[6*t + 2*j + 1] * 3;
+          C[9*t+3*j] = (geo.outer[v] + nx*off) * k0; C[9*t+3*j+1] = (geo.outer[v+1] + ny*off) * k0; C[9*t+3*j+2] = (geo.outer[v+2] + nz*off) * k0; }
+        In[3*t] = nx * (rIn + off) * k0; In[3*t+1] = ny * (rIn + off) * k0; In[3*t+2] = nz * (rIn + off) * k0;
+      }
+      if (!geo.cellE) {
+        geo.cellE = new Uint32Array(nT * 6); geo.cellW = new Uint32Array(nT * 6);
+        for (let t = 0; t < nT; t++) for (let j = 0; j < 3; j++) {
+          geo.cellE[6*t+2*j] = 3*t + j; geo.cellE[6*t+2*j+1] = 3*t + (j + 1) % 3;
+          geo.cellW[6*t+2*j] = t; geo.cellW[6*t+2*j+1] = 3*t + j;
+        }
+      }
+      const PC = projArr(C, 1, null, 1), PIn = projArr(In, 1, null, 1);
+      if (S.L_web)   layers.push({ id: 'web', E: geo.cellW, A: PIn, B: PC, w: lw, color: cWeb, alpha: 1 });
+      if (S.L_inner) pushGrouped(layers, { id: 'inner', E: geo.innerE, A: PIn, B: PIn, w: lw, color: cIn, alpha: 1 }, null,
+                                 k => 1 - Math.max(lift[geo.innerE[2*k]], lift[geo.innerE[2*k+1]]));
+      if (S.L_outer) layers.push({ id: 'outer', E: geo.cellE, A: PC, B: PC, w: lw, color: cOut, alpha: 1 });
+    } else if (tst) {
+      // tune: on each face, lines sit at i/F across in each of the three directions, so new lines are born at the
+      // corners (the five-fold nodes) and slide outward. Each line is drawn as chords between its crossings; at a
+      // whole F those crossings are the Class I nodes, so this is exactly the grid the studio draws
+      const F = tst.F, pts = [], E = [], edgesDone = new Set();
+      const add = p => { const l = Math.hypot(p[0], p[1], p[2]); pts.push(p[0] / l, p[1] / l, p[2] / l); return pts.length / 3 - 1; };
+      for (const ids of FACES) for (let k = 0; k < 3; k++) {
+        const j = (k + 1) % 3, l = (k + 2) % 3, Vk = V[ids[k]], Vj = V[ids[j]], Vl = V[ids[l]];
+        const ek = Math.min(ids[j], ids[l]) * 12 + Math.max(ids[j], ids[l]);   // the edge opposite corner k
+        for (let i = edgesDone.has(ek) ? 1 : 0; i < F - 1e-6; i++) {
+          if (i === 0) edgesDone.add(ek);
+          const t = i / F, cuts = [0, 1 - t];
+          for (let m = 1; m / F < 1 - t - 1e-9; m++) cuts.push(m / F, 1 - t - m / F);
+          cuts.sort((a, b) => a - b);
+          let last = -1, prev = -1;
+          for (const bj of cuts) {
+            if (last >= 0 && bj - prev < 1e-7) continue;
+            const bl = 1 - t - bj, id = add([0, 1, 2].map(d => Vk[d] * t + Vj[d] * bj + Vl[d] * bl));
+            if (last >= 0) E.push(last, id);
+            last = id; prev = bj;
+          }
+        }
+      }
+      const P = projArr(Float32Array.from(pts), 1, null, 1);
+      // the truss: the three families of lines cut each face into cells, each (i0, i1, i2) with i_k/F ≤ b_k ≤ (i_k + 1)/F,
+      // non-empty for F − 3 < Σi < F: small triangles growing out of the nodes (g = F − Σi below 1), hexagons (g 1 to 2)
+      // and triangles shrinking back into nodes (g above 2). Each cell gets an inner node under its centre, as deep as
+      // the cell is large, web struts to its corners and inner struts to the cells beside it. At a whole F the cells are
+      // the Class I triangles and every one is full size, so the truss is the studio's own
+      const fl = Math.floor(F), dl = F - fl;
+      const chordF = build(Math.max(1, fl)).chord * (1 - dl) + build(Math.max(1, Math.ceil(F))).chord * dl;
+      const depth = (depthNow() / 100) * Math.sqrt(2/3) * chordF;
+      const inn = [], cor = [], wE = [], iE = [], across = new Map();
+      const unit = (q, r, out) => { const l = Math.hypot(q[0], q[1], q[2]); out.push(q[0] / l * r, q[1] / l * r, q[2] / l * r); return out.length / 3 - 1; };
+      for (const ids of FACES) {
+        const Vf = ids.map(i => V[i]), here = new Map(), n = fl + 1;
+        const at3 = b => [0, 1, 2].map(d => Vf[0][d] * b[0] + Vf[1][d] * b[1] + Vf[2][d] * b[2]);
+        for (let i0 = 0; i0 <= n; i0++) for (let i1 = 0; i0 + i1 <= n; i1++) for (let i2 = 0; i0 + i1 + i2 <= n; i2++) {
+          const g = F - (i0 + i1 + i2);
+          if (!(g > 1e-9 && g < 3 - 1e-9)) continue;
+          const lo = [i0 / F, i1 / F, i2 / F], hi = [(i0 + 1) / F, (i1 + 1) / F, (i2 + 1) / F], vs = [];
+          for (let k = 0; k < 3; k++) {                     // corners: two coordinates on a bound, the third within its own
+            const a = (k + 1) % 3, c = (k + 2) % 3;
+            for (const va of [lo[a], hi[a]]) for (const vc of [lo[c], hi[c]]) {
+              const vk = 1 - va - vc;
+              if (vk < lo[k] - 1e-9 || vk > hi[k] + 1e-9) continue;
+              const b = [0, 0, 0]; b[a] = va; b[c] = vc; b[k] = vk;
+              if (!vs.some(q => Math.abs(q[0] - b[0]) + Math.abs(q[1] - b[1]) < 1e-9)) vs.push(b);
+            }
+          }
+          if (vs.length < 3) continue;
+          const size = g < 1 ? g : g > 2 ? 3 - g : 1;
+          const id = unit(at3([0, 1, 2].map(d => vs.reduce((t, q) => t + q[d], 0) / vs.length)), 1 - depth * size, inn);
+          here.set(i0 + ',' + i1 + ',' + i2, id);
+          for (const q of vs) wE.push(id, unit(at3(q), 1, cor));
+          // a cell on the face's edge meets one on the next face along the same segment
+          [i0, i1, i2].forEach((ik, k) => {
+            if (ik) return;
+            const on = vs.filter(q => q[k] < 1e-9);
+            if (on.length !== 2) return;
+            const key = at3([0, 1, 2].map(d => (on[0][d] + on[1][d]) / 2)).map(v => Math.round(v * 1e5)).join(',');
+            const other = across.get(key);
+            if (other === undefined) across.set(key, id); else iE.push(other, id);
+          });
+        }
+        for (const [key, id] of here) {                     // neighbours differ by one in one index
+          const t = key.split(',').map(Number);
+          for (let k = 0; k < 3; k++) { t[k]++; const nb = here.get(t.join(',')); t[k]--; if (nb !== undefined) iE.push(id, nb); }
+        }
+      }
+      const PIn = projArr(Float32Array.from(inn), 1, null, 1), PCo = projArr(Float32Array.from(cor), 1, null, 1);
+      if (S.L_web)   layers.push({ id: 'web',   E: Uint32Array.from(wE), A: PIn, B: PCo, w: lw, color: cWeb, alpha: 1 });
+      if (S.L_inner) layers.push({ id: 'inner', E: Uint32Array.from(iE), A: PIn, B: PIn, w: lw, color: cIn,  alpha: 1 });
+      if (S.L_outer) layers.push({ id: 'outer', E: Uint32Array.from(E), A: P, B: P, w: lw, color: cOut, alpha: 1 });
+    } else if (jst) {
+      // jitterbug: the subdivision is ruled across each flat face, one direction at a time, then the truss drawn in
+      const T = edgeTable(geo), f = geo.freq, sb = jst.sub, tr = jst.truss;
+      if (S.L_outer) pushDrawn('outer', geo.outerE, po, po, cOut, k => {
+        const d = T.dir[k], l = T.line[k];
+        if ((d < 2 && l === 0) || (d === 2 && l === f)) return sb > 0 ? 1 : 0;   // the icosahedron's own edges
+        const ud = clamp01((sb - d * 0.22) / 0.56), lp = ease(clamp01((ud - 0.3 * golden(l)) / 0.7));
+        const p = clamp01(lp * T.len[k] - T.step[k]);
+        return T.rev[k] ? -p : p;
+      });
+      if (S.L_web)   pushDrawn('web', geo.webE, pi, po, cWeb, k => -ease(clamp01((tr - 0.5 * golden(geo.webE[2*k])) / 0.5)));
+      if (S.L_inner) pushDrawn('inner', geo.innerE, pi, pi, cIn, k => ease(clamp01((tr - 0.3 - 0.4 * golden(k)) / 0.3)));
+    } else {
+      const trussA = gridA * (ust ? ust.trussA : 1);
+      if (S.L_web)   pushGrouped(layers, { id: 'web',   E: geo.webE,   A: pi, B: po, w: lw,   color: cWeb, alpha: trussA }, null, alphaWeb);
+      if (S.L_inner) pushGrouped(layers, { id: 'inner', E: geo.innerE, A: pi, B: pi, w: lw, color: cIn, alpha: trussA }, null, alphaInner);
+      if (S.L_outer) pushGrouped(layers, { id: 'outer', E: geo.outerE, A: po, B: po, w: lw, color: cOut, alpha: gridA },
+                                 typed ? k => typed.classes[typed.cls[k]].color : null, alphaOuter);
+    }
+    if (mst && mst.a > 0.002) {
+      // moiré: a second copy of the shell, turned about the line of sight, crosses the first
+      const an = mst.turn * Math.PI / 180, cs = Math.cos(an), sn = Math.sin(an);
+      const turn = P => { const o = new Float32Array(P.length);
+        for (let i = 0; i < P.length; i += 3) { const dx = P[i] - c, dy = P[i+1] - c;
+          o[i] = c + dx*cs - dy*sn; o[i+1] = c + dx*sn + dy*cs; o[i+2] = P[i+2]; } return o; };
+      const po2 = turn(po), pi2 = turn(pi);
+      if (S.L_web)   layers.push({ id: 'moire-web',   E: geo.webE,   A: pi2, B: po2, w: lw, color: cWeb, alpha: mst.a });
+      if (S.L_inner) layers.push({ id: 'moire-inner', E: geo.innerE, A: pi2, B: pi2, w: lw, color: cIn,  alpha: mst.a });
+      if (S.L_outer) layers.push({ id: 'moire-outer', E: geo.outerE, A: po2, B: po2, w: lw, color: cOut, alpha: mst.a });
+    }
+    if (lst && Math.abs(lst.H) < 1) {
+      // the scanning plane, as a ring of latitude in the highlight colour
+      const A = AXES[S.axis], rr = Math.sqrt(1 - lst.H ** 2), e1 = norm(cross(A, Math.abs(A[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0])), e2 = cross(A, e1), pts = [];
+      for (let i = 0; i <= 144; i++) { const t = i / 144 * 2 * Math.PI; pts.push([0, 1, 2].map(d => A[d] * lst.H + rr * (Math.cos(t) * e1[d] + Math.sin(t) * e2[d]))); }
+      const Q = projPts(pts);
+      layers.push({ id: 'scan', E: polyline(pts.length), A: Q, B: Q, w: lw, color: acc, alpha: (1 - lst.ghost) / 0.9 });
+    }
 
     const netA = jst ? jst.netA : (S.L_net ? overlayA : 0);
-    if (netA > 0) layers.push({ id: 'net', E: geo.netE, A: po, B: po, w: BASE.net * px, color: acc, alpha: netA });
+    if (netA > 0) layers.push({ id: 'net', E: geo.netE, A: po, B: po, w: lw, color: acc, alpha: netA });
 
     // ── overlays on the sphere ──
     if (S.L_lcd && overlayA > 0) {
@@ -1164,7 +1468,7 @@
       const P = POLY[S.poly];
       P.arcs.forEach((pts, i) => {
         const Q = projPts(pts);
-        layers.push({ id: `poly-${S.poly}-${i + 1}`, E: polyline(pts.length), A: Q, B: Q, w: BASE.poly * px, color: acc, alpha: overlayA });
+        layers.push({ id: `poly-${S.poly}-${i + 1}`, E: polyline(pts.length), A: Q, B: Q, w: lw, color: acc, alpha: overlayA });
       });
       const Qv = projPts(P.verts);
       dots.push({ id: `poly-${S.poly}-vertices`, pts: P.verts.map((_, i) => Qv.subarray(i*3, i*3+3)), r: Math.max(2, 3.4 * px), color: acc, alpha: overlayA });
@@ -1183,7 +1487,7 @@
         if (frac >= 1) pts.push(g.pts[0]);
         const Q = projPts(pts), emph = S.seven && g.seven;
         layers.push({ id: `gc${g.set}-${g.i + 1}`, E: polyline(pts.length), A: Q, B: Q,
-                      w: (emph ? 2 : GC_W[g.set]) * BASE.circle * px, color: acc,
+                      w: lw, color: acc,
                       alpha: (sst ? fadeTemp : overlayA) * (S.seven && !g.seven ? 0.4 : 1) });
       });
     }
@@ -1192,20 +1496,20 @@
     const veA = jst ? jst.veA : (S.L_ve ? overlayA : 0);
     if (veA > 0) VE_CIRCLES.forEach((pts, ci) => {
       const Q = projPts(pts);
-      layers.push({ id: 've-circle-' + (ci + 1), E: ring(pts.length), A: Q, B: Q, w: BASE.circle * px, color: acc, alpha: veA });
+      layers.push({ id: 've-circle-' + (ci + 1), E: ring(pts.length), A: Q, B: Q, w: lw, color: acc, alpha: veA });
     });
 
     // the jitterbug (VE to sphere)
     if (jst && jst.polyA > 0) {
       const P = projPts(jbVerts(jst.t));
       for (const [a, b, cc] of JB_TRIS)
-        fills.push({ pts: [a, b, cc].map(q => P.subarray(q*3, q*3+3)), color: acc, alpha: 0.16 * jst.faceA, id: 'jitterbug-face' });
-      layers.push({ id: 'jitterbug', E: Uint32Array.from(JB_EDGES.flat()), A: P, B: P, w: BASE.net * px, color: acc, alpha: jst.polyA });
-      if (jst.diagA > 0) layers.push({ id: 'jitterbug-diagonals', E: Uint32Array.from(JB_DIAG.flat()), A: P, B: P,
-        w: BASE.net * px, color: acc, alpha: jst.diagA, dash: jst.diagA < 1 ? [3 * px, 3 * px] : null });
+        fills.push({ pts: [a, b, cc].map(q => P.subarray(q*3, q*3+3)), color: acc, alpha: 0.12 * jst.faceA, id: 'jitterbug-face' });
+      layers.push({ id: 'jitterbug', E: Uint32Array.from(JB_EDGES.flat()), A: P, B: P, w: lw, color: acc, alpha: jst.polyA });
+      if (jst.diag > 0) pushDrawn('jitterbug-diagonals', Uint32Array.from(JB_DIAG.flat()), P, P, acc,
+        k => ease(clamp01(jst.diag * 1.4 - k * 0.08)));
       if (jst.circA > 0) VE_CIRCLES.forEach((pts, ci) => {
         const Q = projPts(pts, jbRadius(1));
-        layers.push({ id: 'jb-circle-' + (ci + 1), E: ring(pts.length), A: Q, B: Q, w: BASE.circle * px, color: acc, alpha: jst.circA });
+        layers.push({ id: 'jb-circle-' + (ci + 1), E: ring(pts.length), A: Q, B: Q, w: lw, color: acc, alpha: jst.circA });
       });
     }
 
@@ -1215,17 +1519,17 @@
       const P = projPts(jbVerts(pst.t));
       for (const [p, q, rr] of JB_TRIS)
         fills.push({ pts: [p, q, rr].map(k => P.subarray(k*3, k*3+3)), color: acc, alpha: 0.16 * a, id: 'phase-face' });
-      layers.push({ id: 'phase-edges', E: Uint32Array.from(JB_EDGES.flat()), A: P, B: P, w: BASE.net * px, color: acc, alpha: a });
-      layers.push({ id: 'phase-diagonals', E: Uint32Array.from(JB_DIAG.flat()), A: P, B: P, w: BASE.net * 0.6 * px, color: acc, alpha: a * 0.6 });
+      layers.push({ id: 'phase-edges', E: Uint32Array.from(JB_EDGES.flat()), A: P, B: P, w: lw, color: acc, alpha: a });
+      layers.push({ id: 'phase-diagonals', E: Uint32Array.from(JB_DIAG.flat()), A: P, B: P, w: lw, color: acc, alpha: a * 0.6 });
       [...VE_CIRCLES, ...SQ_CIRCLES].forEach((pts, ci) => {
         const Q = projPts(pts, rad);
-        layers.push({ id: 'seven-axes-' + (ci + 1), E: ring(pts.length), A: Q, B: Q, w: BASE.circle * px, color: line, alpha: a * 0.7 });
+        layers.push({ id: 'seven-axes-' + (ci + 1), E: ring(pts.length), A: Q, B: Q, w: lw, color: line, alpha: a * 0.7 });
       });
       const N = 48, trails = Array.from({ length: 12 }, () => []);
       for (let s = 0; s <= N; s++) jbVerts(1 / (1 - pst.vmax * s / N)).forEach((p, i) => trails[i].push(p));
       trails.forEach((pts, i) => {
         const Q = projPts(pts);
-        layers.push({ id: 'trail-' + (i + 1), E: polyline(pts.length), A: Q, B: Q, w: BASE.circle * 0.8 * px, color: acc, alpha: a * 0.55 });
+        layers.push({ id: 'trail-' + (i + 1), E: polyline(pts.length), A: Q, B: Q, w: lw, color: acc, alpha: a * 0.55 });
       });
       dots.push({ id: 'phase-vertices', pts: P.length ? Array.from({ length: 12 }, (_, i) => P.subarray(i*3, i*3+3)) : [], r: Math.max(2.4, 3.8 * px), color: acc, alpha: a });
     }
@@ -1242,8 +1546,9 @@
   function paint(ctx, size, geo, withBg) {
     const fr = frame(geo, size);
     ctx.clearRect(0, 0, size, size);
-    if (withBg) { ctx.fillStyle = BG_COLORS[S.bg]; ctx.fillRect(0, 0, size, size); }
+    if (withBg) { ctx.fillStyle = S.bg; ctx.fillRect(0, 0, size, size); }
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.globalCompositeOperation = exporting ? S.blend : (previewBlend || S.blend);   // each layer blends with what is drawn
     for (const front of sides()) {
       const sideA = front ? 1 : S.backOp / 100;
       for (const F of fr.fills) {
@@ -1272,21 +1577,47 @@
         ctx.fill();
       }
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     return fr;
+  }
+
+  // grain: one fixed noise tile, dark and light specks so it shows on any background
+  let grainTile = null;
+  function addGrain(ctx, w, h, unit, solid) {
+    if (!S.grain) return;
+    if (!grainTile) {
+      const N = 512, c = document.createElement('canvas'); c.width = c.height = N;
+      const g = c.getContext('2d'), img = g.createImageData(N, N), d = img.data;
+      let x = 0x9e3779b9;   // fixed seed: the same grain every time, in the view and in exports
+      const rnd = () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296; };
+      for (let i = 0; i < d.length; i += 4) {
+        const v = rnd() * 2 - 1;
+        d[i] = d[i + 1] = d[i + 2] = v < 0 ? 0 : 255; d[i + 3] = Math.round(Math.abs(v) ** 1.5 * 255);
+      }
+      g.putImageData(img, 0, 0); grainTile = c;
+    }
+    const pat = ctx.createPattern(grainTile, 'repeat');
+    pat.setTransform(new DOMMatrix().scale(unit));   // one speck per unit: grain scales with the image
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = S.grain / 100;
+    ctx.globalCompositeOperation = solid ? 'source-over' : 'source-atop';   // with no background, only on the lines
+    ctx.fillStyle = pat; ctx.fillRect(0, 0, w, h);
+    ctx.restore();
   }
 
   function toSVG(geo, size) {
     const fr = frame(geo, size), n = v => v.toFixed(1), out = [];
     out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`);
     out.push(`<title>Geodesic sphere, ${geo.freq}v Class I, double layer</title>`);
-    if (S.exportBg && S.bg !== 'clear') out.push(`<rect width="100%" height="100%" fill="${BG_COLORS[S.bg]}"/>`);
+    if (S.exportBg) out.push(`<rect width="100%" height="100%" fill="${S.bg}"/>`);
     out.push('<g fill="none" stroke-linecap="round" stroke-linejoin="round">');
+    const mix = S.blend === 'source-over' ? '' : ` style="mix-blend-mode:${S.blend === 'lighter' ? 'plus-lighter' : S.blend}"`;
     for (const front of sides()) {
       const side = front ? 'front' : 'back';
-      out.push(`<g id="${side}"${front ? '' : ` opacity="${S.backOp / 100}"`}>`);
+      out.push(`<g id="${side}"${front ? '' : ` opacity="${S.backOp / 100}"${mix}`}>`);
       const fills = fr.fills.filter(F => F.alpha > 0 && isFront(polyZ(F)) === front);
-      if (fills.length) out.push(`<g id="${side}-fills" stroke="none">` + fills.map(F =>
+      if (fills.length) out.push(`<g id="${side}-fills" stroke="none"${mix}>` + fills.map(F =>
         `<polygon fill="${F.color}" fill-opacity="${F.alpha.toFixed(3)}" points="${F.pts.map(p => n(p[0]) + ',' + n(p[1])).join(' ')}"/>`).join('') + '</g>');
       for (const L of fr.layers) {
         if (L.alpha <= 0.001) continue;
@@ -1299,12 +1630,12 @@
         if (!d) continue;
         const extra = (L.alpha < 1 ? ` stroke-opacity="${L.alpha.toFixed(3)}"` : '') +
                       (L.dash ? ` stroke-dasharray="${L.dash.map(v => v.toFixed(2)).join(' ')}"` : '');
-        out.push(`<path id="${side}-${L.id}" stroke="${L.color}" stroke-width="${L.w.toFixed(3)}"${extra} d="${d}"/>`);
+        out.push(`<path id="${side}-${L.id}" stroke="${L.color}" stroke-width="${L.w.toFixed(3)}"${extra}${mix} d="${d}"/>`);
       }
       for (const D of fr.dots) {
         const pts = D.pts.filter(p => isFront(p[2]) === front);
         if (!pts.length || D.alpha <= 0.001) continue;
-        out.push(`<g id="${side}-${D.id}" fill="${D.color}"${D.alpha < 1 ? ` fill-opacity="${D.alpha.toFixed(3)}"` : ''}>` +
+        out.push(`<g id="${side}-${D.id}" fill="${D.color}"${D.alpha < 1 ? ` fill-opacity="${D.alpha.toFixed(3)}"` : ''}${mix}>` +
           pts.map(p => `<circle cx="${n(p[0])}" cy="${n(p[1])}" r="${D.r.toFixed(2)}"/>`).join('') + '</g>');
       }
       out.push('</g>');
@@ -1313,7 +1644,6 @@
     return out.join('\n');
   }
 
-  const BG_COLORS = { paper: '#f6f3ee', ink: '#12110f', clear: 'transparent' };
 
   // ───────────────────────── stage ─────────────────────────
   const $ = id => document.getElementById(id);
@@ -1331,7 +1661,8 @@
   function draw() {
     const geo = build(S.freq);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const fr = paint(ctx, boardSize, geo, false);
+    const fr = paint(ctx, boardSize, geo, true);   // the background too, so blend modes act on it
+    addGrain(ctx, boardSize, boardSize, boardSize / 1000, true);
     const label = animLabel(fr.kind, fr.st, S.freq);
     if (label !== lastLabel) {
       lastLabel = label;
@@ -1428,8 +1759,11 @@
     $('animVal').textContent = st ? `${Math.round(anim.x * 100)}% · ${A.dur().toFixed(0)} s` : `complete · ${A.dur().toFixed(0)} s`;
     $('animRun').textContent = anim.running ? 'Pause' : (anim.x < 1 ? 'Resume' : 'Run');
     const names = A.stages(), host = $('stages');
-    if (host.dataset.kind !== S.animKind + names.length) {
-      host.dataset.kind = S.animKind + names.length;
+    $('tuneRow').hidden = S.animKind !== 'tune';
+    $('tuneSub').textContent = `${S.tuneLo}v ↔ ${S.tuneHi}v`;
+    $('tuneLo').value = S.tuneLo; $('tuneHi').value = S.tuneHi;
+    if (host.dataset.kind !== S.animKind + names.join('|')) {
+      host.dataset.kind = S.animKind + names.join('|');
       host.style.gridTemplateColumns = `repeat(${names.length}, 1fr)`;
       host.innerHTML = names.map(n => `<span>${n}</span>`).join('');
     }
@@ -1458,10 +1792,9 @@
     $('tilt').value = S.tilt; $('tiltVal').textContent = `${S.tilt}°`;
     $('wobble').value = S.wobble; $('wobbleVal').textContent = S.wobble ? `±${S.wobble}°` : 'off';
     $('zoom').value = S.zoom; $('zoomVal').textContent = `${S.zoom}%`;
-    $('exportBg').checked = S.exportBg; $('exportBg').disabled = S.bg === 'clear';
+    $('exportBg').checked = S.exportBg;
     document.querySelector(`input[name="axis"][value="${S.axis}"]`).checked = true;
-    document.querySelector(`input[name="bg"][value="${S.bg}"]`).checked = true;
-    board.dataset.bg = S.bg;
+    board.style.background = S.bg; board.dataset.tone = luma(hexRgb(S.bg)) < 128 ? 'dark' : 'light';
     $('play').setAttribute('aria-pressed', S.playing);
     $('play').innerHTML = S.playing
       ? '<svg viewBox="0 0 12 12"><rect x="2" y="1" width="3" height="10"/><rect x="7" y="1" width="3" height="10"/></svg>'
@@ -1471,33 +1804,57 @@
     $('reverseLbl').textContent = S.dir > 0 ? 'reverse' : 'forward';
     $('reverse').querySelector('svg').style.transform = S.dir > 0 ? '' : 'scaleX(-1)';
     $('dial').querySelectorAll('span').forEach(t => t.classList.toggle('on', +t.dataset.n === S.freq));
-    for (const [id, key] of [['sw_line', 'line'], ['sw_accent', 'accent']])
-      $(id).querySelectorAll('.swatch').forEach(b => b.setAttribute('aria-pressed', b.dataset.c.toLowerCase() === S[key].toLowerCase()));
-    $('pick_line').value = S.line; $('pick_accent').value = S.accent;
+    for (const key of ['line', 'accent', 'bg']) {
+      const v = S[key].toLowerCase(), which = v === WHITE ? 'white' : v === BLACK ? 'black' : 'custom';
+      $('sw_' + key).querySelectorAll('.ckey').forEach(k => {
+        k.classList.toggle('on', k.dataset.which === which);
+        if (k.tagName === 'BUTTON') k.setAttribute('aria-pressed', k.dataset.which === which);
+      });
+      $('cdot_' + key).style.background = S.custom[key]; $('pick_' + key).value = S.custom[key];
+    }
+    $('blends').querySelectorAll('.bkey').forEach(b => { b.classList.toggle('on', b.dataset.mode === S.blend); b.setAttribute('aria-checked', b.dataset.mode === S.blend); });
+    $('blendVal').textContent = previewBlend && previewBlend !== S.blend ? `${BLEND_NAME[previewBlend]} · preview` : BLEND_NAME[S.blend];
+    $('grain').value = S.grain; $('grainVal').textContent = S.grain ? `${S.grain}%` : 'off';
     const lc = layerColors();
-    for (const [id, key, v] of [['c_outer', 'cOuter', lc.outer], ['c_inner', 'cInner', lc.inner], ['c_web', 'cWeb', lc.web]]) {
+    for (const [id, key, v] of [['col_outer', 'cOuter', lc.outer], ['col_inner', 'cInner', lc.inner], ['col_web', 'cWeb', lc.web]]) {
       $(id).value = v; $(id + '_chip').style.background = v; $(id + '_v').textContent = S[key] ? v.toUpperCase() : 'as struts';
     }
     $('matchStruts').disabled = !(S.cOuter || S.cInner || S.cWeb);
     readout(); legend(); syncAnim(); syncClip();
   }
 
-  function swatches(id, list, key) {
-    const host = $(id);
-    for (const [name, c] of list) {
+  // each colour role: White, Black, or a custom colour (remembered, so Custom brings it back)
+  function swatches(key, label) {
+    const host = $('sw_' + key);
+    for (const [which, c, name] of [['white', WHITE, 'White'], ['black', BLACK, 'Black']]) {
       const b = document.createElement('button');
-      b.className = 'swatch'; b.style.background = c; b.dataset.c = c; b.title = name; b.setAttribute('aria-label', name);
-      b.addEventListener('click', () => { if (key === 'line') S.cOuter = S.cInner = S.cWeb = null; set(key, c); });
+      b.type = 'button'; b.className = 'ckey'; b.dataset.which = which; b.setAttribute('aria-label', `${label}: ${name}`);
+      b.innerHTML = `<span class="dot" style="background:${c}"></span>${name}`;
+      b.addEventListener('click', () => pickColor(key, c));
       host.append(b);
     }
-    const pick = document.createElement('input');
-    pick.type = 'color'; pick.id = 'pick_' + key; pick.title = 'Custom color'; pick.setAttribute('aria-label', 'Custom color');
-    pick.addEventListener('input', () => { if (key === 'line') S.cOuter = S.cInner = S.cWeb = null; set(key, pick.value); });
-    host.append(pick);
+    const k = document.createElement('label');
+    k.className = 'ckey'; k.dataset.which = 'custom';
+    k.innerHTML = `<span class="dot" id="cdot_${key}"></span>Custom<input type="color" id="pick_${key}" aria-label="${label}: custom colour">`;
+    const pick = k.querySelector('input');
+    pick.addEventListener('click', () => pickColor(key, S.custom[key]));   // switch to the remembered colour; the picker opens to change it
+    pick.addEventListener('input', () => { S.custom[key] = pick.value; pickColor(key, pick.value); });
+    host.append(k);
   }
-  swatches('sw_line', LINE_SW, 'line');
-  swatches('sw_accent', ACC_SW, 'accent');
-  for (const [id, key] of [['c_outer', 'cOuter'], ['c_inner', 'cInner'], ['c_web', 'cWeb']])
+  function pickColor(key, c) {
+    if (key === 'line') S.cOuter = S.cInner = S.cWeb = null;
+    if (key === 'bg') {
+      // keep the default lines visible against the new background
+      const dark = luma(hexRgb(c)) < 128, l = S.line.toLowerCase();
+      if (dark && (l === BLACK || l === '#1d1b18')) S.line = WHITE;
+      if (!dark && l === WHITE) S.line = BLACK;
+    }
+    set(key, c);
+  }
+  swatches('line', 'Struts');
+  swatches('accent', 'Highlights');
+  swatches('bg', 'Background');
+  for (const [id, key] of [['col_outer', 'cOuter'], ['col_inner', 'cInner'], ['col_web', 'cWeb']])
     $(id).addEventListener('input', e => set(key, e.target.value));
   $('matchStruts').addEventListener('click', () => { S.cOuter = S.cInner = S.cWeb = null; sync(); persist(); });
 
@@ -1505,7 +1862,30 @@
 
   const num = (id, key, f = Number) => $(id).addEventListener('input', e => set(key, f(e.target.value)));
   num('freq', 'freq', v => parseInt(v, 10));
-  num('depth', 'depth'); num('weight', 'weight'); num('domeR', 'domeR'); num('tolMM', 'tolMM');
+  num('depth', 'depth'); num('weight', 'weight'); num('grain', 'grain');
+  // blend keys: hovering or focusing one previews it; a click keeps it; leaving the keys goes back to the kept mode
+  for (const [group, modes] of BLENDS) {
+    const row = document.createElement('div'); row.className = 'blend-row';
+    row.innerHTML = `<span>${group}</span>`;
+    for (const [mode, name] of modes) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'bkey'; b.dataset.mode = mode; b.textContent = name; b.setAttribute('role', 'radio');
+      const show = () => { previewBlend = mode; sync(); };
+      b.addEventListener('pointerenter', show); b.addEventListener('focus', show);
+      b.addEventListener('click', () => { previewBlend = null; set('blend', mode); });
+      row.append(b);
+    }
+    $('blends').append(row);
+  }
+  const endPreview = () => { if (previewBlend) { previewBlend = null; sync(); } };
+  $('blends').addEventListener('pointerleave', endPreview);
+  $('blends').addEventListener('focusout', e => { if (!$('blends').contains(e.relatedTarget)) endPreview(); });
+  // tune range
+  for (const id of ['tuneLo', 'tuneHi']) {
+    for (let f = 2; f <= 16; f++) $(id).add(new Option(f + 'v', f));
+    $(id).addEventListener('change', e => { S[id] = +e.target.value; tuneHome(); sync(); persist(); });
+  }
+  $('after').addEventListener('change', e => set('after', +e.target.value)); num('domeR', 'domeR'); num('tolMM', 'tolMM');
   // moving the far-side slider always works: it switches the far side back on
   $('backOp').addEventListener('input', e => { S.L_back = true; set('backOp', +e.target.value); });
   num('speed', 'speed'); num('tilt', 'tilt'); num('wobble', 'wobble'); num('zoom', 'zoom');
@@ -1519,22 +1899,15 @@
   for (const name of ['lcdMode', 'poly'])
     document.querySelectorAll(`input[name="${name}"]`).forEach(r => r.addEventListener('change', () => set(name, r.value)));
   document.querySelectorAll('input[name="axis"]').forEach(r => r.addEventListener('change', () => { theta = 0; set('axis', r.value); }));
-  document.querySelectorAll('input[name="bg"]').forEach(r => r.addEventListener('change', () => {
-    const v = r.value;
-    // keep lines visible against the new artboard
-    if (v === 'ink' && S.line.toLowerCase() === '#1d1b18') S.line = '#ffffff';
-    if (v === 'paper' && S.line.toLowerCase() === '#ffffff') S.line = '#1d1b18';
-    set('bg', v);
-  }));
   $('play').addEventListener('click', () => set('playing', !S.playing));
   $('reverse').addEventListener('click', () => set('dir', -S.dir));
   $('reset').addEventListener('click', () => { theta = 0; clock = 0; dragTilt = 0; S.tilt = DEFAULTS.tilt; sync(); persist(); });
   document.querySelectorAll('input[name="anim"]').forEach(r => r.addEventListener('change', () => {
-    anim.x = 1; anim.running = false; set('animKind', r.value);
+    anim.x = 1; anim.running = false; S.animKind = r.value; tuneHome(); sync(); persist();
   }));
   $('animRun').addEventListener('click', () => {
     if (anim.running) anim.running = false;
-    else { if (anim.x >= 1) anim.x = 0; anim.running = true; }
+    else { if (anim.x >= 1) anim.x = 0; anim.running = true; if (S.animKind === 'tune' && S.freq !== S.tuneLo) { tuneHome(); sync(); persist(); } }
     syncAnim();
   });
   $('animX').addEventListener('input', e => { anim.running = false; anim.x = +e.target.value / 1000; syncAnim(); });
@@ -1567,7 +1940,8 @@
 
   const baseName = () => {
     const tag = anim.x < 1 ? `_${S.animKind}${Math.round(anim.x * 100)}` : '';
-    return `geodesic_${S.freq}v${tag}${S.bg === 'clear' || !S.exportBg ? '' : '_' + S.bg}`;
+    const v = S.bg.toLowerCase(), bgName = v === WHITE ? 'white' : v === BLACK ? 'black' : v.slice(1);
+    return `geodesic_${S.freq}v${tag}${S.exportBg ? '_' + bgName : ''}`;
   };
   $('exSvg').addEventListener('click', () => {
     const svg = toSVG(build(S.freq), 2000);
@@ -1576,7 +1950,9 @@
   $('exPng').addEventListener('click', () => {
     const size = +$('pngSize').value, c = document.createElement('canvas');
     c.width = c.height = size;
-    paint(c.getContext('2d'), size, build(S.freq), S.exportBg && S.bg !== 'clear');
+    const cx = c.getContext('2d');
+    paint(cx, size, build(S.freq), S.exportBg);
+    addGrain(cx, size, size, size / 1000, S.exportBg);
     c.toBlob(b => b ? offer(`${baseName()}_${size}.png`, b) : toast('Couldn’t render the PNG.'), 'image/png');
   });
 
@@ -1601,10 +1977,12 @@
                  clock: cycles ? u * cycles * 4 * Math.PI : clock0, x: 1 };
       } };
     }
-    const A = ANIMS[S.animKind], T = A.dur() + 1.5, n = Math.round(T * fps);
-    return { kind, n, T, at: i => {
-      const t = i / fps;
-      return { theta: theta0 + (A.freezeSpin ? 0 : S.dir * S.speed * Math.PI / 180 * t), clock: clock0 + t, x: Math.min(1, t / A.dur()) };
+    // the animation, then either a short hold or k seamless turns of the finished sphere
+    const A = ANIMS[S.animKind], d = A.dur(), sym = loopAngle(), k = S.speed > 0 ? S.after || 0 : 0;
+    const T = d + (k ? k * sym / S.speed : 1.5), n = Math.round(T * fps);
+    return { kind, n, T, after: k, sym, at: i => {
+      const t = i / fps, spun = A.freezeSpin ? Math.max(0, t - d) : t;
+      return { theta: theta0 + S.dir * S.speed * Math.PI / 180 * spun, clock: clock0 + t, x: Math.min(1, t / d) };
     } };
   }
 
@@ -1616,12 +1994,15 @@
     const n = +S.motionSize; return { W: n, H: n, side: n, offY: 0, tag: String(n) };
   };
   const mp4Bitrate = () => { const d = frameDims(); return Math.round(d.W * d.H * MP4_FPS * BPP[S.quality]); };
-  // draw one frame on a canvas of any shape: clear it all, then paint the square sphere frame
-  function drawFrame(cx, d, geo) {
+  // draw one frame on a canvas of any shape: clear it all (or fill it with the background, then add
+  // grain over the whole frame), and paint the square sphere frame
+  function drawFrame(cx, d, geo, solid = false) {
     cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, d.W, d.H);
+    if (solid) { cx.fillStyle = S.bg; cx.fillRect(0, 0, d.W, d.H); }
     cx.setTransform(1, 0, 0, 1, 0, d.offY);
-    paint(cx, d.side, geo, false);
+    paint(cx, d.side, geo, solid);
     cx.setTransform(1, 0, 0, 1, 0, 0);
+    if (solid) addGrain(cx, d.W, d.H, d.side / 1000, true);
   }
 
   function syncClip() {
@@ -1634,14 +2015,16 @@
     } else {
       const secs = `${p.T.toFixed(p.T < 10 ? 1 : 0)} s`;
       const mb = Math.max(1, Math.round(mp4Bitrate() * 1.05 * p.T / 8 / 1e6));
-      $('clipInfo').textContent = (p.kind === 'loop' ? `${p.sym}° turn${p.loops > 1 ? ` × ${p.loops}` : ''} · ${secs}` : `${S.animKind} · ${secs}`) + ` · MP4 ≈ ${mb} MB`;
+      $('clipInfo').textContent = (p.kind === 'loop' ? `${p.sym}° turn${p.loops > 1 ? ` × ${p.loops}` : ''} · ${secs}`
+        : `${S.animKind}${p.after ? ` + ${p.after} × ${p.sym}°` : ''} · ${secs}`) + ` · MP4 ≈ ${mb} MB`;
     }
     $('exGif').disabled = !p || (busy && exporting.kind !== 'gif');
     $('exMp4').disabled = !p || (busy && exporting.kind !== 'mp4');
     $('motionSize').disabled = busy;
     $('motionSize').value = S.motionSize;
-    $('loops').value = String(S.loops); $('loops').disabled = busy || S.clip !== 'loop';
-    $('loops').closest('.row').classList.toggle('dim', S.clip !== 'loop');
+    $('loops').value = String(S.loops); $('loops').disabled = busy;
+    $('after').value = String(S.after); $('after').disabled = busy || !(S.speed > 0);
+    $('loopsRow').hidden = S.clip !== 'loop'; $('afterRow').hidden = S.clip === 'loop';
     document.querySelector(`input[name="quality"][value="${S.quality}"]`).checked = true;
     document.querySelectorAll('input[name="quality"]').forEach(r => { r.disabled = busy; });
     $('qualityVal').textContent = `${Math.round(mp4Bitrate() / 1e6)} Mbps`;
@@ -1659,9 +2042,6 @@
     document.head.append(sc);
   });
 
-  const luma = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  // background for formats that need one: the artboard, or for Clear whichever suits the lines
-  const solidBg = () => S.bg !== 'clear' ? BG_COLORS[S.bg] : (luma(hexRgb(S.line)) > 128 ? BG_COLORS.ink : BG_COLORS.paper);
 
   const nextTick = () => new Promise(r => setTimeout(r, 0));
 
@@ -1710,13 +2090,13 @@
         : `Couldn’t encode the ${kind.toUpperCase()}: ${failed.message || 'unknown error'}.`);
       return;
     }
-    if (blob) offer(`geodesic_${S.freq}v_${plan.kind === 'loop' ? 'loop' + (plan.loops > 1 ? 'x' + plan.loops : '') : S.animKind}_${dims.tag}.${kind}`, blob);
+    if (blob) offer(`geodesic_${S.freq}v_${plan.kind === 'loop' ? 'loop' + (plan.loops > 1 ? 'x' + plan.loops : '') : S.animKind + (plan.after ? '+loop' + plan.after : '')}_${dims.tag}.${kind}`, blob);
   }
 
   async function encodeGif(plan, c, cx, geo, frameAt, fps, dims) {
     const { GIFEncoder } = await loadGif();
-    const transparent = !(S.exportBg && S.bg !== 'clear');
-    const matte = hexRgb(transparent ? solidBg() : BG_COLORS[S.bg]);
+    const transparent = !S.exportBg;
+    const matte = hexRgb(S.bg);   // soft edges blend toward the background even when it is left out
     // every colour the frame can draw: the three layers, the highlight, and strut-type colours
     const lc = layerColors(), typedInks = S.strutColor ? strutClasses(geo).classes.map(c => c.color) : [];
     const inks = [...new Set([lc.outer, lc.inner, lc.web, S.accent, ...typedInks].map(c => c.toLowerCase()))].map(hexRgb);
@@ -1772,15 +2152,12 @@
     let encErr = null;
     const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: e => { encErr = e; } });
     enc.configure(config);
-    const bg = solidBg(), us = 1e6 / fps;
+    const us = 1e6 / fps;
     for (let i = 0; i < plan.n; i++) {
       if (exporting.cancel) { try { enc.close(); } catch {} return null; }
       if (encErr) throw encErr;
       frameAt(i);
-      drawFrame(cx, dims, geo);
-      cx.globalCompositeOperation = 'destination-over';   // video has no alpha: lay the background underneath
-      cx.fillStyle = bg; cx.fillRect(0, 0, W, H);
-      cx.globalCompositeOperation = 'source-over';
+      drawFrame(cx, dims, geo, true);                 // video has no alpha: always on the background
       const vf = new VideoFrame(c, { timestamp: Math.round(i * us), duration: Math.round(us) });
       enc.encode(vf, { keyFrame: i % (fps * 2) === 0 });
       vf.close();

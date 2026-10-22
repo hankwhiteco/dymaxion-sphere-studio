@@ -68,7 +68,7 @@
   <h1>The geometry behind the studio</h1>
   <p class="lede">What the studio draws, the mathematics each layer and animation rests on, and how every reference value was checked against published sources.</p>
 
-  <h2>1 · the sphere</h2>
+  <h2 id="sphere">1 · the sphere</h2>
   <h3>An icosahedron, subdivided and pushed out to a sphere</h3>
   <p>The studio models the double-layer frame of Buckminster Fuller's United States Pavilion at Expo 67, now the Montreal Biosphere. Everything starts from the regular icosahedron: 12 vertices, 30 edges and 20 equilateral faces. Of the Platonic solids it is the closest to a sphere, so its subdivisions are the most even.</p>
   <p><b>Orientation.</b> The icosahedron sits where Fuller placed it for the Dymaxion (Airocean) map. The vertex coordinates are Robert W. Gray's, with vertex 0 at 64.7°N, 10.536°E. Fuller chose this placement so the 12 vertices and the face seams fall mostly in the ocean.</p>
@@ -83,7 +83,7 @@
     <figcaption>One face of the 4v sphere, flattened, with each strut coloured by its length type A–F. The shortest struts, A, meet at the three corners, the sphere's five-strut joints. The longest, F, form the small triangle at the centre, the part pushed furthest out. The same colouring is the studio's <i>Colour struts by length</i>.</figcaption>
   </figure>
 
-  <h3>Chord factors</h3>
+  <h3 id="chord-factors">Chord factors</h3>
   <p>A chord factor is a strut length on a sphere of radius 1. Multiply by the dome's radius to get real lengths. The table below is computed by the studio and agrees with the standard Class I tables to five decimals.</p>
   <div class="table"><table>
     <thead><tr><th>Frequency</th><th>Type</th><th class="r">Chord factor</th><th class="r">Count</th><th class="r">On a 38 m radius</th></tr></thead>
@@ -97,7 +97,7 @@
   </table></div>
   <p>Multiples of 3 have fewer lengths because the face's central hexagon adds a local mirror. The <i>Cutting tolerance</i> slider merges lengths a builder would cut the same. The same paper reports 16v dropping from 54 to 24 lengths at ±1 mm on a dome with 1.5 m struts.</p>
 
-  <h2>2 · the double layer</h2>
+  <h2 id="double-layer">2 · the double layer</h2>
   <h3>Triangles outside, hexagons inside, braced by a web</h3>
   <ul>
     <li><b>Outer layer:</b> the Class I triangles described above.</li>
@@ -107,7 +107,7 @@
   <p>At 100% truss depth the inner layer sits a·√(2/3) inside the outer, where a is the mean outer strut. That is the height of a regular tetrahedron, the depth of a flat octet truss. On the sphere the tetrahedra are only near-regular: at 16v the web struts run 0.908–1.022 × the outer strut. The curve also pulls the inner layer together, so its hexagon edges (0.40–0.60 ×) are shorter than a flat octet truss's 0.577.</p>
   <p class="note">Not verified: none of the sources consulted gives the Biosphere's actual frequency or layer depth. The studio's 16v (strut ≈ 0.075 r) was matched to the photograph that started the project. Pilarska (2020) on double-layer geodesic grids and Clinton's 1971 NASA report are the references to check.</p>
 
-  <h2>3 · symmetry</h2>
+  <h2 id="symmetry">3 · symmetry</h2>
   <h3>Thirty-one axes, thirty-one great circles</h3>
   <p>The icosahedron's 60 rotations turn about 31 axes: 6 through opposite vertices (five-fold), 10 through opposite faces (three-fold) and 15 through opposite edge midpoints (two-fold). Each axis has an equator, giving Fuller's 31 great circles (<i>Synergetics</i> 457):</p>
   <div class="table"><table>
@@ -150,7 +150,7 @@
   </div>
   <p><b>Seamless loops.</b> The Class I grid keeps the full symmetry. A turn of 72° about a vertex, 120° about a face centre or 180° about an edge maps every node onto another node, within 10⁻⁷. That is why the studio's loop exports repeat with no visible jump. Overlays without that symmetry (the VE, the octahedron, the seven axes) need a full 360°.</p>
 
-  <h2>4 · the vector equilibrium &amp; the jitterbug</h2>
+  <h2 id="jitterbug">4 · the vector equilibrium &amp; the jitterbug</h2>
   <h3>From twelve spheres around one to the icosahedron</h3>
   <p>Fuller's <b>vector equilibrium</b> (VE) is the cuboctahedron: 12 vertices, as far from the centre as from each other, so radial and circumferential vectors balance. Its 12 vertices are the centres of 12 spheres closest-packed around a thirteenth. The VE has 25 great circles in sets of 3, 4, 6 and 12 (<i>Synergetics</i> 452.02). The studio's VE layer draws its 4 hexagonal equators.</p>
   <p>The <b>jitterbug</b> is the VE built from rigid struts with hinged corners. Its 6 squares cannot hold, so the 8 triangles twist and draw inward. The studio models it as the cyclic permutations of (0, ±1, ±t), scaled to hold the edge length constant:</p>
@@ -165,23 +165,28 @@
   </table></div>
   <p>The 8 triangles turn about the 4 three-fold axes, and the vertices stay in the 3 coordinate planes throughout. Those 4 + 3 planes are the <b>seven axes of symmetry</b>: the circles the VE and the icosahedron share. In the studio's 31, they are 4 of the 10 and 3 of the 15. The studio aligns its jitterbug so that t = φ lands on the Dymaxion vertices, within 10⁻¹⁶.</p>
 
-  <h2>5 · animations</h2>
+  <h2 id="animations">5 · animations</h2>
   <h3>What each one shows</h3>
   <div class="table"><table>
     <thead><tr><th>Animation</th><th>Geometry</th></tr></thead>
     <tbody>
-      <tr><td>Jitterbug</td><td>VE → icosahedron → subdivided faces → inflated to the sphere. The inflation interpolates each node from its flat-face position to its projected one.</td></tr>
+      <tr><td>Jitterbug</td><td>VE → icosahedron → subdivided faces → inflated to the sphere. The square diagonals are drawn in as they become icosahedron edges; the Class I lines are then ruled across each flat face, one edge direction at a time, and the truss drawn in underneath. The inflation interpolates each node from its flat-face position to its projected one.</td></tr>
       <tr><td>Phases</td><td>The full jitterbug path, VE → icosahedron → Jessen → octahedron and back, riding on the seven fixed circles, with each vertex's path traced.</td></tr>
       <tr><td>Circles</td><td>The great-circle sets drawn in one after another: 15, then 10, then 6.</td></tr>
-      <tr><td>Unfold</td><td>The sphere deflates to the icosahedron, then 19 hinges open by 41.810° each (180° − the dihedral 138.190°) into a flat net that turns to face you. The net is a band of 10 faces with 5 caps above and below. It is not Fuller's Airocean layout, which splits two faces to keep the continents whole.</td></tr>
-      <tr><td>Grow</td><td>Frequency rises through its divisors (1v → 2v → 4v → 8v → 16v). A coarser Class I grid's nodes are a subset of a finer one's whenever its frequency divides the finer frequency, so each new node starts on an old flat triangle and bulges out.</td></tr>
+      <tr><td>Unfold</td><td>The sphere deflates to the icosahedron, then 19 hinges open by 41.810° each (180° − the dihedral 138.190°) into a flat net that turns to face you. The hinges open in turn, from the root face outward, so the net rolls open; the truss folds away while it is flat. The net is a band of 10 faces with 5 caps above and below. It is not Fuller's Airocean layout, which splits two faces to keep the continents whole.</td></tr>
+      <tr><td>Grow</td><td>Frequency rises through its divisors (1v → 2v → 4v → 8v → 16v). A coarser Class I grid's nodes are a subset of a finer one's whenever its frequency divides the finer frequency, so each new node starts on an old flat triangle. The finer grid's struts that lie along the coarser grid's struts are there from the start; the rest are drawn in as a wave runs down from the crown, and behind it the nodes ease out onto the sphere. Nothing crossfades.</td></tr>
       <tr><td>Build</td><td>Struts appear in rings down the spin axis, the inner layer and web trailing the outer.</td></tr>
+      <tr><td>Ripple</td><td>Study. A radial wave, five crests from crown to base, runs over the shell; its amplitude rises and falls to zero, so a clip starts and ends on the plain sphere.</td></tr>
+      <tr><td>Moiré</td><td>Study. A second copy of the shell turns up to ±4.5° about the line of sight and back. Where the two triangle lattices cross they make the rosettes of a moiré; Difference or Multiply blending sharpens them.</td></tr>
+      <tr><td>Scan</td><td>Study. Everything dims to 10% while a band of full-strength struts, marked by a ring of latitude, travels down the spin axis.</td></tr>
+      <tr><td>Scatter</td><td>Study. Each outer triangle and its pyramid of web struts lifts off along its own normal, crown first, by an amount in proportion to the strut length, then settles back.</td></tr>
+      <tr><td>Tune</td><td>Study. Frequency becomes a continuous number F, running from the first frequency of the chosen range to the second and back. On each face the grid lines sit at i/F of the way across in each of the three edge directions, so as F rises new lines are born at the corners (the 12 five-fold nodes) and slide outward; across a shared edge the lines of both faces meet at the same points. The lines cut each face into cells (i0, i1, i2) with i<sub>k</sub>/F ≤ b<sub>k</sub> ≤ (i<sub>k</sub> + 1)/F: small triangles growing out of the nodes, hexagons, and triangles shrinking back into nodes. Each cell has an inner node under its centre, as deep as the cell is large, web struts to its corners and inner struts to the cells beside it. At a whole F the cells are exactly the Class I triangles, so all three layers match the studio's grid strut for strut. Selecting Tune sets the studio to the range's first frequency, where the study starts and ends. With <i>Keep strut size constant</i> on, the sphere's size breathes with F.</td></tr>
       <tr><td>Breathe</td><td>Truss depth swings 0–150% on a 4π-second cycle, so loop exports can fit a whole number of breaths.</td></tr>
     </tbody>
   </table></div>
   <p class="note">Stepping projection (Haghnazar et al.) builds 16v as four rounds of 2v, projecting after each round. That gives a different, more even sphere with 51 strut lengths instead of 72. The Grow animation uses the studio's single-projection grid, so its final state matches the rest of the studio.</p>
 
-  <h2>6 · verification</h2>
+  <h2 id="verification">6 · verification</h2>
   <h3>Every reference value, checked</h3>
   <p><code>npm test</code> runs <code>tools/verify.mjs</code>. It pulls the geometry code straight out of <code>studio.html</code>, so it checks exactly what the page draws.</p>
   <div class="table"><table>
@@ -205,7 +210,7 @@
     <li>An earlier description of the web as "regular tetrahedra" now reads "near-regular".</li>
   </ul>
 
-  <h2>sources</h2>
+  <h2 id="sources">sources</h2>
   <ul class="refs">
     <li>Haghnazar, R., Nooshin, H. &amp; Golabchi, M. (2014). Improving the regularity of geodesic domes using the concept of stepping projection. <i>International Journal of Space Structures</i> 29(2), 81–95. Normal vs stepping projection; Table 1 of distinct lengths, length ratios and shape ratios.</li>
     <li>Bysiec, D., Jaszczyński, S. &amp; Maleska, T. (2024). Analysis of lightweight structure mesh topology of geodesic domes. <i>Applied Sciences</i> 14, 132. Octahedral domes; methods 1 and 2, the Class I and Class II analogues; structural comparison.</li>
