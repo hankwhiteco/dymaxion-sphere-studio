@@ -379,6 +379,12 @@
         <label for="weight">Line weight</label><span class="val" id="weightVal"></span>
         <input type="range" id="weight" min="0" max="1000" step="1" value="261" aria-label="Line weight, 0.25× to 50×">
       </div>
+      <div class="row"><span class="lbl">Line ends</span></div>
+      <div class="seg three" role="radiogroup" aria-label="Line ends">
+        <input type="radio" name="cap" id="cap_round" value="round"><label for="cap_round">Round<small>soft</small></label>
+        <input type="radio" name="cap" id="cap_square" value="square"><label for="cap_square">Square<small>past the node</small></label>
+        <input type="radio" name="cap" id="cap_butt" value="butt"><label for="cap_butt">Flat<small>at the node</small></label>
+      </div>
     </section>
 
     <section>
@@ -405,10 +411,11 @@
         <div class="color"><span class="lbl">Background</span>
           <div class="swatches" id="sw_bg"></div></div>
       </div>
-      <label class="check"><input type="checkbox" id="gLine"><span>Strut gradient</span><small>from the strut colour to a second colour, across the sphere</small></label>
+      <label class="check"><input type="checkbox" id="gLine"><span>Strut gradient</span><small>strut colour to a second colour; Depth colours each strut by its distance, so the colour turns with the sphere</small></label>
       <div class="grad-opts" id="gLineOpts">
         <label class="lc"><span class="chip" id="gLineTo_chip"></span><input type="color" id="gLineTo" aria-label="Strut gradient end colour"><span>To<small id="gLineTo_v"></small></span></label>
-        <div class="seg four" role="radiogroup" aria-label="Strut gradient direction">
+        <div class="seg five" role="radiogroup" aria-label="Strut gradient direction">
+            <input type="radio" name="gLineDir" id="gLineDir_depth" value="depth"><label for="gLineDir_depth">◐<small>depth</small></label>
             <input type="radio" name="gLineDir" id="gLineDir_vertical" value="vertical"><label for="gLineDir_vertical">↓<small>down</small></label>
             <input type="radio" name="gLineDir" id="gLineDir_horizontal" value="horizontal"><label for="gLineDir_horizontal">→<small>across</small></label>
             <input type="radio" name="gLineDir" id="gLineDir_diagonal" value="diagonal"><label for="gLineDir_diagonal">↘<small>diagonal</small></label>
@@ -1112,7 +1119,8 @@
     playing: true, dir: 1, speed: 3, axis: '5', tilt: 12, wobble: 0, zoom: 94, exportBg: false, clip: 'loop',
     animKind: 'jitterbug', breathe: false, quality: 'high', motionSize: '1080', loops: 1,
     cOuter: null, cInner: null, cWeb: null,   // per-layer colours; null follows the strut colour
-    gLine: false, gLineTo: '#ef5a1f', gLineDir: 'vertical', gBg: false, gBgTo: '#c9c5bc', gBgDir: 'vertical',
+    cap: 'round',
+    gLine: false, gLineTo: '#ef5a1f', gLineDir: 'depth', gBg: false, gBgTo: '#c9c5bc', gBgDir: 'vertical',
   };
   const KEY = 'dymaxion-studio:v1';
   let S = { ...DEFAULTS };
@@ -1175,6 +1183,31 @@
   }
   const cssBg = () => !S.gBg ? S.bg : S.gBgDir === 'radial' ? `radial-gradient(circle, ${S.bg}, ${S.gBgTo})`
     : `linear-gradient(${({ vertical: '180deg', horizontal: '90deg', diagonal: '135deg' })[S.gBgDir]}, ${S.bg}, ${S.gBgTo})`;
+
+  // depth gradient: each stroke that follows the strut colour takes one colour from its distance to the viewer,
+  // the strut colour nearest and the gradient colour farthest, so the colour turns with the sphere
+  const DEPTH_STEPS = 24;
+  const mixHexC = (a, b, t) => '#' + hexRgb(a).map((v, d) => Math.round(v + (hexRgb(b)[d] - v) * t).toString(16).padStart(2, '0')).join('');
+  const depthRamp = () => Array.from({ length: DEPTH_STEPS + 1 }, (_, i) => mixHexC(S.line, S.gLineTo, i / DEPTH_STEPS));
+  function depthSplit(fr) {
+    const ramp = depthRamp(), step = z => Math.round(clamp01((1 - z) / 2) * DEPTH_STEPS), out = [];
+    for (const L of fr.layers) {
+      if (L.color !== GRAD) { out.push(L); continue; }
+      const groups = new Map(), E = L.E, A = L.A, B = L.B;
+      for (let e = 0; e < E.length; e += 2) {
+        const t = step((A[E[e] * 3 + 2] + B[E[e + 1] * 3 + 2]) / 2);
+        let g = groups.get(t); if (!g) groups.set(t, g = []); g.push(E[e], E[e + 1]);
+      }
+      // farthest first, so nearer strokes lie on top
+      for (const t of [...groups.keys()].sort((a, b) => b - a))
+        out.push({ ...L, id: `${L.id}-d${t}`, color: ramp[t], E: Uint32Array.from(groups.get(t)) });
+    }
+    fr.layers = out;
+    for (const F of fr.fills) if (F.color === GRAD) F.color = ramp[step(polyZ(F))];
+    for (const D of fr.dots) if (D.color === GRAD) D.color = S.line;
+    return fr;
+  }
+  const finishFrame = fr => S.gLine && S.gLineDir === 'depth' ? depthSplit(fr) : fr;
 
   // each layer's colour: its own override, or the strut colour
   const layerColors = () => ({ outer: S.cOuter || S.line, inner: S.cInner || S.line, web: S.cWeb || S.line });
@@ -1304,7 +1337,7 @@
         fills.push({ pts: [a, b, cc].map(q => PU.subarray(q*3, q*3+3)), color: acc, alpha: 0.07 });
       }
       layers.push({ id: 'net-faces', E: Uint32Array.from(outline), A: PU, B: PU, w: lw, color: acc, alpha: 1 });
-      return { layers, fills, dots, st, kind, R, c };
+      return finishFrame({ layers, fills, dots, st, kind, R, c });
     }
 
     if (gst) {
@@ -1330,7 +1363,7 @@
         if (S.L_web)   pushDrawn('web', geo.webE, pi, poF, cWeb, k => -ease(clamp01((tr - dI(geo.webE[2*k])) / 0.5)));
         if (S.L_inner) pushDrawn('inner', geo.innerE, pi, pi, cIn, k => ease(clamp01((tr - 0.1 - dI(geo.innerE[2*k])) / 0.4)));
       }
-      return { layers, fills, dots, st, kind, R, c };
+      return finishFrame({ layers, fills, dots, st, kind, R, c });
     }
 
     // ripple: a radial wave runs from the crown to the base, scaled by an envelope that starts and ends at rest
@@ -1584,7 +1617,7 @@
 
     if (S.L_poles && gridA > 0)
       dots.push({ id: 'poles', pts: geo.poles.map(i => po.subarray(i*3, i*3+3)), r: Math.max(2.5, 4.2 * px), color: acc, alpha: gridA });
-    return { layers, fills, dots, st, kind, R, c };
+    return finishFrame({ layers, fills, dots, st, kind, R, c });
   }
 
   const sides = () => S.L_back ? [false, true] : [true];
@@ -1598,7 +1631,7 @@
     if (withBg === true) fillBg(ctx, 0, 0, size, size);
     let sg = null;
     const paintOf = col => col !== GRAD ? col : (sg ||= canvasGrad(ctx, strutGeom(fr), S.line, S.gLineTo));
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.lineCap = S.cap; ctx.lineJoin = 'round';
     ctx.globalCompositeOperation = exporting ? S.blend : (previewBlend || S.blend);   // each layer blends with what is drawn
     for (const front of sides()) {
       const sideA = front ? 1 : S.backOp / 100;
@@ -1666,7 +1699,7 @@
     if (fr.layers.some(L => L.color === GRAD)) defs.push(svgGrad(GRAD, strutGeom(fr), S.line, S.gLineTo));
     if (defs.length) out.push(`<defs>${defs.join('')}</defs>`);
     if (S.exportBg) out.push(`<rect width="100%" height="100%" fill="${S.gBg ? 'url(#bg-gradient)' : S.bg}"/>`);
-    out.push('<g fill="none" stroke-linecap="round" stroke-linejoin="round">');
+    out.push(`<g fill="none" stroke-linecap="${S.cap}" stroke-linejoin="round">`);
     const mix = S.blend === 'source-over' ? '' : ` style="mix-blend-mode:${S.blend === 'lighter' ? 'plus-lighter' : S.blend}"`;
     for (const front of sides()) {
       const side = front ? 'front' : 'back';
@@ -1875,6 +1908,7 @@
       $(id).value = v; $(id + '_chip').style.background = v; $(id + '_v').textContent = S[key] ? v.toUpperCase() : 'as struts';
     }
     $('matchStruts').disabled = !(S.cOuter || S.cInner || S.cWeb);
+    document.querySelector(`input[name="cap"][value="${S.cap}"]`).checked = true;
     for (const g of ['gLine', 'gBg']) {
       $(g).checked = S[g]; $(g + 'Opts').hidden = !S[g];
       $(g + 'To').value = S[g + 'To']; $(g + 'To_chip').style.background = S[g + 'To']; $(g + 'To_v').textContent = S[g + 'To'].toUpperCase();
@@ -1917,6 +1951,7 @@
   for (const [id, key] of [['col_outer', 'cOuter'], ['col_inner', 'cInner'], ['col_web', 'cWeb']])
     $(id).addEventListener('input', e => set(key, e.target.value));
   $('matchStruts').addEventListener('click', () => { S.cOuter = S.cInner = S.cWeb = null; sync(); persist(); });
+  document.querySelectorAll('input[name="cap"]').forEach(r => r.addEventListener('change', () => set('cap', r.value)));
   for (const g of ['gLine', 'gBg']) {
     $(g).addEventListener('change', e => set(g, e.target.checked));
     $(g + 'To').addEventListener('input', e => { S[g] = true; set(g + 'To', e.target.value); });
@@ -2170,7 +2205,7 @@
     // every colour the frame can draw: the three layers, the highlight, and strut-type colours
     const lc = layerColors(), typedInks = S.strutColor ? strutClasses(geo).classes.map(c => c.color) : [];
     const mixHex = (a, b, t) => '#' + hexRgb(a).map((v, d) => Math.round(v + (hexRgb(b)[d] - v) * t).toString(16).padStart(2, '0')).join('');
-    const gradInks = S.gLine ? Array.from({ length: 9 }, (_, i) => mixHex(S.line, S.gLineTo, i / 8)) : [];
+    const gradInks = !S.gLine ? [] : S.gLineDir === 'depth' ? depthRamp() : Array.from({ length: 9 }, (_, i) => mixHex(S.line, S.gLineTo, i / 8));
     const inks = [...new Set([lc.outer, lc.inner, lc.web, S.accent, ...typedInks, ...gradInks].map(c => c.toLowerCase()))].map(hexRgb);
     const L = Math.max(2, Math.min(6, Math.floor(255 / inks.length)));   // coverage levels per ink
     // index 0 = transparent (or the solid background); then L tints per ink over the matte
