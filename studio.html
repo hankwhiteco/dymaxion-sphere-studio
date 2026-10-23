@@ -179,6 +179,8 @@
   input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
   input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 
+  .grad-opts { display: grid; grid-template-columns: 96px 1fr; gap: 6px; padding-left: 24px; }
+  .grad-opts .seg label { padding-block: 13px 5px; font-size: 13px; }
   .layer-colors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .lc { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 3px; background: var(--well);
         box-shadow: inset 0 -1px 0 var(--line); cursor: pointer; font-weight: 500; font-size: 12px; min-width: 0; }
@@ -375,7 +377,7 @@
       </div>
       <div class="row">
         <label for="weight">Line weight</label><span class="val" id="weightVal"></span>
-        <input type="range" id="weight" min="0.25" max="4" step="0.05" value="1">
+        <input type="range" id="weight" min="0.25" max="12" step="0.05" value="1">
       </div>
     </section>
 
@@ -402,6 +404,26 @@
           <div class="swatches" id="sw_accent"></div></div>
         <div class="color"><span class="lbl">Background</span>
           <div class="swatches" id="sw_bg"></div></div>
+      </div>
+      <label class="check"><input type="checkbox" id="gLine"><span>Strut gradient</span><small>from the strut colour to a second colour, across the sphere</small></label>
+      <div class="grad-opts" id="gLineOpts">
+        <label class="lc"><span class="chip" id="gLineTo_chip"></span><input type="color" id="gLineTo" aria-label="Strut gradient end colour"><span>To<small id="gLineTo_v"></small></span></label>
+        <div class="seg four" role="radiogroup" aria-label="Strut gradient direction">
+            <input type="radio" name="gLineDir" id="gLineDir_vertical" value="vertical"><label for="gLineDir_vertical">↓<small>down</small></label>
+            <input type="radio" name="gLineDir" id="gLineDir_horizontal" value="horizontal"><label for="gLineDir_horizontal">→<small>across</small></label>
+            <input type="radio" name="gLineDir" id="gLineDir_diagonal" value="diagonal"><label for="gLineDir_diagonal">↘<small>diagonal</small></label>
+            <input type="radio" name="gLineDir" id="gLineDir_radial" value="radial"><label for="gLineDir_radial">◎<small>radial</small></label>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="gBg"><span>Background gradient</span><small>from the background colour to a second colour</small></label>
+      <div class="grad-opts" id="gBgOpts">
+        <label class="lc"><span class="chip" id="gBgTo_chip"></span><input type="color" id="gBgTo" aria-label="Background gradient end colour"><span>To<small id="gBgTo_v"></small></span></label>
+        <div class="seg four" role="radiogroup" aria-label="Background gradient direction">
+            <input type="radio" name="gBgDir" id="gBgDir_vertical" value="vertical"><label for="gBgDir_vertical">↓<small>down</small></label>
+            <input type="radio" name="gBgDir" id="gBgDir_horizontal" value="horizontal"><label for="gBgDir_horizontal">→<small>across</small></label>
+            <input type="radio" name="gBgDir" id="gBgDir_diagonal" value="diagonal"><label for="gBgDir_diagonal">↘<small>diagonal</small></label>
+            <input type="radio" name="gBgDir" id="gBgDir_radial" value="radial"><label for="gBgDir_radial">◎<small>radial</small></label>
+        </div>
       </div>
       <div class="row"><span class="lbl">Each layer</span><button class="linkbtn" id="matchStruts" type="button">Match struts</button></div>
       <div class="layer-colors">
@@ -520,7 +542,7 @@
         <input type="radio" name="quality" id="q_max" value="max"><label for="q_max">Max<small>for editing</small></label>
       </div>
       <div class="progress" id="progress" hidden><span id="progressBar"></span></div>
-      <p class="note" id="clipNote">Reel is 1080×1920 with the sphere centred, ready for Instagram without rescaling. For the crispest video, raise Line weight to 1.5× or more. GIF is transparent unless the background is included; its soft edges are blended toward the background colour, so set it to match where the GIF will sit. MP4 always includes the background colour.</p>
+      <p class="note" id="clipNote">Reel is 1080×1920 with the sphere centred, ready for Instagram without rescaling. For the crispest video, raise Line weight to 1.5× or more. GIF is transparent unless the background is included; its soft edges are blended toward the background colour, so set it to match where the GIF will sit. MP4 always includes the background colour. A background gradient shows in PNG, SVG and MP4; a GIF uses the start colour.</p>
     </section>
   </aside>
 </div>
@@ -1090,6 +1112,7 @@
     playing: true, dir: 1, speed: 3, axis: '5', tilt: 12, wobble: 0, zoom: 94, exportBg: false, clip: 'loop',
     animKind: 'jitterbug', breathe: false, quality: 'high', motionSize: '1080', loops: 1,
     cOuter: null, cInner: null, cWeb: null,   // per-layer colours; null follows the strut colour
+    gLine: false, gLineTo: '#ef5a1f', gLineDir: 'vertical', gBg: false, gBgTo: '#c9c5bc', gBgDir: 'vertical',
   };
   const KEY = 'dymaxion-studio:v1';
   let S = { ...DEFAULTS };
@@ -1128,6 +1151,31 @@
     const r = norm(cross(A, f)), u = cross(f, r);
     return { f, r, u };
   }
+  // gradients: strokes that follow the strut colour carry this marker and are painted with the strut gradient
+  const GRAD = 'strut-gradient';
+  // end points of a gradient over a box, by direction; radial runs from the centre to the given radius
+  const gradGeom = (x, y, w, h, dir, rr) => dir === 'radial' ? { radial: true, cx: x + w / 2, cy: y + h / 2, r: rr ?? Math.hypot(w, h) / 2 }
+    : dir === 'horizontal' ? { x1: x, y1: y + h / 2, x2: x + w, y2: y + h / 2 }
+    : dir === 'diagonal' ? { x1: x, y1: y, x2: x + w, y2: y + h } : { x1: x + w / 2, y1: y, x2: x + w / 2, y2: y + h };
+  function canvasGrad(ctx, G, from, to) {
+    const g = G.radial ? ctx.createRadialGradient(G.cx, G.cy, 0, G.cx, G.cy, G.r) : ctx.createLinearGradient(G.x1, G.y1, G.x2, G.y2);
+    g.addColorStop(0, from); g.addColorStop(1, to); return g;
+  }
+  function svgGrad(id, G, from, to) {
+    const stops = `<stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/>`, n = v => v.toFixed(1);
+    return G.radial ? `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n(G.cx)}" cy="${n(G.cy)}" r="${n(G.r)}">${stops}</radialGradient>`
+      : `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n(G.x1)}" y1="${n(G.y1)}" x2="${n(G.x2)}" y2="${n(G.y2)}">${stops}</linearGradient>`;
+  }
+  // the strut gradient spans the sphere itself, so it reads the same at any zoom
+  const strutGeom = fr => gradGeom(fr.c - fr.R, fr.c - fr.R, 2 * fr.R, 2 * fr.R, S.gLineDir, fr.R);
+  // background: solid, or a gradient over the given box
+  function fillBg(ctx, x, y, w, h) {
+    ctx.fillStyle = S.gBg ? canvasGrad(ctx, gradGeom(x, y, w, h, S.gBgDir), S.bg, S.gBgTo) : S.bg;
+    ctx.fillRect(x, y, w, h);
+  }
+  const cssBg = () => !S.gBg ? S.bg : S.gBgDir === 'radial' ? `radial-gradient(circle, ${S.bg}, ${S.gBgTo})`
+    : `linear-gradient(${({ vertical: '180deg', horizontal: '90deg', diagonal: '135deg' })[S.gBgDir]}, ${S.bg}, ${S.gBgTo})`;
+
   // each layer's colour: its own override, or the strut colour
   const layerColors = () => ({ outer: S.cOuter || S.line, inner: S.cInner || S.line, web: S.cWeb || S.line });
   const depthNow = () => S.breathe ? 75 * (1 - Math.cos(clock * 0.5)) : S.depth;
@@ -1190,8 +1238,8 @@
     const px = size / 1000 * S.weight;
     const lw = px;   // every stroke is the same width, set by Line weight
     const layers = [], fills = [], dots = [];
-    const line = S.line, acc = S.accent;
-    const { outer: cOut, inner: cIn, web: cWeb } = layerColors();
+    const line = S.gLine ? GRAD : S.line, acc = S.accent;
+    const cOut = S.cOuter || line, cIn = S.cInner || line, cWeb = S.cWeb || line;
     let po = null;
     // draw-on: edge k shows from its first end to a fraction p of its length (p < 0: from its second end)
     const pushDrawn = (id, E, A, B, color, prog, alpha = 1) => {
@@ -1256,7 +1304,7 @@
         fills.push({ pts: [a, b, cc].map(q => PU.subarray(q*3, q*3+3)), color: acc, alpha: 0.07 });
       }
       layers.push({ id: 'net-faces', E: Uint32Array.from(outline), A: PU, B: PU, w: lw, color: acc, alpha: 1 });
-      return { layers, fills, dots, st, kind };
+      return { layers, fills, dots, st, kind, R, c };
     }
 
     if (gst) {
@@ -1282,7 +1330,7 @@
         if (S.L_web)   pushDrawn('web', geo.webE, pi, poF, cWeb, k => -ease(clamp01((tr - dI(geo.webE[2*k])) / 0.5)));
         if (S.L_inner) pushDrawn('inner', geo.innerE, pi, pi, cIn, k => ease(clamp01((tr - 0.1 - dI(geo.innerE[2*k])) / 0.4)));
       }
-      return { layers, fills, dots, st, kind };
+      return { layers, fills, dots, st, kind, R, c };
     }
 
     // ripple: a radial wave runs from the crown to the base, scaled by an envelope that starts and ends at rest
@@ -1536,7 +1584,7 @@
 
     if (S.L_poles && gridA > 0)
       dots.push({ id: 'poles', pts: geo.poles.map(i => po.subarray(i*3, i*3+3)), r: Math.max(2.5, 4.2 * px), color: acc, alpha: gridA });
-    return { layers, fills, dots, st, kind };
+    return { layers, fills, dots, st, kind, R, c };
   }
 
   const sides = () => S.L_back ? [false, true] : [true];
@@ -1545,22 +1593,25 @@
 
   function paint(ctx, size, geo, withBg) {
     const fr = frame(geo, size);
-    ctx.clearRect(0, 0, size, size);
-    if (withBg) { ctx.fillStyle = S.bg; ctx.fillRect(0, 0, size, size); }
+    // withBg: true fills the background, false leaves it clear, 'keep' draws over what is already there
+    if (withBg !== 'keep') ctx.clearRect(0, 0, size, size);
+    if (withBg === true) fillBg(ctx, 0, 0, size, size);
+    let sg = null;
+    const paintOf = col => col !== GRAD ? col : (sg ||= canvasGrad(ctx, strutGeom(fr), S.line, S.gLineTo));
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.globalCompositeOperation = exporting ? S.blend : (previewBlend || S.blend);   // each layer blends with what is drawn
     for (const front of sides()) {
       const sideA = front ? 1 : S.backOp / 100;
       for (const F of fr.fills) {
         if (isFront(polyZ(F)) !== front || F.alpha <= 0) continue;
-        ctx.globalAlpha = sideA * F.alpha; ctx.fillStyle = F.color; ctx.beginPath();
+        ctx.globalAlpha = sideA * F.alpha; ctx.fillStyle = paintOf(F.color); ctx.beginPath();
         F.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
         ctx.closePath(); ctx.fill();
       }
       for (const L of fr.layers) {
         if (L.alpha <= 0.001) continue;
         ctx.globalAlpha = sideA * L.alpha;
-        ctx.strokeStyle = L.color; ctx.lineWidth = L.w; ctx.setLineDash(L.dash || []); ctx.beginPath();
+        ctx.strokeStyle = paintOf(L.color); ctx.lineWidth = L.w; ctx.setLineDash(L.dash || []); ctx.beginPath();
         const E = L.E, A = L.A, B = L.B;
         for (let e = 0; e < E.length; e += 2) {
           const a = E[e] * 3, b = E[e+1] * 3;
@@ -1572,7 +1623,7 @@
       ctx.setLineDash([]);
       for (const D of fr.dots) {
         if (D.alpha <= 0.001) continue;
-        ctx.globalAlpha = sideA * D.alpha; ctx.fillStyle = D.color; ctx.beginPath();
+        ctx.globalAlpha = sideA * D.alpha; ctx.fillStyle = paintOf(D.color); ctx.beginPath();
         for (const p of D.pts) if (isFront(p[2]) === front) { ctx.moveTo(p[0] + D.r, p[1]); ctx.arc(p[0], p[1], D.r, 0, Math.PI * 2); }
         ctx.fill();
       }
@@ -1610,7 +1661,11 @@
     const fr = frame(geo, size), n = v => v.toFixed(1), out = [];
     out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`);
     out.push(`<title>Geodesic sphere, ${geo.freq}v Class I, double layer</title>`);
-    if (S.exportBg) out.push(`<rect width="100%" height="100%" fill="${S.bg}"/>`);
+    const defs = [];
+    if (S.exportBg && S.gBg) defs.push(svgGrad('bg-gradient', gradGeom(0, 0, size, size, S.gBgDir), S.bg, S.gBgTo));
+    if (fr.layers.some(L => L.color === GRAD)) defs.push(svgGrad(GRAD, strutGeom(fr), S.line, S.gLineTo));
+    if (defs.length) out.push(`<defs>${defs.join('')}</defs>`);
+    if (S.exportBg) out.push(`<rect width="100%" height="100%" fill="${S.gBg ? 'url(#bg-gradient)' : S.bg}"/>`);
     out.push('<g fill="none" stroke-linecap="round" stroke-linejoin="round">');
     const mix = S.blend === 'source-over' ? '' : ` style="mix-blend-mode:${S.blend === 'lighter' ? 'plus-lighter' : S.blend}"`;
     for (const front of sides()) {
@@ -1630,7 +1685,7 @@
         if (!d) continue;
         const extra = (L.alpha < 1 ? ` stroke-opacity="${L.alpha.toFixed(3)}"` : '') +
                       (L.dash ? ` stroke-dasharray="${L.dash.map(v => v.toFixed(2)).join(' ')}"` : '');
-        out.push(`<path id="${side}-${L.id}" stroke="${L.color}" stroke-width="${L.w.toFixed(3)}"${extra}${mix} d="${d}"/>`);
+        out.push(`<path id="${side}-${L.id}" stroke="${L.color === GRAD ? `url(#${GRAD})` : L.color}" stroke-width="${L.w.toFixed(3)}"${extra}${mix} d="${d}"/>`);
       }
       for (const D of fr.dots) {
         const pts = D.pts.filter(p => isFront(p[2]) === front);
@@ -1794,7 +1849,7 @@
     $('zoom').value = S.zoom; $('zoomVal').textContent = `${S.zoom}%`;
     $('exportBg').checked = S.exportBg;
     document.querySelector(`input[name="axis"][value="${S.axis}"]`).checked = true;
-    board.style.background = S.bg; board.dataset.tone = luma(hexRgb(S.bg)) < 128 ? 'dark' : 'light';
+    board.style.background = cssBg(); board.dataset.tone = luma(hexRgb(S.bg)) < 128 ? 'dark' : 'light';
     $('play').setAttribute('aria-pressed', S.playing);
     $('play').innerHTML = S.playing
       ? '<svg viewBox="0 0 12 12"><rect x="2" y="1" width="3" height="10"/><rect x="7" y="1" width="3" height="10"/></svg>'
@@ -1820,6 +1875,11 @@
       $(id).value = v; $(id + '_chip').style.background = v; $(id + '_v').textContent = S[key] ? v.toUpperCase() : 'as struts';
     }
     $('matchStruts').disabled = !(S.cOuter || S.cInner || S.cWeb);
+    for (const g of ['gLine', 'gBg']) {
+      $(g).checked = S[g]; $(g + 'Opts').hidden = !S[g];
+      $(g + 'To').value = S[g + 'To']; $(g + 'To_chip').style.background = S[g + 'To']; $(g + 'To_v').textContent = S[g + 'To'].toUpperCase();
+      document.querySelector(`input[name="${g}Dir"][value="${S[g + 'Dir']}"]`).checked = true;
+    }
     readout(); legend(); syncAnim(); syncClip();
   }
 
@@ -1857,6 +1917,11 @@
   for (const [id, key] of [['col_outer', 'cOuter'], ['col_inner', 'cInner'], ['col_web', 'cWeb']])
     $(id).addEventListener('input', e => set(key, e.target.value));
   $('matchStruts').addEventListener('click', () => { S.cOuter = S.cInner = S.cWeb = null; sync(); persist(); });
+  for (const g of ['gLine', 'gBg']) {
+    $(g).addEventListener('change', e => set(g, e.target.checked));
+    $(g + 'To').addEventListener('input', e => { S[g] = true; set(g + 'To', e.target.value); });
+    document.querySelectorAll(`input[name="${g}Dir"]`).forEach(r => r.addEventListener('change', () => { S[g] = true; set(g + 'Dir', r.value); }));
+  }
 
   function set(key, v) { S[key] = v; sync(); persist(); }
 
@@ -1998,9 +2063,9 @@
   // grain over the whole frame), and paint the square sphere frame
   function drawFrame(cx, d, geo, solid = false) {
     cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, d.W, d.H);
-    if (solid) { cx.fillStyle = S.bg; cx.fillRect(0, 0, d.W, d.H); }
+    if (solid) fillBg(cx, 0, 0, d.W, d.H);   // the whole frame, so a Reel's gradient runs top to bottom
     cx.setTransform(1, 0, 0, 1, 0, d.offY);
-    paint(cx, d.side, geo, solid);
+    paint(cx, d.side, geo, solid ? 'keep' : false);
     cx.setTransform(1, 0, 0, 1, 0, 0);
     if (solid) addGrain(cx, d.W, d.H, d.side / 1000, true);
   }
@@ -2099,7 +2164,9 @@
     const matte = hexRgb(S.bg);   // soft edges blend toward the background even when it is left out
     // every colour the frame can draw: the three layers, the highlight, and strut-type colours
     const lc = layerColors(), typedInks = S.strutColor ? strutClasses(geo).classes.map(c => c.color) : [];
-    const inks = [...new Set([lc.outer, lc.inner, lc.web, S.accent, ...typedInks].map(c => c.toLowerCase()))].map(hexRgb);
+    const mixHex = (a, b, t) => '#' + hexRgb(a).map((v, d) => Math.round(v + (hexRgb(b)[d] - v) * t).toString(16).padStart(2, '0')).join('');
+    const gradInks = S.gLine ? Array.from({ length: 9 }, (_, i) => mixHex(S.line, S.gLineTo, i / 8)) : [];
+    const inks = [...new Set([lc.outer, lc.inner, lc.web, S.accent, ...typedInks, ...gradInks].map(c => c.toLowerCase()))].map(hexRgb);
     const L = Math.max(2, Math.min(6, Math.floor(255 / inks.length)));   // coverage levels per ink
     // index 0 = transparent (or the solid background); then L tints per ink over the matte
     const palette = [matte];
