@@ -37,7 +37,8 @@ GIF and MP4 export load [gifenc](https://github.com/mattdesl/gifenc) and [mp4-mu
 |---|---|
 | `geodesic.py` | Pure-Python SVG generator (no dependencies). `python3 geodesic.py -f 16 -o geodesic_16v.svg`; see `--help` for view angle, far-side opacity and truncation. |
 | `geodesic-sphere.js` | `<geodesic-sphere>` web component: a slowly rotating sphere for embedding in a page. |
-| `index.html` | Demo of the web component: 16v and 8v side by side at the same strut scale. |
+| `demo.html` | Demo of the web component: 16v and 8v side by side at the same strut scale. |
+| `vercel.json` | Vercel hosting: a static site whose home page is the studio. |
 | `export-gif.mjs` | Node script for a seamless looping GIF (`npm install`, then `node export-gif.mjs --freq 8 --size 1200`). |
 | `geodesic_16v.svg`, `geodesic_8v_1000.svg` | Example exports. |
 

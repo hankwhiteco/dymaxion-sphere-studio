@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo 'Static site: nothing to install (package.json is for the Node GIF exporter)'",
+  "buildCommand": "echo 'Static site: nothing to build'",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/studio.html" }
+  ]
+}

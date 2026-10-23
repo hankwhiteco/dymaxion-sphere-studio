@@ -1,0 +1,7 @@
+# development files: not part of the website
+node_modules
+tools
+export-gif.mjs
+geodesic.py
+package.json
+package-lock.json
