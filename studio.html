@@ -377,7 +377,7 @@
       </div>
       <div class="row">
         <label for="weight">Line weight</label><span class="val" id="weightVal"></span>
-        <input type="range" id="weight" min="0.25" max="12" step="0.05" value="1">
+        <input type="range" id="weight" min="0" max="1000" step="1" value="261" aria-label="Line weight, 0.25× to 50×">
       </div>
     </section>
 
@@ -1837,7 +1837,7 @@
     document.querySelector(`input[name="poly"][value="${S.poly}"]`).checked = true;
     $('backOp').value = S.backOp; $('backVal').textContent = `${S.backOp}%`;
     $('backOp').closest('.row').classList.toggle('dim', !S.L_back);
-    $('weight').value = S.weight; $('weightVal').textContent = `${(+S.weight).toFixed(2)}×`;
+    $('weight').value = Math.round(weightToSlider(S.weight)); $('weightVal').textContent = `${(+S.weight).toFixed(S.weight < 10 ? 2 : 1)}×`;
     $('domeR').value = S.domeR; $('domeRVal').textContent = `${S.domeR} m${S.domeR === 38 ? ' · Biosphere' : ''}`;
     $('tolMM').value = S.tolMM; $('tolVal').textContent = S.tolMM ? `±${S.tolMM} mm` : 'exact';
     $('domeR').closest('.row').classList.toggle('dim', !S.strutColor);
@@ -1924,10 +1924,15 @@
   }
 
   function set(key, v) { S[key] = v; sync(); persist(); }
+  // line weight runs 0.25× to 50× on a logarithmic slider, so the fine low end keeps its room
+  const W_MIN = 0.25, W_MAX = 50, W_SPAN = Math.log(W_MAX / W_MIN);
+  function sliderToWeight(v) { const w = W_MIN * Math.exp(v / 1000 * W_SPAN); return w < 10 ? Math.round(w * 100) / 100 : Math.round(w * 10) / 10; }
+  function weightToSlider(w) { return 1000 * Math.log(Math.min(W_MAX, Math.max(W_MIN, w)) / W_MIN) / W_SPAN; }
 
   const num = (id, key, f = Number) => $(id).addEventListener('input', e => set(key, f(e.target.value)));
   num('freq', 'freq', v => parseInt(v, 10));
-  num('depth', 'depth'); num('weight', 'weight'); num('grain', 'grain');
+  num('depth', 'depth'); num('grain', 'grain');
+  $('weight').addEventListener('input', e => set('weight', sliderToWeight(+e.target.value)));
   // blend keys: hovering or focusing one previews it; a click keeps it; leaving the keys goes back to the kept mode
   for (const [group, modes] of BLENDS) {
     const row = document.createElement('div'); row.className = 'blend-row';
