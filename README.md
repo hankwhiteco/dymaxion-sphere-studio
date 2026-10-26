@@ -27,15 +27,24 @@ The control panel has five tabs: **Shape** (frequency, structure, strut types), 
 - **Strut types**: colour every strut by its length, with a chord-factor legend in metres for any dome radius and a cutting tolerance that merges near-equal lengths.
 - **Color**: struts, highlights and background, each White, Black or Custom; the outer, inner and diagonal layers follow the struts or take their own. Custom (or a layer) opens a small editor: Solid, or Gradient from one colour to another, down, across, diagonal, radial or by depth (each strut coloured by its distance from you, so struts change colour as they turn toward or away from you). Struts, each layer and the background can all have their own gradient; highlights stay solid. Every line is drawn at the one Line weight, and line ends can be round, square or flat.
 - **Texture**: every canvas blend mode for the lines (Multiply, Screen, Overlay, Difference and the rest; hover a mode to preview it) and a grain layer on top, in black and white or any colour, from fine to coarse and from dense to scattered. Grain scales with the image, so PNG and MP4 exports match the view; GIFs leave it out, SVGs keep the blend but not the grain.
-- **Motion**: speed, direction, spin axis (polar, or the 5-, 3- or 2-fold symmetry axes), tilt, wobble, and drag to orbit.
+- **Motion**: spin (one slider, both directions), spin axis (polar, or the 5-, 3- or 2-fold symmetry axes), tilt, wobble, and drag to orbit.
 - **Animations**: the jitterbug (VE to sphere), the jitterbug's phases on the seven circles (VE, icosahedron, Jessen, octahedron), great circles sweeping in, unfolding to the icosahedral net, frequency growth by divisors, building from the crown, and a breathing truss; plus five studies (Facet, sphere to icosahedron to dodecahedron; Moiré, two neighbouring grids crossing; Scan; Scatter, cells tumbling off the shell; and Tune, which moves smoothly between any two frequencies) that start and end on the plain sphere, so their clips loop. Run or scrub any of them.
 - **Export**: SVG and PNG of the current frame (transparent by default), plus GIF and MP4 clips at 720, 1080 or 1600 square or as a 1080×1920 Reel, with Standard, High or Max video quality. Loops turn by the drawing's own symmetry angle, so they repeat seamlessly, and a loop clip can run 1–10 loops in a row. An animation clip can carry on for 1–10 seamless loops after the animation ends.
 
 ### Keyboard and macropad
 
-`Space` plays or pauses; `[` and `]` step the frequency down and up (a short readout shows the new value). Keys are matched by position, so they work on any layout, and are ignored while typing in a field.
+| Key | Does |
+|---|---|
+| `Space` | play or pause |
+| `[` / `]` | frequency down / up |
+| `,` / `.` | spin slower / faster, through stopped into reverse |
+| `-` / `=` | truss depth down / up by 5% (turns auto breathing off) |
+| `1`–`0` | toggle outer, inner, diagonals, far side, icosahedron net, five-fold nodes, vector equilibrium, great circles, LCD triangles, spherical polyhedron |
+| `F` | full screen (just the sphere); `Esc` leaves |
 
-To put the frequency on a Work Louder Creator Micro wheel: open [usevia.app](https://usevia.app) (or Work Louder's setup page) in Chrome or Edge, select the Creator Micro, click a wheel and set **clockwise** to `]` and **counter-clockwise** to `[` (Basic keycodes, KC_RBRC and KC_LBRC). Each detent then steps the frequency by one while the studio's window has focus.
+Keys are matched by position, so they work on any layout, and are ignored while typing in a field or with Cmd, Ctrl or Alt held. Each shows a short readout of what changed.
+
+To put a control on a Work Louder Creator Micro wheel: open [usevia.app](https://usevia.app) in Chrome or Edge, select the Creator Micro, click a wheel's **clockwise** and **counter-clockwise** slots and choose the pair from Basic: `]` and `[` (KC_RBRC, KC_LBRC) for frequency, `.` and `,` (KC_DOT, KC_COMM) for spin, or `=` and `-` (KC_EQL, KC_MINS) for truss depth. Each detent then steps once while the studio's window has focus.
 
 GIF and MP4 export load [gifenc](https://github.com/mattdesl/gifenc) and [mp4-muxer](https://github.com/Vanilagy/mp4-muxer) from jsDelivr on first use. MP4 needs WebCodecs (Chrome, Edge, Safari 16.4+).
 

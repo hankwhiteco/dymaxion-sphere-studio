@@ -295,6 +295,20 @@
   .stages span { border-top: 2px solid var(--track); padding-top: 6px; }
   .stages span.on { border-top-color: var(--accent); color: var(--fg); }
 
+  /* full screen (F, or the masthead key; Esc leaves): just the sphere, as large as the screen allows */
+  .notes-key { border: 0; cursor: pointer; }
+  .notes-key kbd { font: 500 10px var(--font); color: var(--muted); }
+  .exit-full { display: none; }
+  body.immersive .panel, body.immersive .masthead, body.immersive .readout { display: none !important; }
+  body.immersive .app { display: block; height: 100%; }
+  body.immersive .stage { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 0;
+                          height: auto !important; background: var(--board-bg, var(--bg)); box-shadow: none; }
+  body.immersive .board-wrap { container-type: normal; display: grid; place-items: center; width: 100%; height: 100%; }
+  body.immersive .board { width: min(100vw, 100vh); border-radius: 0; box-shadow: none; transform: none !important; }
+  body.immersive .exit-full { display: inline-flex; position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px;
+                              z-index: 25; opacity: .25; transition: opacity .2s; }
+  body.immersive .exit-full:hover, body.immersive .exit-full:focus-visible { opacity: 1; }
+  .toast { z-index: 30; }
   .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
            background: var(--key); color: var(--key-fg); padding: 10px 14px; border-radius: 3px; font-weight: 500;
            opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); }
@@ -325,10 +339,12 @@
     <div class="masthead">
       <div class="brand"><span class="grille" aria-hidden="true"></span><h1>Dymaxion Sphere Studio</h1></div>
       <div class="mast-right">
-        <span class="hint">Drag the sphere to turn it · Space to play or pause · [ ] frequency</span>
+        <span class="hint">Drag to turn · Space play · [ ] frequency · , . spin · − = depth · 1–0 layers · F full screen</span>
+        <button type="button" class="notes-key" id="fullBtn" aria-label="Full screen (F)">Full screen <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 4 V1.5 H4 M6 1.5 H8.5 V4 M8.5 6 V8.5 H6 M4 8.5 H1.5 V6"/></svg></button>
         <a class="notes-key" href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html" target="_blank" rel="noopener">Geometry notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a>
       </div>
     </div>
+    <button type="button" class="notes-key exit-full" id="exitFull">Exit full screen <kbd>Esc</kbd></button>
     <div class="board-wrap">
       <div class="board" id="board" data-tone="dark"><canvas id="cv" aria-label="Rotating geodesic sphere" role="img"></canvas><span class="phase" id="phase" hidden></span></div>
     </div>
@@ -361,6 +377,7 @@
         <label for="depth">Truss depth</label><span class="val" id="depthVal"></span>
         <input type="range" id="depth" min="0" max="150" step="5" value="100">
       </div>
+      <label class="check"><input type="checkbox" id="breathe"><span>Auto breathing</span><small>truss depth swings 0–150% and back, one breath every 12.6 s</small></label>
       </div></details>
       <details class="sec" data-sec="structure" open><summary><h2>Structure</h2></summary>
       <div class="sec-body">
@@ -543,8 +560,8 @@
         <div class="key-wrap"><button class="key" id="reset" aria-label="Back to the starting angle"><svg viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="1"/></svg></button><span>reset</span></div>
       </div>
       <div class="row">
-        <label for="speed">Speed</label><span class="val" id="speedVal"></span>
-        <input type="range" id="speed" min="0" max="30" step="0.5" value="3">
+        <label for="speed">Spin</label><span class="val" id="speedVal"></span>
+        <input type="range" id="speed" min="-30" max="30" step="0.5" value="3" aria-label="Spin speed and direction about the spin axis">
       </div>
       <div class="row"><span class="lbl">Spin axis</span></div>
       <div class="seg" role="radiogroup" aria-label="Spin axis">
@@ -597,7 +614,6 @@
         <input type="range" id="animX" min="0" max="1000" step="1" value="1000">
       </div>
       <div class="stages" id="stages"></div>
-      <label class="check"><input type="checkbox" id="breathe"><span>Breathe the truss</span><small>depth swings 0–150% and back, one breath every 12.6 s</small></label>
       </div></details>
     </div>
     <div class="pane" id="pane-export" role="tabpanel" aria-labelledby="tab-export">
@@ -2015,14 +2031,14 @@
     $('tolMM').value = S.tolMM; $('tolVal').textContent = S.tolMM ? `±${S.tolMM} mm` : 'exact';
     $('domeR').closest('.row').classList.toggle('dim', !S.strutColor);
     $('tolMM').closest('.row').classList.toggle('dim', !S.strutColor);
-    $('speed').value = S.speed;
-    $('speedVal').textContent = S.speed > 0 ? `${(+S.speed).toFixed(1)}°/s · turn ${fmtTime(360 / S.speed)}` : 'still';
+    $('speed').value = S.dir * S.speed;   // one slider both ways: left of centre spins in reverse
+    $('speedVal').textContent = S.speed > 0 ? `${S.dir > 0 ? 'forward' : 'reverse'} · ${(+S.speed).toFixed(1)}°/s · turn ${fmtTime(360 / S.speed)}` : 'still';
     $('tilt').value = S.tilt; $('tiltVal').textContent = `${S.tilt}°`;
     $('wobble').value = S.wobble; $('wobbleVal').textContent = S.wobble ? `±${S.wobble}°` : 'off';
     $('zoom').value = S.zoom; $('zoomVal').textContent = `${S.zoom}%`;
     $('exportBg').checked = S.exportBg;
     document.querySelector(`input[name="axis"][value="${S.axis}"]`).checked = true;
-    board.style.background = cssBg(); board.dataset.tone = luma(hexRgb(S.bg)) < 128 ? 'dark' : 'light';
+    board.style.background = cssBg(); document.documentElement.style.setProperty('--board-bg', S.bg); board.dataset.tone = luma(hexRgb(S.bg)) < 128 ? 'dark' : 'light';
     $('play').setAttribute('aria-pressed', S.playing);
     $('play').innerHTML = S.playing
       ? '<svg viewBox="0 0 12 12"><rect x="2" y="1" width="3" height="10"/><rect x="7" y="1" width="3" height="10"/></svg>'
@@ -2160,7 +2176,9 @@
 
   const num = (id, key, f = Number) => $(id).addEventListener('input', e => set(key, f(e.target.value)));
   num('freq', 'freq', v => parseInt(v, 10));
-  num('depth', 'depth'); num('grain', 'grain'); num('grainSize', 'grainSize'); num('grainSpread', 'grainSpread');
+  // moving the depth yourself takes over from auto breathing
+  $('depth').addEventListener('input', e => { S.breathe = false; set('depth', +e.target.value); });
+  num('grain', 'grain'); num('grainSize', 'grainSize'); num('grainSpread', 'grainSpread');
   $('sw_grain').querySelectorAll('button.ckey').forEach(b => b.addEventListener('click', () => set('grainColor', b.dataset.which)));
   $('pick_grain').addEventListener('click', () => set('grainColor', 'custom'));   // the remembered colour; the picker opens to change it
   $('pick_grain').addEventListener('input', e => { S.grainCustom = e.target.value; set('grainColor', 'custom'); });
@@ -2190,7 +2208,8 @@
   $('after').addEventListener('change', e => set('after', +e.target.value)); num('domeR', 'domeR'); num('tolMM', 'tolMM');
   // moving the far-side slider always works: it switches the far side back on
   $('backOp').addEventListener('input', e => { S.L_back = true; set('backOp', +e.target.value); });
-  num('speed', 'speed'); num('tilt', 'tilt'); num('wobble', 'wobble'); num('zoom', 'zoom');
+  $('speed').addEventListener('input', e => setSpin(+e.target.value));
+  num('tilt', 'tilt'); num('wobble', 'wobble'); num('zoom', 'zoom');
   $('freqDown').addEventListener('click', () => set('freq', Math.max(2, S.freq - 1)));
   $('freqUp').addEventListener('click', () => set('freq', Math.min(16, S.freq + 1)));
   for (const k of ['trueScale', 'L_outer', 'L_inner', 'L_web', 'L_net', 'L_poles', 'L_ve', 'L_back', 'L_gc', 'L_lcd', 'L_poly',
@@ -2229,8 +2248,59 @@
     if (f !== S.freq) set('freq', f);
     toast(`${S.freq}v`);   // the value is in view whichever tab is open
   }
-  const SHORTCUTS = { BracketLeft: () => stepFreq(-1), BracketRight: () => stepFreq(1) };
-  const BY_KEY = { '[': 'BracketLeft', ']': 'BracketRight' };   // for synthetic keystrokes that carry no key position
+  // spin: one signed value, speed times direction, about the chosen spin axis
+  function setSpin(v) {
+    v = Math.max(-30, Math.min(30, Math.round(v * 2) / 2));
+    if (v) S.dir = v < 0 ? -1 : 1;
+    set('speed', Math.abs(v));
+  }
+  function stepSpin(d) {
+    setSpin(S.dir * S.speed + d);
+    toast(S.speed ? `Spin ${S.dir > 0 ? 'forward' : 'reverse'} · ${S.speed.toFixed(1)}°/s` : 'Spin stopped');
+  }
+  function stepDepth(d) {
+    S.breathe = false;
+    set('depth', Math.max(0, Math.min(150, Math.round((S.depth + d) / 5) * 5)));
+    toast(`Truss depth ${S.depth}%`);
+  }
+  // 1 to 0 toggle the layers, in panel order
+  const LAYER_KEYS = [['L_outer', 'Outer triangles'], ['L_inner', 'Inner hexagons'], ['L_web', 'Web diagonals'], ['L_back', 'Far side'],
+    ['L_net', 'Icosahedron net'], ['L_poles', 'Five-fold nodes'], ['L_ve', 'Vector equilibrium'], ['L_gc', 'Great circles'],
+    ['L_lcd', 'LCD triangles'], ['L_poly', 'Spherical polyhedron']];
+  function toggleLayer(i) {
+    const [key, name] = LAYER_KEYS[i];
+    set(key, !S[key]);
+    toast(`${name} ${S[key] ? 'on' : 'off'}`);
+  }
+  // full screen: the page goes full screen where the browser allows it; where it does not (some embedded views),
+  // the sphere still fills the window
+  const isFull = () => document.body.classList.contains('immersive');
+  function setFull(on) {
+    if (on === isFull()) return;
+    document.body.classList.toggle('immersive', on);
+    if (on) {
+      try { document.documentElement.requestFullscreen?.().catch(() => {}); } catch {}
+      toast('Full screen · F or Esc to leave');
+    } else if (document.fullscreenElement) {
+      try { document.exitFullscreen?.().catch(() => {}); } catch {}
+    }
+    pinLayout();
+  }
+  // the browser's own Esc leaves its full screen without a keydown reaching the page
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && isFull()) setFull(false); });
+  $('fullBtn').addEventListener('click', () => setFull(true));
+  $('exitFull').addEventListener('click', () => setFull(false));
+
+  const SHORTCUTS = {
+    BracketLeft: () => stepFreq(-1), BracketRight: () => stepFreq(1),
+    Comma: () => stepSpin(-0.5), Period: () => stepSpin(0.5),
+    Minus: () => stepDepth(-5), Equal: () => stepDepth(5), NumpadSubtract: () => stepDepth(-5), NumpadAdd: () => stepDepth(5),
+    KeyF: () => setFull(!isFull()), Escape: () => setFull(false),
+  };
+  for (let i = 0; i < 10; i++) SHORTCUTS['Digit' + ((i + 1) % 10)] = SHORTCUTS['Numpad' + ((i + 1) % 10)] = () => toggleLayer(i);
+  // for synthetic keystrokes that carry no key position
+  const BY_KEY = { '[': 'BracketLeft', ']': 'BracketRight', ',': 'Comma', '.': 'Period', '-': 'Minus', '=': 'Equal', '+': 'Equal',
+    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])) };
   addEventListener('keydown', e => {
     const run = SHORTCUTS[e.code || BY_KEY[e.key]];
     if (!run || e.metaKey || e.ctrlKey || e.altKey || typing()) return;
@@ -2518,7 +2588,7 @@
   let pin = null;   // full-size measurements while pinned
   function pinLayout() {
     stageEl.style.height = ''; board.style.transform = ''; mastEl.style.opacity = $('readout').style.opacity = mastEl.style.pointerEvents = '';
-    if (!phone.matches) {
+    if (!phone.matches || document.body.classList.contains('immersive')) {
       pin = null;
       for (const v of ['--stage-full', '--stage-small', '--panel-min']) rootStyle.removeProperty(v);
       return;
