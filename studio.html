@@ -305,7 +305,8 @@
   body.immersive .stage { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 0;
                           height: auto !important; background: var(--board-bg, var(--bg)); box-shadow: none; }
   body.immersive .board-wrap { container-type: normal; display: grid; place-items: center; width: 100%; height: 100%; }
-  body.immersive .board { width: min(100vw, 100vh); border-radius: 0; box-shadow: none; transform: none !important; }
+  /* the board fills the screen: background and grain run edge to edge, the sphere is drawn centred */
+  body.immersive .board { width: 100vw; height: 100vh; max-width: none; aspect-ratio: auto; border-radius: 0; box-shadow: none; transform: none !important; }
   body.immersive .exit-full { display: inline-flex; position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px;
                               z-index: 25; opacity: .25; transition: opacity .2s; }
   body.immersive .exit-full:hover, body.immersive .exit-full:focus-visible { opacity: 1; }
@@ -1910,10 +1911,13 @@
   // ───────────────────────── stage ─────────────────────────
   const $ = id => document.getElementById(id);
   const cv = $('cv'), ctx = cv.getContext('2d'), board = $('board');
-  let boardSize = 600, dpr = 1;
+  // boardW × boardH is the canvas; the sphere's square frame is boardSize, centred in it (full screen is wider or taller)
+  let boardSize = 600, boardW = 600, boardH = 600, dpr = 1;
   function resize() {
-    boardSize = Math.max(1, board.clientWidth); dpr = Math.min(devicePixelRatio || 1, 2);   // layout size, not the scaled one
-    cv.width = Math.round(boardSize * dpr); cv.height = Math.round(boardSize * dpr);
+    boardW = Math.max(1, board.clientWidth); dpr = Math.min(devicePixelRatio || 1, 2);   // layout size, not the scaled one
+    boardH = document.body.classList.contains('immersive') ? Math.max(1, board.clientHeight) : boardW;
+    boardSize = Math.min(boardW, boardH);
+    cv.width = Math.round(boardW * dpr); cv.height = Math.round(boardH * dpr);
     draw();
   }
   new ResizeObserver(resize).observe(board);
@@ -1921,9 +1925,17 @@
   let lastLabel = null;
   function draw() {
     const geo = build(S.freq);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const fr = paint(ctx, boardSize, geo, true);   // the background too, so blend modes act on it
-    addGrain(ctx, boardSize, boardSize, boardSize / 1000, true);
+    let fr;
+    if (boardW === boardH) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      fr = paint(ctx, boardSize, geo, true);   // the background too, so blend modes act on it
+    } else {   // full screen: background over the whole canvas, then the sphere's square frame, centred
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, boardW, boardH); fillBg(ctx, 0, 0, boardW, boardH);
+      ctx.setTransform(dpr, 0, 0, dpr, dpr * (boardW - boardSize) / 2, dpr * (boardH - boardSize) / 2);
+      fr = paint(ctx, boardSize, geo, 'keep');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    addGrain(ctx, boardW, boardH, boardSize / 1000, true);   // grain over the whole canvas
     const label = animLabel(fr.kind, fr.st, S.freq);
     if (label !== lastLabel) {
       lastLabel = label;
