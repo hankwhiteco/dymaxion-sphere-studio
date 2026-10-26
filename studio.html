@@ -579,15 +579,15 @@
       <div class="sec-body">
       <div class="row">
         <label for="turn">Turn</label><span class="val" id="turnVal"></span>
-        <input type="range" id="turn" min="0" max="359" step="1" value="0" aria-label="Turn about the spin axis">
+        <input type="range" id="turn" min="0" max="359.9" step="0.1" value="0" aria-label="Turn about the spin axis">
       </div>
       <div class="row">
         <label for="tilt">Tilt</label><span class="val" id="tiltVal"></span>
-        <input type="range" id="tilt" min="-89" max="89" step="1" value="12" aria-label="Tilt toward you">
+        <input type="range" id="tilt" min="-89" max="89" step="0.1" value="12" aria-label="Tilt toward you">
       </div>
       <div class="row">
         <label for="roll">Roll</label><span class="val" id="rollVal"></span>
-        <input type="range" id="roll" min="-180" max="180" step="1" value="0" aria-label="Roll about the line of sight">
+        <input type="range" id="roll" min="-180" max="180" step="0.1" value="0" aria-label="Roll about the line of sight">
       </div>
       <p class="note">Turn goes around the spin axis (what Spin animates), Tilt tips that axis toward you, and Roll turns the picture in the screen. Drag the sphere to turn and tilt it; Shift-drag to roll.</p>
       <div class="row">
@@ -1937,34 +1937,44 @@
       if (anim.x >= 1) anim.running = false;
       syncAnim();
     }
-    syncTurn();
+    if (!dragging) stepOrientation(dt);
+    syncOrient();
     requestAnimationFrame(tick);   // ask for the next frame first: a bad frame must never stop the loop
     try { draw(); } catch (e) { if (!tick.failed) { tick.failed = true; console.error(e); } }
   }
   requestAnimationFrame(tick);
 
   // drag to orbit: horizontal turns about the spin axis, vertical tilts
-  let px0, py0;
+  let px0, py0, pt0 = 0;
+  const flick = { turn: 0, tilt: 0, roll: 0 };   // drag velocity in degrees a second, smoothed
   board.addEventListener('pointerdown', e => {
-    dragging = true; px0 = e.clientX; py0 = e.clientY;
+    dragging = true; px0 = e.clientX; py0 = e.clientY; pt0 = performance.now();
+    flick.turn = flick.tilt = flick.roll = 0;
+    for (const a in orient.vel) orient.vel[a] = orient.pend[a] = 0;   // catching the sphere stops it
     board.setPointerCapture(e.pointerId); board.classList.add('dragging');
   });
   board.addEventListener('pointermove', e => {
     if (!dragging) return;
-    const k = 180 / boardSize;
-    if (e.shiftKey) S.roll = wrap180(S.roll + (e.clientX - px0) * k);   // shift-drag rolls the picture
-    else {
-      theta -= (e.clientX - px0) * k * Math.PI / 180;
-      dragTilt = Math.max(-89 - S.tilt, Math.min(89 - S.tilt, dragTilt + (e.clientY - py0) * k));
+    const k = 180 / boardSize, now = performance.now(), dts = Math.max(0.008, (now - pt0) / 1000);
+    const dx = (e.clientX - px0) * k, dy = (e.clientY - py0) * k, m = 0.35;   // m: how fast the flick velocity follows
+    if (e.shiftKey) {                                    // shift-drag rolls the picture
+      S.roll = wrap180(S.roll + dx);
+      flick.roll += (dx / dts - flick.roll) * m; flick.turn *= 1 - m; flick.tilt *= 1 - m;
+    } else {
+      theta -= dx * Math.PI / 180;
+      dragTilt = Math.max(-89 - S.tilt, Math.min(89 - S.tilt, dragTilt + dy));
+      flick.turn += (-dx / dts - flick.turn) * m; flick.tilt += (dy / dts - flick.tilt) * m; flick.roll *= 1 - m;
     }
-    px0 = e.clientX; py0 = e.clientY;
+    px0 = e.clientX; py0 = e.clientY; pt0 = now;
   });
   const endDrag = () => {
     if (!dragging) return;
     dragging = false; board.classList.remove('dragging');
     // fold the drag tilt into the tilt control so it sticks
-    S.tilt = Math.round(Math.max(-89, Math.min(89, S.tilt + dragTilt))); dragTilt = 0;
-    S.roll = Math.round(S.roll);
+    S.tilt = Math.max(-89, Math.min(89, S.tilt + dragTilt)); dragTilt = 0;
+    // a flick coasts on; a drag that came to a stop before letting go does not
+    const still = performance.now() - pt0 > 90, cap = v => Math.max(-720, Math.min(720, v));
+    if (!still) for (const a of ['turn', 'tilt', 'roll']) orient.vel[a] = cap(flick[a]);
     sync(); persist();
   };
   board.addEventListener('pointerup', endDrag);
@@ -2049,9 +2059,7 @@
     $('tolMM').closest('.row').classList.toggle('dim', !S.strutColor);
     $('speed').value = S.dir * S.speed;   // one slider both ways: left of centre spins in reverse
     $('speedVal').textContent = S.speed > 0 ? `${S.dir > 0 ? 'forward' : 'reverse'} · ${(+S.speed).toFixed(1)}°/s · turn ${fmtTime(360 / S.speed)}` : 'still';
-    $('tilt').value = S.tilt; $('tiltVal').textContent = `${S.tilt}° toward you`;
-    $('roll').value = S.roll; $('rollVal').textContent = `${S.roll}°`;
-    syncTurn(true);
+    syncOrient(true);
     $('wobble').value = S.wobble; $('wobbleVal').textContent = S.wobble ? `±${S.wobble}°` : 'off';
     $('zoom').value = S.zoom; $('zoomVal').textContent = `${S.zoom}%`;
     $('exportBg').checked = S.exportBg;
@@ -2189,18 +2197,63 @@
   function set(key, v) { S[key] = v; sync(); persist(); }
   // orientation: turn is the spin angle itself, shown in degrees
   const wrap180 = a => ((a + 180) % 360 + 360) % 360 - 180;
-  const turnDeg = () => ((Math.round(theta * 180 / Math.PI) % 360) + 360) % 360;
-  let shownTurn = null;
-  function syncTurn(force) {
-    const d = turnDeg();
-    if (!force && d === shownTurn) return;
-    shownTurn = d; $('turn').value = d; $('turnVal').textContent = `${d}° about the axis`;
+  const turnDegF = () => ((theta * 180 / Math.PI) % 360 + 360) % 360;
+  const turnDeg = () => Math.round(turnDegF()) % 360;
+  // write the three orientation sliders and their labels; a slider you are dragging is left alone
+  let shownOrient = '';
+  function syncOrient(force) {
+    const t = turnDegF(), key = [t.toFixed(1), S.tilt.toFixed(1), S.roll.toFixed(1)].join('|');
+    if (!force && key === shownOrient) return;
+    shownOrient = key;
+    const put = (id, v) => { if (document.activeElement !== $(id) || !sliderHeld) $(id).value = v; };
+    put('turn', t.toFixed(1)); put('tilt', S.tilt.toFixed(1)); put('roll', S.roll.toFixed(1));
+    $('turnVal').textContent = `${Math.round(t) % 360}° about the axis`;
+    $('tiltVal').textContent = `${Math.round(S.tilt)}° toward you`;
+    $('rollVal').textContent = `${Math.round(S.roll)}°`;
   }
-  function stepOrient(kind, d) {
-    if (kind === 'turn') { theta += d * Math.PI / 180; syncTurn(); toast(`Turn ${turnDeg()}°`); return; }
-    if (kind === 'tilt') { set('tilt', Math.max(-89, Math.min(89, S.tilt + d))); toast(`Tilt ${S.tilt}°`); return; }
-    set('roll', wrap180(S.roll + d)); toast(`Roll ${S.roll}°`);
+  const syncTurn = syncOrient;
+  let sliderHeld = false;
+  // Orientation by hand. Keys and drags never move the sphere directly: they add to a pending amount per axis,
+  // and each frame the sphere eases a share of it in (ease-out), so taps glide. A held key keeps feeding the
+  // pending amount at a rate that ramps up, so several keys at once mix (turn and tilt together goes diagonally).
+  // A flicked drag leaves a velocity that decays, so the sphere coasts to rest.
+  const ORIENT_KEYS = { ArrowLeft: ['turn', -1], ArrowRight: ['turn', 1], ArrowUp: ['tilt', 1], ArrowDown: ['tilt', -1],
+                        KeyQ: ['roll', -1], KeyE: ['roll', 1] };
+  const orient = { pend: { turn: 0, tilt: 0, roll: 0 }, vel: { turn: 0, tilt: 0, roll: 0 }, held: new Map(), moving: false };
+  function orientKey(e, down) {
+    const k = ORIENT_KEYS[e.code]; if (!k) return;
+    if (!down) { orient.held.delete(e.code); return; }
+    if (e.repeat) return;                                    // holds are timed here, not by key repeat
+    const [axis, dir] = k;
+    orient.pend[axis] += dir * (e.shiftKey ? 1 : 5);         // a tap: one glide of 5°, or 1° with Shift
+    orient.held.set(e.code, { axis, dir, fine: e.shiftKey, t: 0 });
   }
+  function applyOrient(axis, d) {
+    if (axis === 'turn') theta += d * Math.PI / 180;
+    else if (axis === 'tilt') S.tilt = Math.max(-89, Math.min(89, S.tilt + d));
+    else S.roll = wrap180(S.roll + d);
+  }
+  function stepOrientation(dt) {
+    let moved = false;
+    for (const h of orient.held.values()) {                  // holding: after a beat, a steady rate that ramps in
+      h.t += dt;
+      if (h.t > 0.18) orient.pend[h.axis] += h.dir * (h.fine ? 12 : 70) * Math.min(1, (h.t - 0.18) / 0.5) * dt;
+    }
+    const ease = 1 - Math.exp(-dt * 9);                      // ease-out: the remaining amount, a share per frame
+    for (const axis of ['turn', 'tilt', 'roll']) {
+      let d = orient.pend[axis] * ease;
+      if (Math.abs(orient.pend[axis]) < 0.002) { d = orient.pend[axis]; }
+      orient.pend[axis] -= d;
+      const v = orient.vel[axis];
+      if (Math.abs(v) > 0.05) { d += v * dt; orient.vel[axis] = v * Math.exp(-dt * 2.6); } else orient.vel[axis] = 0;
+      if (d) { applyOrient(axis, d); moved = true; }
+    }
+    if (moved) { syncOrient(); orient.moving = true; }
+    else if (orient.moving) { orient.moving = false; persist(); }   // save once the sphere comes to rest
+    return moved;
+  }
+  addEventListener('keyup', e => orientKey(e, false));
+  addEventListener('blur', () => orient.held.clear());
   // line weight runs 0.25× to 50× on a logarithmic slider, so the fine low end keeps its room
   const W_MIN = 0.25, W_MAX = 50, W_SPAN = Math.log(W_MAX / W_MIN);
   function sliderToWeight(v) { const w = W_MIN * Math.exp(v / 1000 * W_SPAN); return w < 10 ? Math.round(w * 100) / 100 : Math.round(w * 10) / 10; }
@@ -2241,8 +2294,13 @@
   // moving the far-side slider always works: it switches the far side back on
   $('backOp').addEventListener('input', e => { S.L_back = true; set('backOp', +e.target.value); });
   $('speed').addEventListener('input', e => setSpin(+e.target.value));
-  num('tilt', 'tilt'); num('roll', 'roll');
-  $('turn').addEventListener('input', e => { theta = +e.target.value * Math.PI / 180; syncTurn(true); }); num('wobble', 'wobble'); num('zoom', 'zoom');
+  $('tilt').addEventListener('input', e => { S.tilt = +e.target.value; orient.pend.tilt = orient.vel.tilt = 0; syncOrient(true); persist(); });
+  $('roll').addEventListener('input', e => { S.roll = +e.target.value; orient.pend.roll = orient.vel.roll = 0; syncOrient(true); persist(); });
+  for (const id of ['turn', 'tilt', 'roll']) {
+    $(id).addEventListener('pointerdown', () => { sliderHeld = true; });
+    $(id).addEventListener('pointerup', () => { sliderHeld = false; });
+  }
+  $('turn').addEventListener('input', e => { theta = +e.target.value * Math.PI / 180; orient.pend.turn = orient.vel.turn = 0; syncOrient(true); }); num('wobble', 'wobble'); num('zoom', 'zoom');
   $('freqDown').addEventListener('click', () => set('freq', Math.max(2, S.freq - 1)));
   $('freqUp').addEventListener('click', () => set('freq', Math.min(16, S.freq + 1)));
   for (const k of ['trueScale', 'L_outer', 'L_inner', 'L_web', 'L_net', 'L_poles', 'L_ve', 'L_back', 'L_gc', 'L_lcd', 'L_poly',
@@ -2329,9 +2387,8 @@
     Comma: () => stepSpin(-0.5), Period: () => stepSpin(0.5),
     Minus: () => stepDepth(-5), Equal: () => stepDepth(5), NumpadSubtract: () => stepDepth(-5), NumpadAdd: () => stepDepth(5),
     KeyF: () => setFull(!isFull()), Escape: () => setFull(false),
-    ArrowLeft: e => stepOrient('turn', e.shiftKey ? -1 : -5), ArrowRight: e => stepOrient('turn', e.shiftKey ? 1 : 5),
-    ArrowUp: e => stepOrient('tilt', e.shiftKey ? 1 : 5), ArrowDown: e => stepOrient('tilt', e.shiftKey ? -1 : -5),
-    KeyQ: e => stepOrient('roll', e.shiftKey ? -1 : -5), KeyE: e => stepOrient('roll', e.shiftKey ? 1 : 5),
+    ArrowLeft: e => orientKey(e, true), ArrowRight: e => orientKey(e, true), ArrowUp: e => orientKey(e, true),
+    ArrowDown: e => orientKey(e, true), KeyQ: e => orientKey(e, true), KeyE: e => orientKey(e, true),
   };
   for (let i = 0; i < 10; i++) SHORTCUTS['Digit' + ((i + 1) % 10)] = SHORTCUTS['Numpad' + ((i + 1) % 10)] = () => toggleLayer(i);
   // for synthetic keystrokes that carry no key position
