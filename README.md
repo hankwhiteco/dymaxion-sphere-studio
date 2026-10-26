@@ -44,6 +44,7 @@ The control panel has five tabs: **Shape** (frequency, structure, strut types), 
 | `↑` / `↓` | tilt toward / away from you |
 | `Q` / `E` | roll the picture about the line of sight |
 | `1`–`0` | toggle outer, inner, diagonals, far side, icosahedron net, five-fold nodes, vector equilibrium, great circles, LCD triangles, spherical polyhedron |
+| `R` | random colours for the outer, inner and diagonal layers (a colour scheme from a random hue, readable on the background); `Shift+R` gives each a depth gradient instead. Match struts undoes it |
 | `F` | full screen (just the sphere); `Esc` leaves |
 
 The orientation keys glide rather than step: a tap eases 5° (1° with Shift), holding ramps up to a steady turn and glides to a stop on release, and keys combine, so → and ↑ together move diagonally. A flicked drag coasts to rest. Keys are matched by position, so they work on any layout, and are ignored while typing in a field or with Cmd, Ctrl or Alt held. Each shows a short readout of what changed.

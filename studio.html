@@ -228,6 +228,7 @@
   .linkbtn { border: 0; background: none; padding: 0; color: var(--muted); font: 400 12px var(--font); cursor: pointer;
              border-bottom: 1px solid var(--line); }
   .linkbtn:hover { color: var(--fg); }
+  .links { display: inline-flex; gap: 14px; }
   .linkbtn:disabled { opacity: .4; cursor: default; }
   .linkbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .check { display: grid; grid-template-columns: 14px 1fr; align-items: center; gap: 2px 10px; cursor: pointer; font-size: 12.5px; font-weight: 400; }
@@ -339,7 +340,7 @@
     <div class="masthead">
       <div class="brand"><span class="grille" aria-hidden="true"></span><h1>Dymaxion Sphere Studio</h1></div>
       <div class="mast-right">
-        <span class="hint">Drag to turn · Space play · [ ] frequency · , . spin · ← → ↑ ↓ turn, tilt · Q E roll · ; ' line weight · − = depth · 1–0 layers · F full screen</span>
+        <span class="hint">Drag to turn · Space play · [ ] frequency · , . spin · ← → ↑ ↓ turn, tilt · Q E roll · ; ' line weight · − = depth · 1–0 layers · R random colours · F full screen</span>
         <button type="button" class="notes-key" id="fullBtn" aria-label="Full screen (F)">Full screen <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 4 V1.5 H4 M6 1.5 H8.5 V4 M8.5 6 V8.5 H6 M4 8.5 H1.5 V6"/></svg></button>
         <a class="notes-key" href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html" target="_blank" rel="noopener">Geometry notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a>
       </div>
@@ -502,7 +503,7 @@
           <div class="swatches" id="sw_bg"></div></div>
         <div class="ced-slot" id="slot_bg"></div>
       </div>
-      <div class="row"><span class="lbl">Each layer</span><button class="linkbtn" id="matchStruts" type="button">Match struts</button></div>
+      <div class="row"><span class="lbl">Each layer</span><span class="links"><button class="linkbtn" id="randomLayers" type="button" title="R; Shift+R for gradients">Randomise</button><button class="linkbtn" id="matchStruts" type="button">Match struts</button></span></div>
       <div class="layer-colors">
         <button type="button" class="lc lchip" data-role="outer" aria-label="Outer layer colour"><span class="chip" id="chip_outer"></span><span>Outer<small id="sub_outer"></small></span></button>
         <button type="button" class="lc lchip" data-role="inner" aria-label="Inner layer colour"><span class="chip" id="chip_inner"></span><span>Inner<small id="sub_inner"></small></span></button>
@@ -2187,6 +2188,29 @@
   $('ced_b').addEventListener('input', e => { S.grad[cedRole].to = e.target.value; S.grad[cedRole].on = true; sync(); persist(); });
   document.querySelectorAll('input[name="ced_dir"]').forEach(r => r.addEventListener('change', () => { S.grad[cedRole].dir = r.value; sync(); persist(); }));
   $('ced_struts').addEventListener('click', () => { S[LAYER_KEY[cedRole]] = null; S.grad[cedRole].on = false; sync(); persist(); });
+  // random layer colours: a colour scheme from a random hue, with lightness set against the background so the
+  // lines stay readable; with gradients, each layer runs by depth from its colour to a deeper shade of the next
+  const hslHex = (h, sat, l) => {
+    h = ((h % 360) + 360) % 360; sat /= 100; l /= 100;
+    const k = n => (n + h / 30) % 12, a = sat * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+    return '#' + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+  };
+  const SCHEMES = [['analogous', [0, 28, 56]], ['triadic', [0, 120, 240]], ['split complementary', [0, 150, 210]], ['complementary', [0, 180, 20]]];
+  function randomLayers(gradient) {
+    const dark = luma(hexRgb(S.bg)) < 128, rnd = (a, b) => a + Math.random() * (b - a);
+    const [name, offs] = SCHEMES[Math.floor(Math.random() * SCHEMES.length)], h0 = rnd(0, 360);
+    const order = ['outer', 'inner', 'web'].sort(() => Math.random() - 0.5);   // which layer gets which colour
+    const cols = offs.map(o => hslHex(h0 + o + rnd(-8, 8), rnd(55, 85), dark ? rnd(56, 72) : rnd(30, 46)));
+    order.forEach((role, i) => {
+      S[LAYER_KEY[role]] = cols[i];
+      const to = hslHex(h0 + offs[(i + 1) % 3] + rnd(-8, 8), rnd(45, 75), dark ? rnd(22, 34) : rnd(68, 82));   // recedes toward the background
+      S.grad[role] = { ...S.grad[role], on: gradient, to, dir: gradient ? 'depth' : S.grad[role].dir };
+    });
+    sync(); persist();
+    toast(`Random ${name}${gradient ? ' gradients' : ' colours'} · Match struts to undo`);
+  }
+  $('randomLayers').addEventListener('click', e => randomLayers(e.shiftKey));
   $('matchStruts').addEventListener('click', () => {
     S.cOuter = S.cInner = S.cWeb = null;
     for (const r of ['outer', 'inner', 'web']) S.grad[r].on = false;
@@ -2396,14 +2420,14 @@
     Comma: () => stepSpin(-0.5), Period: () => stepSpin(0.5),
     Minus: () => stepDepth(-5), Equal: () => stepDepth(5),
     Semicolon: e => stepWeight(-1, e.shiftKey), Quote: e => stepWeight(1, e.shiftKey), NumpadSubtract: () => stepDepth(-5), NumpadAdd: () => stepDepth(5),
-    KeyF: () => setFull(!isFull()), Escape: () => setFull(false),
+    KeyF: () => setFull(!isFull()), Escape: () => setFull(false), KeyR: e => randomLayers(e.shiftKey),
     ArrowLeft: e => orientKey(e, true), ArrowRight: e => orientKey(e, true), ArrowUp: e => orientKey(e, true),
     ArrowDown: e => orientKey(e, true), KeyQ: e => orientKey(e, true), KeyE: e => orientKey(e, true),
   };
   for (let i = 0; i < 10; i++) SHORTCUTS['Digit' + ((i + 1) % 10)] = SHORTCUTS['Numpad' + ((i + 1) % 10)] = () => toggleLayer(i);
   // for synthetic keystrokes that carry no key position
   const BY_KEY = { '[': 'BracketLeft', ']': 'BracketRight', ',': 'Comma', '.': 'Period', '-': 'Minus', '=': 'Equal', '+': 'Equal',
-    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ';': 'Semicolon', "'": 'Quote', q: 'KeyQ', Q: 'KeyQ', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])) };
+    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ';': 'Semicolon', "'": 'Quote', q: 'KeyQ', Q: 'KeyQ', r: 'KeyR', R: 'KeyR', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])) };
   addEventListener('keydown', e => {
     const run = SHORTCUTS[e.code || BY_KEY[e.key]];
     if (!run || e.metaKey || e.ctrlKey || e.altKey || typing()) return;
