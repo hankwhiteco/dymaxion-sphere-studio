@@ -1785,12 +1785,14 @@
   // depth: instead of a hard front/back split, a strut's opacity eases between the far-side opacity and full strength
   // across a band around the sphere's edge, so nothing pops as it turns from front to back. Everything is sorted
   // into DEPTH_K steps and drawn far to near, so nearer struts still lie on top
-  const DEPTH_K = 10, DEPTH_W = 0.18;   // steps, and the band's half-width in sphere radii
-  function depthBand(fr) {
+  // the canvas uses fine steps so no strut visibly jumps; the SVG keeps fewer, so its groups stay editable
+  const DEPTH_K = 10, PAINT_K = 32, DEPTH_W = 0.18;   // steps, and the band's half-width in sphere radii
+  function depthBand(fr, K = DEPTH_K) {
     const backA = S.L_back ? S.backOp / 100 : 0;
-    return { level: k => backA + (1 - backA) * ease(k / (DEPTH_K - 1)),
-             step: fr.flat ? () => DEPTH_K - 1 : z => Math.round(clamp01((z + DEPTH_W) / (2 * DEPTH_W)) * (DEPTH_K - 1)) };
+    return { level: k => backA + (1 - backA) * ease(k / (K - 1)),
+             step: fr.flat ? () => K - 1 : z => Math.round(clamp01((z + DEPTH_W) / (2 * DEPTH_W)) * (K - 1)) };
   }
+  let inkCanvas = null;   // offscreen layer for Normal blending, reused between frames
   const groupName = k => k === DEPTH_K - 1 ? 'front' : k === 0 ? 'back' : 'depth-' + k;
   const polyZ = F => { let z = 0; for (const p of F.pts) z += p[2]; return z / F.pts.length; };
 
@@ -1799,11 +1801,29 @@
     // withBg: true fills the background, false leaves it clear, 'keep' draws over what is already there
     if (withBg !== 'keep') ctx.clearRect(0, 0, size, size);
     if (withBg === true) fillBg(ctx, 0, 0, size, size);
+    const blend = exporting ? S.blend : (previewBlend || S.blend);
+    // Normal blending draws the sphere on its own layer, where each stroke first clears what lies beneath it:
+    // a nearer stroke replaces a farther one instead of stacking on it, so semi-transparent overlaps never darken
+    // and flicker as struts change depth step. The other blend modes are about strokes mixing, so they draw directly
+    const solo = blend === 'source-over';
+    let g = ctx;
+    if (solo) {
+      const W = ctx.canvas.width, H = ctx.canvas.height;
+      inkCanvas ||= document.createElement('canvas');
+      if (inkCanvas.width !== W || inkCanvas.height !== H) { inkCanvas.width = W; inkCanvas.height = H; }
+      g = inkCanvas.getContext('2d');
+      g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H); g.setTransform(ctx.getTransform());
+    }
     const grads = {};
-    const paintOf = col => !isGrad(col) ? col : (grads[col] ||= (g => canvasGrad(ctx, strutGeom(fr, g.dir), g.from, g.to))(gradOf(roleOf(col))));
-    ctx.lineCap = S.cap; ctx.lineJoin = 'round';
-    ctx.globalCompositeOperation = exporting ? S.blend : (previewBlend || S.blend);   // each layer blends with what is drawn
-    const { level, step } = depthBand(fr), K = DEPTH_K;
+    const paintOf = col => !isGrad(col) ? col : (grads[col] ||= (gr => canvasGrad(g, strutGeom(fr, gr.dir), gr.from, gr.to))(gradOf(roleOf(col))));
+    g.lineCap = S.cap; g.lineJoin = 'round';
+    g.globalCompositeOperation = blend;   // each layer blends with what is drawn
+    // clear the shape, then draw it (on the layer); directly, just draw it
+    const put = (alpha, style, draw) => {
+      if (solo) { g.globalCompositeOperation = 'destination-out'; g.globalAlpha = 1; draw(); g.globalCompositeOperation = 'source-over'; }
+      g.globalAlpha = alpha; style(); draw();
+    };
+    const K = PAINT_K, { level, step } = depthBand(fr, K);
     // sort once into depth steps (one path per layer and step), then draw the steps far to near
     const fillAt = Array.from({ length: K }, () => []);
     for (const F of fr.fills) if (F.alpha > 0) fillAt[step(polyZ(F))].push(F);
@@ -1820,23 +1840,28 @@
       const la = level(k);
       if (la <= 0.002) continue;
       for (const F of fillAt[k]) {
-        ctx.globalAlpha = la * F.alpha; ctx.fillStyle = paintOf(F.color); ctx.beginPath();
-        F.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
-        ctx.closePath(); ctx.fill();
+        const shape = new Path2D();
+        F.pts.forEach((p, i) => i ? shape.lineTo(p[0], p[1]) : shape.moveTo(p[0], p[1]));
+        shape.closePath();
+        put(la * F.alpha, () => { g.fillStyle = paintOf(F.color); }, () => g.fill(shape));
       }
       fr.layers.forEach((L, i) => {
         const p = paths[i] && paths[i][k];
         if (!p) return;
-        ctx.globalAlpha = la * L.alpha; ctx.strokeStyle = paintOf(L.color); ctx.lineWidth = L.w; ctx.setLineDash(L.dash || []);
-        ctx.stroke(p);
+        g.lineWidth = L.w; g.setLineDash(L.dash || []);
+        put(la * L.alpha, () => { g.strokeStyle = paintOf(L.color); }, () => g.stroke(p));
       });
-      ctx.setLineDash([]);
+      g.setLineDash([]);
       for (const D of fr.dots) {
         if (D.alpha <= 0.001) continue;
-        ctx.globalAlpha = la * D.alpha; ctx.fillStyle = paintOf(D.color); ctx.beginPath();
-        for (const p of D.pts) if (step(p[2]) === k) { ctx.moveTo(p[0] + D.r, p[1]); ctx.arc(p[0], p[1], D.r, 0, Math.PI * 2); }
-        ctx.fill();
+        const shape = new Path2D();
+        for (const p of D.pts) if (step(p[2]) === k) { shape.moveTo(p[0] + D.r, p[1]); shape.arc(p[0], p[1], D.r, 0, Math.PI * 2); }
+        put(la * D.alpha, () => { g.fillStyle = paintOf(D.color); }, () => g.fill(shape));
       }
+    }
+    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    if (solo) {
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(inkCanvas, 0, 0); ctx.restore();
     }
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     return fr;
