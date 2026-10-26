@@ -1770,8 +1770,8 @@
       if (anim.x >= 1) anim.running = false;
       syncAnim();
     }
-    draw();
-    requestAnimationFrame(tick);
+    requestAnimationFrame(tick);   // ask for the next frame first: a bad frame must never stop the loop
+    try { draw(); } catch (e) { if (!tick.failed) { tick.failed = true; console.error(e); } }
   }
   requestAnimationFrame(tick);
 
