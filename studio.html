@@ -58,17 +58,14 @@
                background: var(--panel); color: var(--fg); font: 500 12px var(--font); text-decoration: none;
                box-shadow: inset 0 0 0 1px var(--line), inset 0 -1px 0 var(--line); }
   .notes-key:hover { background: var(--well); }
-  .notes-key:focus-visible, .notes:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .notes-key svg, .notes svg { width: 9px; height: 9px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
-  .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-  .notes { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); text-decoration: none; }
-  .notes:hover { color: var(--fg); }
+  .notes-key:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .notes-key svg { width: 9px; height: 9px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
   .board-wrap { display: grid; place-items: center; min-height: 0; container-type: size; }
   .board { position: relative; width: min(100%, 100cqh); aspect-ratio: 1; max-width: 100%;
            border-radius: 6px; overflow: hidden; touch-action: none; cursor: grab;
            box-shadow: inset 0 0 0 1px var(--line); }
   .board.dragging { cursor: grabbing; }
-  .board { background: #f2f1ed; }   /* replaced by the Background colour */
+  .board { background: #141413; }   /* replaced by the Background colour; the default is the dark window colour */
   .board canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
   .phase { position: absolute; left: 12px; bottom: 12px; font: 500 11px/1 var(--font);
            padding: 7px 9px; border-radius: 3px; background: rgba(242, 241, 237, 0.92); color: #1d1d1c;
@@ -83,11 +80,33 @@
      stretch it far below the window, and focusing one scrolls the page to it */
   .panel { position: relative; background: var(--panel); box-shadow: -1px 0 0 var(--line); overflow-y: auto;
            padding-block: 6px 28px; padding-inline: 22px; }
-  section { display: grid; gap: 12px; padding-block: 18px; border-bottom: 1px solid var(--line); }
-  section:last-child { border-bottom: 0; }
-  h2 { margin: 0; font: 500 11px/1 var(--font); color: var(--muted); text-transform: lowercase; letter-spacing: 0.01em; }
+  /* tabs: five push keys with indicator lamps, held at the top of the panel */
+  .tabs { position: sticky; top: -6px; z-index: 3; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
+          margin-top: -6px; padding: 18px 0 14px; background: var(--panel); box-shadow: 0 1px 0 var(--line); }
+  .tab { position: relative; padding: 15px 2px 7px; border: 0; border-radius: 3px; background: var(--well); color: var(--fg);
+         font: 500 12px var(--font); cursor: pointer; box-shadow: inset 0 -1px 0 var(--line); }
+  .tab::before { content: ""; position: absolute; top: 6px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px;
+                 border-radius: 50%; background: var(--track); }
+  .tab:hover { background: var(--line); }
+  .tab[aria-selected="true"] { background: var(--key); color: var(--key-fg); box-shadow: none; }
+  .tab[aria-selected="true"]::before { background: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* sections fold away behind their label */
+  .sec { border-bottom: 1px solid var(--line); }
+  .sec:last-child { border-bottom: 0; }
+  .sec > summary { display: flex; align-items: center; justify-content: space-between; padding-block: 17px; cursor: pointer;
+                   list-style: none; user-select: none; }
+  .sec > summary::-webkit-details-marker { display: none; }
+  .sec > summary::after { content: ""; width: 6px; height: 6px; margin-right: 3px; border: solid var(--muted);
+                          border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) translate(-2px, -2px); transition: transform .15s; }
+  .sec:not([open]) > summary::after { transform: rotate(-45deg); }
+  .sec > summary:hover h2, .sec > summary:hover::after { color: var(--fg); border-color: var(--fg); }
+  .sec > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sec-body { display: grid; gap: 12px; padding-bottom: 20px; }
+  /* three levels: section titles (14px medium, full colour) over control labels (12.5px regular) over values (grey) */
+  h2 { margin: 0; font: 500 14px/1 var(--font); color: var(--fg); letter-spacing: -0.005em; }
   .row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 12px; }
-  .row label, .row .lbl { font-weight: 500; }
+  .row label, .row .lbl { font-size: 12.5px; font-weight: 400; }
   .val { font: 400 12px var(--font); color: var(--muted); text-align: right; }
   .row input[type="range"] { grid-column: 1 / -1; }
   .row.dim > :not(input) { opacity: .45; }
@@ -129,7 +148,7 @@
   .layer input { position: absolute; opacity: 0; pointer-events: none; }
   .layer svg { width: 30px; height: 20px; overflow: visible; }
   .layer svg * { fill: none; stroke: var(--fg); stroke-linecap: round; }
-  .layer .name { font-weight: 500; }
+  .layer .name { font-size: 12.5px; font-weight: 400; }
   .layer .count { font-size: 11px; color: var(--muted); }
   .layer .meta { display: grid; gap: 1px; }
   /* slide switch with an indicator lamp */
@@ -162,7 +181,7 @@
   /* colors */
   .colors { display: grid; gap: 8px; }
   .color { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; }
-  .color .lbl { font-weight: 500; }
+  .color .lbl { font-size: 12.5px; font-weight: 400; }
   .swatches { display: flex; gap: 4px; }
   /* White / Black / Custom keys, each with its colour chip */
   .ckey { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 9px 0 7px;
@@ -171,6 +190,7 @@
   .ckey:hover { background: var(--line); }
   .ckey .dot { width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--track); }
   .ckey.on { background: var(--key); color: var(--key-fg); box-shadow: none; }
+  .color.dim { opacity: .45; }
   .ckey input[type="color"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border-radius: 3px; }
   .ckey:focus-visible, .ckey:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
   input[type="color"] { width: 20px; height: 20px; border: 0; border-radius: 50%; padding: 0; background: none; cursor: pointer;
@@ -179,8 +199,23 @@
   input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
   input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 
-  .grad-opts { display: grid; grid-template-columns: 96px 1fr; gap: 6px; padding-left: 24px; }
-  .grad-opts .seg label { padding-block: 13px 5px; font-size: 13px; }
+  /* colour editor: opens under its row from Custom or a layer chip; Solid or Gradient */
+  .ced-slot:empty { display: none; }
+  .ced { display: grid; gap: 10px; padding: 12px; border-radius: 4px; background: var(--well); box-shadow: inset 0 0 0 1px var(--line); }
+  .ced-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 30px; }
+  .ced-tabs { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 4px; background: var(--panel); }
+  .ced-tabs button { border: 0; border-radius: 3px; padding: 6px 14px; background: none; color: var(--muted); font: 500 12px var(--font); cursor: pointer; }
+  .ced-tabs button[aria-selected="true"] { background: var(--key); color: var(--key-fg); }
+  .ced-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .ced-wells { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .ced .lc { background: var(--panel); }
+  .ced .seg label { padding-block: 13px 5px; font-size: 13px; background: var(--panel); }
+  .ced .note { margin: 0; }
+  /* layer chips open the editor too */
+  .lchip { border: 0; color: var(--fg); text-align: left; font-family: var(--font); }
+  .lchip:hover { background: var(--line); }
+  .lchip.on { box-shadow: inset 0 0 0 1px var(--accent); }
+  .lchip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .layer-colors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .lc { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 3px; background: var(--well);
         box-shadow: inset 0 -1px 0 var(--line); cursor: pointer; font-weight: 500; font-size: 12px; min-width: 0; }
@@ -195,7 +230,7 @@
   .linkbtn:hover { color: var(--fg); }
   .linkbtn:disabled { opacity: .4; cursor: default; }
   .linkbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .check { display: grid; grid-template-columns: 14px 1fr; align-items: center; gap: 2px 10px; cursor: pointer; font-weight: 500; }
+  .check { display: grid; grid-template-columns: 14px 1fr; align-items: center; gap: 2px 10px; cursor: pointer; font-size: 12.5px; font-weight: 400; }
   .check input { accent-color: var(--cap); width: 14px; height: 14px; margin: 0; }
   .check small { grid-column: 2; color: var(--muted); font-weight: 400; font-size: 11.5px; }
   .check:has(input:disabled) { opacity: .45; cursor: default; }
@@ -267,11 +302,20 @@
 
   @media (max-width: 860px) {
     html, body { height: auto; }
-    .app { grid-template-columns: minmax(0, 1fr); height: auto; }
-    .stage { padding: 16px; }
-    .board-wrap { container-type: normal; }
-    .board { width: 100%; }
-    .panel { box-shadow: 0 -1px 0 var(--line); overflow: visible; padding-inline: 16px; }
+    .app { display: block; height: auto; }
+    /* phones: the stage is pinned to the top of the screen; scrolling the controls shrinks it (see pinLayout) to the
+       top third, and the controls slide under it. The panel starts below the full-size stage and is tall enough
+       for the stage to shrink all the way. */
+    .stage { display: block; position: fixed; z-index: 5; top: 0; left: 0; right: 0; overflow: hidden;
+             padding: 12px 16px; background: var(--bg); box-shadow: 0 1px 0 var(--line); }
+    .masthead { margin-bottom: 12px; }
+    .hint { display: none; }
+    .board-wrap { display: block; container-type: normal; }
+    .board { width: 100%; transform-origin: 50% 0; will-change: transform; }
+    .readout { margin-top: 12px; }
+    .panel { box-shadow: none; overflow: visible; padding-inline: 16px;
+             padding-top: var(--stage-full, 0px); min-height: var(--panel-min, auto); }
+    .tabs { top: var(--stage-small, 0px); margin-top: 0; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -286,14 +330,22 @@
       </div>
     </div>
     <div class="board-wrap">
-      <div class="board" id="board" data-tone="light"><canvas id="cv" aria-label="Rotating geodesic sphere" role="img"></canvas><span class="phase" id="phase" hidden></span></div>
+      <div class="board" id="board" data-tone="dark"><canvas id="cv" aria-label="Rotating geodesic sphere" role="img"></canvas><span class="phase" id="phase" hidden></span></div>
     </div>
     <div class="readout" id="readout"></div>
   </main>
 
   <aside class="panel">
-    <section>
-      <div class="sec-head"><h2>Frequency</h2><a class="notes" href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html#sphere" target="_blank" rel="noopener" aria-label="Geometry notes on the sphere">notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a></div>
+    <nav class="tabs" role="tablist" aria-label="Controls">
+      <button type="button" class="tab" role="tab" id="tab-shape" aria-controls="pane-shape">Shape</button>
+      <button type="button" class="tab" role="tab" id="tab-overlays" aria-controls="pane-overlays">Overlays</button>
+      <button type="button" class="tab" role="tab" id="tab-style" aria-controls="pane-style">Style</button>
+      <button type="button" class="tab" role="tab" id="tab-motion" aria-controls="pane-motion">Motion</button>
+      <button type="button" class="tab" role="tab" id="tab-export" aria-controls="pane-export">Export</button>
+    </nav>
+    <div class="pane" id="pane-shape" role="tabpanel" aria-labelledby="tab-shape">
+      <details class="sec" data-sec="frequency" open><summary><h2>Frequency</h2></summary>
+      <div class="sec-body">
       <div class="freq-head">
         <span class="freq-num" id="freqNum">16<small>v</small></span>
         <span class="val" id="freqNote"></span>
@@ -309,10 +361,9 @@
         <label for="depth">Truss depth</label><span class="val" id="depthVal"></span>
         <input type="range" id="depth" min="0" max="150" step="5" value="100">
       </div>
-    </section>
-
-    <section>
-      <div class="sec-head"><h2>Layers</h2><a class="notes" href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html#double-layer" target="_blank" rel="noopener" aria-label="Geometry notes on the double layer">notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a></div>
+      </div></details>
+      <details class="sec" data-sec="structure" open><summary><h2>Structure</h2></summary>
+      <div class="sec-body">
       <div class="layers">
         <label class="layer"><input type="checkbox" id="L_outer" checked>
           <svg viewBox="0 0 34 22"><path d="M2 20 L11 3 L20 20 Z M11 3 L29 3 L20 20 M29 3 L32 9" stroke-width="1.6"/></svg>
@@ -323,12 +374,55 @@
         <label class="layer"><input type="checkbox" id="L_web" checked>
           <svg viewBox="0 0 34 22"><path d="M17 12 L4 3 M17 12 L30 3 M17 12 L17 21" stroke-width=".8"/></svg>
           <span class="meta"><span class="name">Web diagonals</span><span class="count" id="c_web"></span></span><span class="sw"></span></label>
+        <label class="layer"><input type="checkbox" id="L_back" checked>
+          <svg viewBox="0 0 34 22"><circle cx="17" cy="11" r="9" stroke-width="1.4"/><path d="M8 11 Q17 16 26 11" stroke-width="1" stroke-dasharray="2 2"/></svg>
+          <span class="meta"><span class="name">Far side</span><span class="count">see-through hemisphere</span></span><span class="sw"></span></label>
+      </div>
+      <div class="row">
+        <label for="backOp">Far side opacity</label><span class="val" id="backVal"></span>
+        <input type="range" id="backOp" min="5" max="100" step="1" value="28">
+      </div>
+      </div></details>
+      <details class="sec" data-sec="struts" open><summary><h2>Strut types</h2></summary>
+      <div class="sec-body">
+      <label class="check"><input type="checkbox" id="strutColor"><span>Colour struts by length</span><small>each distinct chord gets its own colour, shortest to longest</small></label>
+      <div class="row">
+        <label for="domeR">Dome radius</label><span class="val" id="domeRVal"></span>
+        <input type="range" id="domeR" min="2" max="60" step="1" value="38">
+      </div>
+      <div class="row">
+        <label for="tolMM">Cutting tolerance</label><span class="val" id="tolVal"></span>
+        <input type="range" id="tolMM" min="0" max="50" step="1" value="0">
+      </div>
+      <div class="legend" id="legend" hidden></div>
+      </div></details>
+    </div>
+    <div class="pane" id="pane-overlays" role="tabpanel" aria-labelledby="tab-overlays">
+      <details class="sec" data-sec="symmetry" open><summary><h2>Net &amp; symmetry</h2></summary>
+      <div class="sec-body">
+      <div class="layers">
         <label class="layer" data-accent><input type="checkbox" id="L_net">
           <svg viewBox="0 0 34 22"><path d="M2 20 L17 2 L32 20 Z" stroke-width="1.8"/></svg>
           <span class="meta"><span class="name">Icosahedron net</span><span class="count">20 Dymaxion faces</span></span><span class="sw"></span></label>
         <label class="layer" data-accent><input type="checkbox" id="L_poles">
           <svg viewBox="0 0 34 22"><circle cx="17" cy="11" r="4" stroke-width="1.6"/><path d="M17 3 L17 1 M24 8 L26 7 M22 18 L23 20 M12 18 L11 20 M10 8 L8 7" stroke-width="1.2"/></svg>
           <span class="meta"><span class="name">Five-fold nodes</span><span class="count">12 pentagon centers</span></span><span class="sw"></span></label>
+        <label class="layer" data-accent><input type="checkbox" id="L_lcd">
+          <svg viewBox="0 0 34 22"><path d="M3 19 L17 3 L31 19 Z M17 3 L17 19 M3 19 L24 11 M31 19 L10 11" stroke-width="1"/><path d="M17 3 L17 14 L10 11 Z" stroke-width=".1" style="fill:var(--accent);fill-opacity:.35"/></svg>
+          <span class="meta"><span class="name">LCD triangles</span><span class="count">120 cut by the 15 mirrors</span></span><span class="sw"></span></label>
+        <div class="sub" id="lcdOpts">
+          <div class="seg four" role="radiogroup" aria-label="Colour the LCD triangles by">
+            <input type="radio" name="lcdMode" id="lcd_mirror" value="mirror"><label for="lcd_mirror">Mirror<small>60 + 60</small></label>
+            <input type="radio" name="lcdMode" id="lcd_icosa" value="icosa"><label for="lcd_icosa">Icosa<small>6 per face</small></label>
+            <input type="radio" name="lcdMode" id="lcd_dodeca" value="dodeca"><label for="lcd_dodeca">Dodeca<small>10 per face</small></label>
+            <input type="radio" name="lcdMode" id="lcd_rhomb" value="rhomb"><label for="lcd_rhomb">Rhombs<small>4 per face</small></label>
+          </div>
+        </div>
+      </div>
+      </div></details>
+      <details class="sec" data-sec="circles" open><summary><h2>Great circles</h2></summary>
+      <div class="sec-body">
+      <div class="layers">
         <label class="layer" data-accent><input type="checkbox" id="L_ve">
           <svg viewBox="0 0 34 22"><circle cx="17" cy="11" r="9.5" stroke-width="1.2"/><ellipse cx="17" cy="11" rx="9.5" ry="3.6" stroke-width="1"/><ellipse cx="17" cy="11" rx="3.6" ry="9.5" stroke-width="1"/></svg>
           <span class="meta"><span class="name">Vector equilibrium</span><span class="count">4 great circles</span></span><span class="sw"></span></label>
@@ -343,17 +437,11 @@
           </div>
           <label class="check"><input type="checkbox" id="seven"><span>Emphasise the seven axes</span><small>the 3 + 4 circles shared with the vector equilibrium</small></label>
         </div>
-        <label class="layer" data-accent><input type="checkbox" id="L_lcd">
-          <svg viewBox="0 0 34 22"><path d="M3 19 L17 3 L31 19 Z M17 3 L17 19 M3 19 L24 11 M31 19 L10 11" stroke-width="1"/><path d="M17 3 L17 14 L10 11 Z" stroke-width=".1" style="fill:var(--accent);fill-opacity:.35"/></svg>
-          <span class="meta"><span class="name">LCD triangles</span><span class="count">120 cut by the 15 mirrors</span></span><span class="sw"></span></label>
-        <div class="sub" id="lcdOpts">
-          <div class="seg four" role="radiogroup" aria-label="Colour the LCD triangles by">
-            <input type="radio" name="lcdMode" id="lcd_mirror" value="mirror"><label for="lcd_mirror">Mirror<small>60 + 60</small></label>
-            <input type="radio" name="lcdMode" id="lcd_icosa" value="icosa"><label for="lcd_icosa">Icosa<small>6 per face</small></label>
-            <input type="radio" name="lcdMode" id="lcd_dodeca" value="dodeca"><label for="lcd_dodeca">Dodeca<small>10 per face</small></label>
-            <input type="radio" name="lcdMode" id="lcd_rhomb" value="rhomb"><label for="lcd_rhomb">Rhombs<small>4 per face</small></label>
-          </div>
-        </div>
+      </div>
+      </div></details>
+      <details class="sec" data-sec="polyhedra" open><summary><h2>Polyhedra</h2></summary>
+      <div class="sec-body">
+      <div class="layers">
         <label class="layer" data-accent><input type="checkbox" id="L_poly">
           <svg viewBox="0 0 34 22"><path d="M17 2 L26 8.5 L22.5 19 L11.5 19 L8 8.5 Z" stroke-width="1.4"/><circle cx="17" cy="11" r="9.5" stroke-width=".6"/></svg>
           <span class="meta"><span class="name">Spherical polyhedron</span><span class="count">traced by great-circle arcs</span></span><span class="sw"></span></label>
@@ -367,14 +455,12 @@
             <input type="radio" name="poly" id="poly_ve" value="ve"><label for="poly_ve">VE<small>14 faces</small></label>
           </div>
         </div>
-        <label class="layer"><input type="checkbox" id="L_back" checked>
-          <svg viewBox="0 0 34 22"><circle cx="17" cy="11" r="9" stroke-width="1.4"/><path d="M8 11 Q17 16 26 11" stroke-width="1" stroke-dasharray="2 2"/></svg>
-          <span class="meta"><span class="name">Far side</span><span class="count">see-through hemisphere</span></span><span class="sw"></span></label>
       </div>
-      <div class="row">
-        <label for="backOp">Far side opacity</label><span class="val" id="backVal"></span>
-        <input type="range" id="backOp" min="5" max="100" step="1" value="28">
-      </div>
+      </div></details>
+    </div>
+    <div class="pane" id="pane-style" role="tabpanel" aria-labelledby="tab-style">
+      <details class="sec" data-sec="lines" open><summary><h2>Lines</h2></summary>
+      <div class="sec-body">
       <div class="row">
         <label for="weight">Line weight</label><span class="val" id="weightVal"></span>
         <input type="range" id="weight" min="0" max="1000" step="1" value="261" aria-label="Line weight, 0.25× to 50×">
@@ -385,74 +471,72 @@
         <input type="radio" name="cap" id="cap_square" value="square"><label for="cap_square">Square<small>past the node</small></label>
         <input type="radio" name="cap" id="cap_butt" value="butt"><label for="cap_butt">Flat<small>at the node</small></label>
       </div>
-    </section>
-
-    <section>
-      <div class="sec-head"><h2>Strut types</h2><a class="notes" href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html#chord-factors" target="_blank" rel="noopener" aria-label="Geometry notes on chord factors">notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a></div>
-      <label class="check"><input type="checkbox" id="strutColor"><span>Colour struts by length</span><small>each distinct chord gets its own colour, shortest to longest</small></label>
-      <div class="row">
-        <label for="domeR">Dome radius</label><span class="val" id="domeRVal"></span>
-        <input type="range" id="domeR" min="2" max="60" step="1" value="38">
-      </div>
-      <div class="row">
-        <label for="tolMM">Cutting tolerance</label><span class="val" id="tolVal"></span>
-        <input type="range" id="tolMM" min="0" max="50" step="1" value="0">
-      </div>
-      <div class="legend" id="legend" hidden></div>
-    </section>
-
-    <section>
-      <h2>Color</h2>
+      </div></details>
+      <details class="sec" data-sec="colour" open><summary><h2>Colour</h2></summary>
+      <div class="sec-body">
       <div class="colors">
         <div class="color"><span class="lbl">Struts</span>
           <div class="swatches" id="sw_line"></div></div>
+        <div class="ced-slot" id="slot_line"></div>
         <div class="color"><span class="lbl">Highlights</span>
           <div class="swatches" id="sw_accent"></div></div>
+        <div class="ced-slot" id="slot_accent"></div>
         <div class="color"><span class="lbl">Background</span>
           <div class="swatches" id="sw_bg"></div></div>
-      </div>
-      <label class="check"><input type="checkbox" id="gLine"><span>Strut gradient</span><small>strut colour to a second colour; Depth colours each strut by its distance, so the colour turns with the sphere</small></label>
-      <div class="grad-opts" id="gLineOpts">
-        <label class="lc"><span class="chip" id="gLineTo_chip"></span><input type="color" id="gLineTo" aria-label="Strut gradient end colour"><span>To<small id="gLineTo_v"></small></span></label>
-        <div class="seg five" role="radiogroup" aria-label="Strut gradient direction">
-            <input type="radio" name="gLineDir" id="gLineDir_depth" value="depth"><label for="gLineDir_depth">◐<small>depth</small></label>
-            <input type="radio" name="gLineDir" id="gLineDir_vertical" value="vertical"><label for="gLineDir_vertical">↓<small>down</small></label>
-            <input type="radio" name="gLineDir" id="gLineDir_horizontal" value="horizontal"><label for="gLineDir_horizontal">→<small>across</small></label>
-            <input type="radio" name="gLineDir" id="gLineDir_diagonal" value="diagonal"><label for="gLineDir_diagonal">↘<small>diagonal</small></label>
-            <input type="radio" name="gLineDir" id="gLineDir_radial" value="radial"><label for="gLineDir_radial">◎<small>radial</small></label>
-        </div>
-      </div>
-      <label class="check"><input type="checkbox" id="gBg"><span>Background gradient</span><small>from the background colour to a second colour</small></label>
-      <div class="grad-opts" id="gBgOpts">
-        <label class="lc"><span class="chip" id="gBgTo_chip"></span><input type="color" id="gBgTo" aria-label="Background gradient end colour"><span>To<small id="gBgTo_v"></small></span></label>
-        <div class="seg four" role="radiogroup" aria-label="Background gradient direction">
-            <input type="radio" name="gBgDir" id="gBgDir_vertical" value="vertical"><label for="gBgDir_vertical">↓<small>down</small></label>
-            <input type="radio" name="gBgDir" id="gBgDir_horizontal" value="horizontal"><label for="gBgDir_horizontal">→<small>across</small></label>
-            <input type="radio" name="gBgDir" id="gBgDir_diagonal" value="diagonal"><label for="gBgDir_diagonal">↘<small>diagonal</small></label>
-            <input type="radio" name="gBgDir" id="gBgDir_radial" value="radial"><label for="gBgDir_radial">◎<small>radial</small></label>
-        </div>
+        <div class="ced-slot" id="slot_bg"></div>
       </div>
       <div class="row"><span class="lbl">Each layer</span><button class="linkbtn" id="matchStruts" type="button">Match struts</button></div>
       <div class="layer-colors">
-        <label class="lc"><span class="chip" id="col_outer_chip"></span><input type="color" id="col_outer" aria-label="Outer colour"><span>Outer<small id="col_outer_v"></small></span></label>
-        <label class="lc"><span class="chip" id="col_inner_chip"></span><input type="color" id="col_inner" aria-label="Inner colour"><span>Inner<small id="col_inner_v"></small></span></label>
-        <label class="lc"><span class="chip" id="col_web_chip"></span><input type="color" id="col_web" aria-label="Diagonals colour"><span>Diagonals<small id="col_web_v"></small></span></label>
+        <button type="button" class="lc lchip" data-role="outer" aria-label="Outer layer colour"><span class="chip" id="chip_outer"></span><span>Outer<small id="sub_outer"></small></span></button>
+        <button type="button" class="lc lchip" data-role="inner" aria-label="Inner layer colour"><span class="chip" id="chip_inner"></span><span>Inner<small id="sub_inner"></small></span></button>
+        <button type="button" class="lc lchip" data-role="web" aria-label="Diagonals colour"><span class="chip" id="chip_web"></span><span>Diagonals<small id="sub_web"></small></span></button>
       </div>
-    </section>
-
-    <section>
-      <h2>Texture</h2>
+      <div class="ced-slot" id="slot_layers"></div>
+      <div class="ced" id="ced" hidden>
+        <div class="ced-head">
+          <div class="ced-tabs" id="ced_tabs" role="tablist" aria-label="Fill"><button type="button" role="tab" data-mode="solid">Solid</button><button type="button" role="tab" data-mode="gradient">Gradient</button></div>
+          <button class="linkbtn" id="ced_struts" type="button">As struts</button>
+        </div>
+        <div class="ced-wells">
+          <label class="lc"><span class="chip" id="ced_a_chip"></span><input type="color" id="ced_a" aria-label="Colour"><span><span id="ced_a_lbl">Colour</span><small id="ced_a_v"></small></span></label>
+          <label class="lc" id="ced_b_wrap"><span class="chip" id="ced_b_chip"></span><input type="color" id="ced_b" aria-label="Gradient end colour"><span>To<small id="ced_b_v"></small></span></label>
+        </div>
+        <div class="seg five" id="ced_dirs" role="radiogroup" aria-label="Gradient direction">
+          <input type="radio" name="ced_dir" id="ced_dir_depth" value="depth"><label for="ced_dir_depth">◐<small>depth</small></label>
+          <input type="radio" name="ced_dir" id="ced_dir_vertical" value="vertical"><label for="ced_dir_vertical">↓<small>down</small></label>
+          <input type="radio" name="ced_dir" id="ced_dir_horizontal" value="horizontal"><label for="ced_dir_horizontal">→<small>across</small></label>
+          <input type="radio" name="ced_dir" id="ced_dir_diagonal" value="diagonal"><label for="ced_dir_diagonal">↘<small>diagonal</small></label>
+          <input type="radio" name="ced_dir" id="ced_dir_radial" value="radial"><label for="ced_dir_radial">◎<small>radial</small></label>
+        </div>
+        <p class="note" id="ced_note">Depth: each strut takes its colour from its distance to you, From nearest and To farthest, so struts change colour as they turn toward or away from you.</p>
+      </div>
+      </div></details>
+      <details class="sec" data-sec="texture" open><summary><h2>Texture</h2></summary>
+      <div class="sec-body">
       <div class="row"><span class="lbl">Blend</span><span class="val" id="blendVal"></span></div>
       <div class="blends" id="blends" role="radiogroup" aria-label="Blend mode"></div>
       <div class="row">
         <label for="grain">Grain</label><span class="val" id="grainVal"></span>
         <input type="range" id="grain" min="0" max="100" step="1" value="0">
       </div>
+      <div class="color" id="grainColorRow"><span class="lbl">Grain colour</span><div class="swatches" id="sw_grain">
+        <button type="button" class="ckey" data-which="mono" aria-label="Grain colour: black and white"><span class="dot" style="background: linear-gradient(90deg, #000 50%, #fff 50%)"></span>Mono</button>
+        <label class="ckey" data-which="custom"><span class="dot" id="gdot_custom"></span>Custom<input type="color" id="pick_grain" aria-label="Grain colour: custom"></label>
+      </div></div>
+      <div class="row" id="grainSizeRow">
+        <label for="grainSize">Grain size</label><span class="val" id="grainSizeVal"></span>
+        <input type="range" id="grainSize" min="0.5" max="4" step="0.25" value="1">
+      </div>
+      <div class="row" id="grainSpreadRow">
+        <label for="grainSpread">Dispersion</label><span class="val" id="grainSpreadVal"></span>
+        <input type="range" id="grainSpread" min="0" max="100" step="1" value="0">
+      </div>
       <p class="note">Blend sets how lines mix where they cross and with the background. Overlay, soft light and the dodge and burn modes barely show on pure white or black; try a custom background. Grain is a fixed noise layer over everything, scaled with the image so exports match the view. GIFs leave it out; SVGs keep the blend but not the grain.</p>
-    </section>
-
-    <section>
-      <h2>Motion</h2>
+      </div></details>
+    </div>
+    <div class="pane" id="pane-motion" role="tabpanel" aria-labelledby="tab-motion">
+      <details class="sec" data-sec="spin" open><summary><h2>Spin</h2></summary>
+      <div class="sec-body">
       <div class="keys">
         <div class="key-wrap main"><button class="key play" id="play" aria-pressed="true"></button><span id="playLbl">pause</span></div>
         <div class="key-wrap"><button class="key" id="reverse" aria-label="Reverse direction"><svg viewBox="0 0 12 12"><path d="M1 6 L5.5 2 V10 Z M6.5 6 L11 2 V10 Z"/></svg></button><span id="reverseLbl">reverse</span></div>
@@ -470,17 +554,23 @@
         <input type="radio" name="axis" id="ax_2" value="2"><label for="ax_2">2-fold<small>edge</small></label>
       </div>
       <div class="row">
+        <label for="wobble">Wobble</label><span class="val" id="wobbleVal"></span>
+        <input type="range" id="wobble" min="0" max="30" step="1" value="0">
+      </div>
+      </div></details>
+      <details class="sec" data-sec="view" open><summary><h2>View</h2></summary>
+      <div class="sec-body">
+      <div class="row">
         <label for="tilt">Tilt</label><span class="val" id="tiltVal"></span>
         <input type="range" id="tilt" min="-89" max="89" step="1" value="12">
       </div>
       <div class="row">
-        <label for="wobble">Wobble</label><span class="val" id="wobbleVal"></span>
-        <input type="range" id="wobble" min="0" max="30" step="1" value="0">
+        <label for="zoom">Size in frame</label><span class="val" id="zoomVal"></span>
+        <input type="range" id="zoom" min="30" max="100" step="1" value="94">
       </div>
-    </section>
-
-    <section>
-      <div class="sec-head"><h2>Animations</h2><a class="notes" href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html#animations" target="_blank" rel="noopener" aria-label="Geometry notes on the animations">notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a></div>
+      </div></details>
+      <details class="sec" data-sec="animations" open><summary><h2>Animations</h2></summary>
+      <div class="sec-body">
       <div class="seg three" role="radiogroup" aria-label="Animation">
         <input type="radio" name="anim" id="an_jitterbug" value="jitterbug"><label for="an_jitterbug">Jitterbug<small>VE to sphere</small></label>
         <input type="radio" name="anim" id="an_phases" value="phases"><label for="an_phases">Phases<small>with 7 circles</small></label>
@@ -491,10 +581,10 @@
       </div>
       <div class="row"><span class="lbl">Studies</span></div>
       <div class="seg five" role="radiogroup" aria-label="Studies">
-        <input type="radio" name="anim" id="an_ripple" value="ripple"><label for="an_ripple">Ripple<small>waves</small></label>
-        <input type="radio" name="anim" id="an_moire" value="moire"><label for="an_moire">Moiré<small>two shells</small></label>
+        <input type="radio" name="anim" id="an_facet" value="facet"><label for="an_facet">Facet<small>icosa, dodeca</small></label>
+        <input type="radio" name="anim" id="an_moire" value="moire"><label for="an_moire">Moiré<small>two grids</small></label>
         <input type="radio" name="anim" id="an_slice" value="slice"><label for="an_slice">Scan<small>a band</small></label>
-        <input type="radio" name="anim" id="an_scatter" value="scatter"><label for="an_scatter">Scatter<small>lift off</small></label>
+        <input type="radio" name="anim" id="an_scatter" value="scatter"><label for="an_scatter">Scatter<small>tumble</small></label>
         <input type="radio" name="anim" id="an_tune" value="tune"><label for="an_tune">Tune<small id="tuneSub">3v ↔ 14v</small></label>
       </div>
       <div class="row" id="tuneRow" hidden><span class="lbl">Range</span>
@@ -508,14 +598,11 @@
       </div>
       <div class="stages" id="stages"></div>
       <label class="check"><input type="checkbox" id="breathe"><span>Breathe the truss</span><small>depth swings 0–150% and back, one breath every 12.6 s</small></label>
-    </section>
-
-    <section>
-      <h2>View &amp; export</h2>
-      <div class="row">
-        <label for="zoom">Size in frame</label><span class="val" id="zoomVal"></span>
-        <input type="range" id="zoom" min="30" max="100" step="1" value="94">
-      </div>
+      </div></details>
+    </div>
+    <div class="pane" id="pane-export" role="tabpanel" aria-labelledby="tab-export">
+      <details class="sec" data-sec="image" open><summary><h2>Image</h2></summary>
+      <div class="sec-body">
       <label class="check"><input type="checkbox" id="exportBg"><span>Include background</span><small>off = transparent</small></label>
       <div class="exports">
         <button class="btn primary" id="exSvg">Export SVG</button>
@@ -524,10 +611,9 @@
           <select id="pngSize" aria-label="PNG size"><option value="2048">2048</option><option value="4096" selected>4096</option><option value="1024">1024</option></select>
         </div>
       </div>
-    </section>
-
-    <section>
-      <h2>Motion export</h2>
+      </div></details>
+      <details class="sec" data-sec="clip" open><summary><h2>Clip</h2></summary>
+      <div class="sec-body">
       <div class="seg two" role="radiogroup" aria-label="Clip">
         <input type="radio" name="clip" id="clip_loop" value="loop" checked><label for="clip_loop">Seamless loop<small>one symmetric turn</small></label>
         <input type="radio" name="clip" id="clip_anim" value="anim"><label for="clip_anim">Animation<small id="clipAnimSub">jitterbug</small></label>
@@ -550,7 +636,8 @@
       </div>
       <div class="progress" id="progress" hidden><span id="progressBar"></span></div>
       <p class="note" id="clipNote">Reel is 1080×1920 with the sphere centred, ready for Instagram without rescaling. For the crispest video, raise Line weight to 1.5× or more. GIF is transparent unless the background is included; its soft edges are blended toward the background colour, so set it to match where the GIF will sit. MP4 always includes the background colour. A background gradient shows in PNG, SVG and MP4; a GIF uses the start colour.</p>
-    </section>
+      </div></details>
+    </div>
   </aside>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -603,6 +690,7 @@
   const ICO_EDGES = [];
   for (let i = 0; i < 12; i++) for (let j = i+1; j < 12; j++) if (adjV(i, j)) ICO_EDGES.push([i, j]);
   const FACE_CEN = FACES.map(f => norm(sum(...f.map(i => V[i]))));      // dodecahedron vertices
+  const POLY_IN = dot(FACE_CEN[0], V[FACES[0][0]]);   // inradius over circumradius, the same for icosahedron and dodecahedron (0.7947)
   const MIDS = ICO_EDGES.map(([i, j]) => norm(sum(V[i], V[j])));        // icosidodecahedron vertices
   const edgeIdx = (i, j) => ICO_EDGES.findIndex(([a, b]) => (a === i && b === j) || (a === j && b === i));
 
@@ -1026,8 +1114,11 @@
   }
   // studies: each starts and ends on the plain sphere, so a clip of one loops cleanly
   const envelope = (x, a = 0.12) => easeSine(seg(x, 0, a)) * (1 - easeSine(seg(x, 1 - a, 1)));
-  const rippleState = x => ({ x, amp: 0.045 * Math.sin(Math.PI * x) ** 2, phase: 3 * x, stage: x < 0.2 ? 0 : x < 0.8 ? 1 : 2 });
-  const moireState = x => ({ x, a: envelope(x), turn: 4.5 * Math.sin(2 * Math.PI * x), stage: x < 0.12 ? 0 : x < 0.88 ? 1 : 2 });
+  // facet: the sphere flattens onto the icosahedron, swells through the sphere onto the dodecahedron, and returns
+  const facetState = x => { const s = Math.sin(2 * Math.PI * x); return { x, s: Math.sign(s) * easeSine(Math.abs(s)), stage: x < 0.5 ? 0 : 1 }; };
+  // moiré: a second grid one frequency down fades in over the first and turns against it about the spin axis
+  const moireState = x => ({ x, a: envelope(x, 0.15), turn: 36 * Math.sin(2 * Math.PI * x), stage: x < 0.15 ? 0 : x < 0.85 ? 1 : 2 });
+  const moireFreq = () => S.freq > 2 ? S.freq - 1 : 3;
   const sliceState = x => ({ x, ghost: 1 - 0.9 * envelope(x, 0.1), H: 1.12 - 2.24 * easeSine(seg(x, 0.08, 0.92)),
                              stage: x < 0.08 ? 0 : x < 0.92 ? 1 : 2 });
   const scatterState = x => ({ x, stage: x < 0.3 ? 0 : x < 0.7 ? 1 : 2 });
@@ -1066,8 +1157,8 @@
                  stages: () => growChain(S.freq).map(n => n + 'v') },
     build:     { dur: () => 10, state: buildState,
                  stages: () => ['1 · Crown', '2 · Shoulder', '3 · Base', '4 · Truss'] },
-    ripple:    { dur: () => 12, state: rippleState, stages: () => ['1 · Still', '2 · Waves', '3 · Settle'] },
-    moire:     { dur: () => 14, state: moireState, stages: () => ['1 · Second shell', '2 · Turning', '3 · Aligned'] },
+    facet:     { dur: () => 10, state: facetState, stages: () => ['1 · Icosahedron', '2 · Dodecahedron'] },
+    moire:     { dur: () => 16, state: moireState, stages: () => ['1 · Second grid', '2 · Turning', '3 · Aligned'] },
     slice:     { dur: () => 10, state: sliceState, stages: () => ['1 · Dim', '2 · Scan', '3 · Restore'] },
     scatter:   { dur: () => 12, state: scatterState, stages: () => ['1 · Crown lifts', '2 · Scattered', '3 · Settling'] },
     tune:      { dur: () => 2 + 0.75 * tunePath().D, state: tuneState,
@@ -1090,8 +1181,8 @@
     if (kind === 'unfold') return ['Flattening to the icosahedron', `Unfolding · hinges at ${(FOLD_DEG * (1 - st.fold)).toFixed(1)}°`,
       'The icosahedral net · 20 faces, 19 hinges', 'Folding back to the sphere'][st.stage];
     if (kind === 'grow') return st.truss > 0 ? `${freq}v · drawing the truss` : `Subdividing ${st.from}v → ${st.to}v`;
-    if (kind === 'ripple') return 'Waves across the shell';
-    if (kind === 'moire') return `Two shells · ${Math.abs(st.turn).toFixed(1)}° apart`;
+    if (kind === 'facet') return st.s >= 0 ? `Toward the icosahedron · ${Math.round(st.s * 100)}%` : `Toward the dodecahedron · ${Math.round(-st.s * 100)}%`;
+    if (kind === 'moire') return `Two grids · ${freq}v over ${moireFreq()}v · ${Math.abs(st.turn).toFixed(0)}° apart`;
     if (kind === 'slice') return 'Scanning the shell';
     if (kind === 'tune') return `Tuning · ${st.F.toFixed(1)}v`;
     if (kind === 'scatter') return ['Cells lifting from the crown', 'The shell scattered', 'Settling back'][st.stage];
@@ -1101,6 +1192,7 @@
 
   // ───────────────────────── state ─────────────────────────
   const WHITE = '#ffffff', BLACK = '#000000';
+  const WINDOW = '#141413';   // the dark window colour (--bg): white struts on it are the default view
   const BLENDS = [['', [['source-over', 'Normal']]],
     ['darken', [['darken', 'Darken'], ['multiply', 'Multiply'], ['color-burn', 'Burn']]],
     ['lighten', [['lighten', 'Lighten'], ['screen', 'Screen'], ['color-dodge', 'Dodge'], ['lighter', 'Add']]],
@@ -1114,13 +1206,17 @@
     L_gc: false, gc15: true, gc10: true, gc6: true, seven: false,
     L_lcd: false, lcdMode: 'mirror', L_poly: false, poly: 'dodeca',
     strutColor: false, tolMM: 0, domeR: 38,
-    backOp: 28, weight: 1, line: BLACK, accent: '#ff4e02', bg: WHITE, blend: 'source-over', grain: 0, after: 0, tuneLo: 3, tuneHi: 14,
-    custom: { line: '#7a711e', accent: '#ff4e02', bg: '#f2f1ed' },   // last custom colour per role
+    backOp: 28, weight: 1, line: WHITE, accent: '#ff4e02', bg: WINDOW, blend: 'source-over', grain: 0, grainColor: 'mono', grainCustom: '#7a711e', grainSize: 1, grainSpread: 0, after: 0, tuneLo: 3, tuneHi: 14,
+    tab: 'shape', closed: [],   // the panel tab in view, and the sections folded shut
+    custom: { line: '#7a711e', accent: '#ff4e02', bg: WINDOW },   // last custom colour per role
     playing: true, dir: 1, speed: 3, axis: '5', tilt: 12, wobble: 0, zoom: 94, exportBg: false, clip: 'loop',
     animKind: 'jitterbug', breathe: false, quality: 'high', motionSize: '1080', loops: 1,
     cOuter: null, cInner: null, cWeb: null,   // per-layer colours; null follows the strut colour
     cap: 'round',
-    gLine: false, gLineTo: '#ef5a1f', gLineDir: 'depth', gBg: false, gBgTo: '#c9c5bc', gBgDir: 'vertical',
+    // a gradient for each role, from the role's own colour to To; off means a solid colour
+    grad: { line: { on: false, to: '#ef5a1f', dir: 'depth' }, outer: { on: false, to: '#ef5a1f', dir: 'depth' },
+            inner: { on: false, to: '#ef5a1f', dir: 'depth' }, web: { on: false, to: '#ef5a1f', dir: 'depth' },
+            bg: { on: false, to: '#c9c5bc', dir: 'vertical' } },
   };
   const KEY = 'dymaxion-studio:v1';
   let S = { ...DEFAULTS };
@@ -1131,6 +1227,15 @@
   S.custom = { ...DEFAULTS.custom, ...S.custom };
   for (const k of ['line', 'accent', 'bg']) if (![WHITE, BLACK].includes(S[k].toLowerCase())) S.custom[k] = S[k];
   if (!BLEND_NAME[S.blend]) S.blend = 'source-over';
+  {   // one gradient per role; older saves had one strut and one background gradient
+    const g = { ...(S.grad || {}) };
+    if ('gLine' in S) g.line = { on: !!S.gLine, to: S.gLineTo || DEFAULTS.grad.line.to, dir: S.gLineDir || 'depth' };
+    if ('gBg' in S) g.bg = { on: !!S.gBg, to: S.gBgTo || DEFAULTS.grad.bg.to, dir: S.gBgDir || 'vertical' };
+    for (const k of ['gLine', 'gLineTo', 'gLineDir', 'gBg', 'gBgTo', 'gBgDir']) delete S[k];
+    S.grad = Object.fromEntries(Object.entries(DEFAULTS.grad).map(([r, d]) => [r, { ...d, ...(g[r] || {}) }]));
+    if (S.grad.bg.dir === 'depth') S.grad.bg.dir = 'vertical';
+  }
+  if (!['mono', 'custom'].includes(S.grainColor)) S.grainColor = 'mono';   // Struts was dropped
   if (!ANIMS[S.animKind]) S.animKind = 'jitterbug';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduced) S.playing = false;
@@ -1159,8 +1264,13 @@
     const r = norm(cross(A, f)), u = cross(f, r);
     return { f, r, u };
   }
-  // gradients: strokes that follow the strut colour carry this marker and are painted with the strut gradient
-  const GRAD = 'strut-gradient';
+  // gradients: a stroke coloured 'grad:<role>' is painted with that role's gradient, from the role's own colour to its
+  // To colour. Roles: struts (line), each layer (outer, inner, web; only when the layer has its own colour), background
+  const LAYER_KEY = { outer: 'cOuter', inner: 'cInner', web: 'cWeb' };
+  const baseOf = role => role in LAYER_KEY ? (S[LAYER_KEY[role]] || S.line) : S[role];
+  const gradOf = role => ({ from: baseOf(role), to: S.grad[role].to, dir: S.grad[role].dir });
+  const isGrad = col => typeof col === 'string' && col.startsWith('grad:');
+  const roleOf = col => col.slice(5);
   // end points of a gradient over a box, by direction; radial runs from the centre to the given radius
   const gradGeom = (x, y, w, h, dir, rr) => dir === 'radial' ? { radial: true, cx: x + w / 2, cy: y + h / 2, r: rr ?? Math.hypot(w, h) / 2 }
     : dir === 'horizontal' ? { x1: x, y1: y + h / 2, x2: x + w, y2: y + h / 2 }
@@ -1175,24 +1285,27 @@
       : `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n(G.x1)}" y1="${n(G.y1)}" x2="${n(G.x2)}" y2="${n(G.y2)}">${stops}</linearGradient>`;
   }
   // the strut gradient spans the sphere itself, so it reads the same at any zoom
-  const strutGeom = fr => gradGeom(fr.c - fr.R, fr.c - fr.R, 2 * fr.R, 2 * fr.R, S.gLineDir, fr.R);
+  const strutGeom = (fr, dir) => gradGeom(fr.c - fr.R, fr.c - fr.R, 2 * fr.R, 2 * fr.R, dir, fr.R);
   // background: solid, or a gradient over the given box
   function fillBg(ctx, x, y, w, h) {
-    ctx.fillStyle = S.gBg ? canvasGrad(ctx, gradGeom(x, y, w, h, S.gBgDir), S.bg, S.gBgTo) : S.bg;
+    ctx.fillStyle = S.grad.bg.on ? canvasGrad(ctx, gradGeom(x, y, w, h, S.grad.bg.dir), S.bg, S.grad.bg.to) : S.bg;
     ctx.fillRect(x, y, w, h);
   }
-  const cssBg = () => !S.gBg ? S.bg : S.gBgDir === 'radial' ? `radial-gradient(circle, ${S.bg}, ${S.gBgTo})`
-    : `linear-gradient(${({ vertical: '180deg', horizontal: '90deg', diagonal: '135deg' })[S.gBgDir]}, ${S.bg}, ${S.gBgTo})`;
+  const cssBg = () => { const g = S.grad.bg; return !g.on ? S.bg : g.dir === 'radial' ? `radial-gradient(circle, ${S.bg}, ${g.to})`
+    : `linear-gradient(${({ vertical: '180deg', horizontal: '90deg', diagonal: '135deg' })[g.dir]}, ${S.bg}, ${g.to})`; };
 
-  // depth gradient: each stroke that follows the strut colour takes one colour from its distance to the viewer,
-  // the strut colour nearest and the gradient colour farthest, so the colour turns with the sphere
+  // depth gradient: each stroke of a role set to Depth takes one colour from its distance to the viewer, the role's
+  // colour nearest and To farthest, so struts change colour as they turn toward or away from you
   const DEPTH_STEPS = 24;
   const mixHexC = (a, b, t) => '#' + hexRgb(a).map((v, d) => Math.round(v + (hexRgb(b)[d] - v) * t).toString(16).padStart(2, '0')).join('');
-  const depthRamp = () => Array.from({ length: DEPTH_STEPS + 1 }, (_, i) => mixHexC(S.line, S.gLineTo, i / DEPTH_STEPS));
+  const depthRamp = role => { const g = gradOf(role); return Array.from({ length: DEPTH_STEPS + 1 }, (_, i) => mixHexC(g.from, g.to, i / DEPTH_STEPS)); };
+  const byDepth = col => isGrad(col) && S.grad[roleOf(col)].dir === 'depth';
   function depthSplit(fr) {
-    const ramp = depthRamp(), step = z => Math.round(clamp01((1 - z) / 2) * DEPTH_STEPS), out = [];
+    const ramps = {}, rampOf = col => ramps[col] ||= depthRamp(roleOf(col));
+    const step = z => Math.round(clamp01((1 - z) / 2) * DEPTH_STEPS), out = [];
     for (const L of fr.layers) {
-      if (L.color !== GRAD) { out.push(L); continue; }
+      if (!byDepth(L.color)) { out.push(L); continue; }
+      const ramp = rampOf(L.color);
       const groups = new Map(), E = L.E, A = L.A, B = L.B;
       for (let e = 0; e < E.length; e += 2) {
         const t = step((A[E[e] * 3 + 2] + B[E[e + 1] * 3 + 2]) / 2);
@@ -1203,11 +1316,11 @@
         out.push({ ...L, id: `${L.id}-d${t}`, color: ramp[t], E: Uint32Array.from(groups.get(t)) });
     }
     fr.layers = out;
-    for (const F of fr.fills) if (F.color === GRAD) F.color = ramp[step(polyZ(F))];
-    for (const D of fr.dots) if (D.color === GRAD) D.color = S.line;
+    for (const F of fr.fills) if (byDepth(F.color)) F.color = rampOf(F.color)[step(polyZ(F))];
+    for (const D of fr.dots) if (byDepth(D.color)) D.color = gradOf(roleOf(D.color)).from;
     return fr;
   }
-  const finishFrame = fr => S.gLine && S.gLineDir === 'depth' ? depthSplit(fr) : fr;
+  const finishFrame = fr => ['line', 'outer', 'inner', 'web'].some(r => S.grad[r].on && S.grad[r].dir === 'depth') ? depthSplit(fr) : fr;
 
   // each layer's colour: its own override, or the strut colour
   const layerColors = () => ({ outer: S.cOuter || S.line, inner: S.cInner || S.line, web: S.cWeb || S.line });
@@ -1238,7 +1351,7 @@
     const jst = kind === 'jitterbug' ? st : null, pst = kind === 'phases' ? st : null;
     const ust = kind === 'unfold' ? st : null, gst = kind === 'grow' ? st : null;
     const sst = kind === 'sweep' ? st : null, bst = kind === 'build' ? st : null;
-    const rst = kind === 'ripple' ? st : null, mst = kind === 'moire' ? st : null;
+    const fst = kind === 'facet' ? st : null, mst = kind === 'moire' ? st : null;
     const lst = kind === 'slice' ? st : null, xst = kind === 'scatter' ? st : null, tst = kind === 'tune' ? st : null;
     const scale = S.trueScale ? (tst ? tst.F : geo.freq) / 16 : 1;   // with constant struts, tune breathes the size too
     const R = size / 2 * (S.zoom / 100) * scale, c = size / 2;
@@ -1271,8 +1384,9 @@
     const px = size / 1000 * S.weight;
     const lw = px;   // every stroke is the same width, set by Line weight
     const layers = [], fills = [], dots = [];
-    const line = S.gLine ? GRAD : S.line, acc = S.accent;
-    const cOut = S.cOuter || line, cIn = S.cInner || line, cWeb = S.cWeb || line;
+    const tok = (role, base) => S.grad[role].on ? 'grad:' + role : base;
+    const line = tok('line', S.line), acc = S.accent;
+    const cOut = S.cOuter ? tok('outer', S.cOuter) : line, cIn = S.cInner ? tok('inner', S.cInner) : line, cWeb = S.cWeb ? tok('web', S.cWeb) : line;
     let po = null;
     // draw-on: edge k shows from its first end to a fraction p of its length (p < 0: from its second end)
     const pushDrawn = (id, E, A, B, color, prog, alpha = 1) => {
@@ -1366,9 +1480,16 @@
       return finishFrame({ layers, fills, dots, st, kind, R, c });
     }
 
-    // ripple: a radial wave runs from the crown to the base, scaled by an envelope that starts and ends at rest
-    const rad = rst ? (x, y, z) => { const A = AXES[S.axis], c0 = Math.max(-1, Math.min(1, x*A[0] + y*A[1] + z*A[2]));
-      return 1 + rst.amp * Math.sin(5 * Math.acos(c0) - 2 * Math.PI * rst.phase); } : null;
+    // facet: each node's distance from the centre moves toward the icosahedron's (s > 0) or the dodecahedron's (s < 0),
+    // with the polyhedron's vertices on the sphere: at full strength every strut lies flat on a face
+    const rad = fst && Math.abs(fst.s) > 1e-4 ? (() => {
+      const normals = fst.s > 0 ? FACE_CEN : V, s = Math.abs(fst.s);   // icosahedron faces, or dodecahedron faces (= icosa vertices)
+      return (x, y, z) => {
+        const l = Math.hypot(x, y, z); let m = -1;
+        for (const n of normals) { const d = (x*n[0] + y*n[1] + z*n[2]) / l; if (d > m) m = d; }
+        return 1 + s * (POLY_IN / m - 1);
+      };
+    })() : null;
     po = projArr(geo.outer, 1, geo.outerFlat, undefined, rad);
     const pi = projArr(geo.innerDir, rIn, geo.innerFlat, undefined, rad);
 
@@ -1394,19 +1515,31 @@
     }
     const typed = S.strutColor ? strutClasses(geo) : null;
     if (xst) {
-      // scatter: each outer triangle and its pyramid of web struts lifts off along its own normal, crown first
+      // scatter: each outer triangle and its pyramid of web struts lifts off along its own normal, crown first,
+      // tumbling as it goes, and settles back
       const Ax = AXES[S.axis], nT = geo.nTris, W = geo.webE, D = geo.innerDir;
       const C = new Float32Array(nT * 9), In = new Float32Array(nT * 3), lift = new Float32Array(nT);
       // lift in proportion to the cells' size, so coarse and fine spheres scatter alike; the shell eases inward
       // as it scatters, so the cloud stays inside the sphere's outline
-      const reach = Math.min(0.22, 0.04 + 0.9 * geo.chord), k0 = 1 / (1 + reach * Math.sin(Math.PI * xst.x) ** 2);
+      const reach = Math.min(0.45, 0.12 + 2 * geo.chord), k0 = 1 / (1 + reach * Math.sin(Math.PI * xst.x) ** 2);
+      const pt = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];   // a cell: its three corners and its inner node
       for (let t = 0; t < nT; t++) {
         const nx = D[3*t], ny = D[3*t+1], nz = D[3*t+2], h = nx*Ax[0] + ny*Ax[1] + nz*Ax[2];
-        const l = Math.sin(Math.PI * clamp01((xst.x - 0.2 * (1 - h)) / 0.6)) ** 2, off = reach * l * (0.55 + 0.45 * golden(t));
+        const l = Math.sin(Math.PI * clamp01((xst.x - 0.25 * (1 - h)) / 0.5)) ** 2, off = reach * l * (0.5 + 0.5 * golden(t));
         lift[t] = l;
-        for (let j = 0; j < 3; j++) { const v = W[6*t + 2*j + 1] * 3;
-          C[9*t+3*j] = (geo.outer[v] + nx*off) * k0; C[9*t+3*j+1] = (geo.outer[v+1] + ny*off) * k0; C[9*t+3*j+2] = (geo.outer[v+2] + nz*off) * k0; }
-        In[3*t] = nx * (rIn + off) * k0; In[3*t+1] = ny * (rIn + off) * k0; In[3*t+2] = nz * (rIn + off) * k0;
+        for (let j = 0; j < 3; j++) { const v = W[6*t + 2*j + 1] * 3; pt[j][0] = geo.outer[v] + nx*off; pt[j][1] = geo.outer[v+1] + ny*off; pt[j][2] = geo.outer[v+2] + nz*off; }
+        pt[3][0] = nx * (rIn + off); pt[3][1] = ny * (rIn + off); pt[3][2] = nz * (rIn + off);
+        // tumble about the cell's centre, on its own axis, by up to 120 degrees
+        const z0 = 2 * golden(t * 7 + 3) - 1, ph = 2 * Math.PI * golden(t * 13 + 5), rz = Math.sqrt(1 - z0 * z0);
+        const ux = rz * Math.cos(ph), uy = rz * Math.sin(ph), uz = z0, th = l * (2 * Math.PI / 3) * (0.5 + 0.5 * golden(t * 3 + 1));
+        const cs = Math.cos(th), sn = Math.sin(th);
+        const mx = (pt[0][0] + pt[1][0] + pt[2][0]) / 3, my = (pt[0][1] + pt[1][1] + pt[2][1]) / 3, mz = (pt[0][2] + pt[1][2] + pt[2][2]) / 3;
+        for (let j = 0; j < 4; j++) {
+          const x = pt[j][0] - mx, y = pt[j][1] - my, z = pt[j][2] - mz, d = x*ux + y*uy + z*uz;
+          const rx = x*cs + (uy*z - uz*y)*sn + ux*d*(1 - cs), ry = y*cs + (uz*x - ux*z)*sn + uy*d*(1 - cs), rz2 = z*cs + (ux*y - uy*x)*sn + uz*d*(1 - cs);
+          const out = j < 3 ? C : In, at = j < 3 ? 9*t + 3*j : 3*t;
+          out[at] = (mx + rx) * k0; out[at+1] = (my + ry) * k0; out[at+2] = (mz + rz2) * k0;
+        }
       }
       if (!geo.cellE) {
         geo.cellE = new Uint32Array(nT * 6); geo.cellW = new Uint32Array(nT * 6);
@@ -1507,29 +1640,24 @@
       if (S.L_web)   pushDrawn('web', geo.webE, pi, po, cWeb, k => -ease(clamp01((tr - 0.5 * golden(geo.webE[2*k])) / 0.5)));
       if (S.L_inner) pushDrawn('inner', geo.innerE, pi, pi, cIn, k => ease(clamp01((tr - 0.3 - 0.4 * golden(k)) / 0.3)));
     } else {
-      const trussA = gridA * (ust ? ust.trussA : 1);
+      const trussA = gridA * (ust ? ust.trussA : 1) * (mst ? 1 - mst.a : 1);   // moiré: just the two lattices
       if (S.L_web)   pushGrouped(layers, { id: 'web',   E: geo.webE,   A: pi, B: po, w: lw,   color: cWeb, alpha: trussA }, null, alphaWeb);
       if (S.L_inner) pushGrouped(layers, { id: 'inner', E: geo.innerE, A: pi, B: pi, w: lw, color: cIn, alpha: trussA }, null, alphaInner);
       if (S.L_outer) pushGrouped(layers, { id: 'outer', E: geo.outerE, A: po, B: po, w: lw, color: cOut, alpha: gridA },
                                  typed ? k => typed.classes[typed.cls[k]].color : null, alphaOuter);
     }
     if (mst && mst.a > 0.002) {
-      // moiré: a second copy of the shell, turned about the line of sight, crosses the first
-      const an = mst.turn * Math.PI / 180, cs = Math.cos(an), sn = Math.sin(an);
-      const turn = P => { const o = new Float32Array(P.length);
-        for (let i = 0; i < P.length; i += 3) { const dx = P[i] - c, dy = P[i+1] - c;
-          o[i] = c + dx*cs - dy*sn; o[i+1] = c + dx*sn + dy*cs; o[i+2] = P[i+2]; } return o; };
-      const po2 = turn(po), pi2 = turn(pi);
-      if (S.L_web)   layers.push({ id: 'moire-web',   E: geo.webE,   A: pi2, B: po2, w: lw, color: cWeb, alpha: mst.a });
-      if (S.L_inner) layers.push({ id: 'moire-inner', E: geo.innerE, A: pi2, B: pi2, w: lw, color: cIn,  alpha: mst.a });
-      if (S.L_outer) layers.push({ id: 'moire-outer', E: geo.outerE, A: po2, B: po2, w: lw, color: cOut, alpha: mst.a });
-    }
-    if (lst && Math.abs(lst.H) < 1) {
-      // the scanning plane, as a ring of latitude in the highlight colour
-      const A = AXES[S.axis], rr = Math.sqrt(1 - lst.H ** 2), e1 = norm(cross(A, Math.abs(A[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0])), e2 = cross(A, e1), pts = [];
-      for (let i = 0; i <= 144; i++) { const t = i / 144 * 2 * Math.PI; pts.push([0, 1, 2].map(d => A[d] * lst.H + rr * (Math.cos(t) * e1[d] + Math.sin(t) * e2[d]))); }
-      const Q = projPts(pts);
-      layers.push({ id: 'scan', E: polyline(pts.length), A: Q, B: Q, w: lw, color: acc, alpha: (1 - lst.ghost) / 0.9 });
+      // moiré: the outer grid one frequency down, turned about the spin axis. Neighbouring frequencies drift a strut
+      // apart across each face, so broad interference bands show even where the grids line up
+      const g2 = build(moireFreq()), A = AXES[S.axis], an = mst.turn * Math.PI / 180, cs = Math.cos(an), sn = Math.sin(an);
+      const o = g2.outer, Q = new Float32Array(o.length);
+      for (let i = 0; i < o.length; i += 3) {   // Rodrigues: turn each node about the spin axis
+        const x = o[i], y = o[i+1], z = o[i+2], d = x*A[0] + y*A[1] + z*A[2];
+        const cx = A[1]*z - A[2]*y, cy = A[2]*x - A[0]*z, cz = A[0]*y - A[1]*x;
+        Q[i] = x*cs + cx*sn + A[0]*d*(1 - cs); Q[i+1] = y*cs + cy*sn + A[1]*d*(1 - cs); Q[i+2] = z*cs + cz*sn + A[2]*d*(1 - cs);
+      }
+      const P2 = projArr(Q, 1, null, 1);
+      layers.push({ id: 'moire-outer', E: g2.outerE, A: P2, B: P2, w: lw, color: cOut, alpha: mst.a });
     }
 
     const netA = jst ? jst.netA : (S.L_net ? overlayA : 0);
@@ -1629,8 +1757,8 @@
     // withBg: true fills the background, false leaves it clear, 'keep' draws over what is already there
     if (withBg !== 'keep') ctx.clearRect(0, 0, size, size);
     if (withBg === true) fillBg(ctx, 0, 0, size, size);
-    let sg = null;
-    const paintOf = col => col !== GRAD ? col : (sg ||= canvasGrad(ctx, strutGeom(fr), S.line, S.gLineTo));
+    const grads = {};
+    const paintOf = col => !isGrad(col) ? col : (grads[col] ||= (g => canvasGrad(ctx, strutGeom(fr, g.dir), g.from, g.to))(gradOf(roleOf(col))));
     ctx.lineCap = S.cap; ctx.lineJoin = 'round';
     ctx.globalCompositeOperation = exporting ? S.blend : (previewBlend || S.blend);   // each layer blends with what is drawn
     for (const front of sides()) {
@@ -1666,22 +1794,31 @@
   }
 
   // grain: one fixed noise tile, dark and light specks so it shows on any background
-  let grainTile = null;
+  // Mono: dark and light specks, so it shows on any background. Custom: every speck in that one colour.
+  // Dispersion thins the specks out: a pixel carries one if its own fixed random number falls under the share
+  // (all pixels at 0, 1 in 50 at 100), so specks keep their places as the slider moves; sparser specks are drawn
+  // stronger, so scattered grain reads as distinct dots. The tile is rebuilt only when colour or dispersion change.
+  let grainTile = null, grainKey = '';
+  const grainShare = () => 50 ** (-S.grainSpread / 100);
   function addGrain(ctx, w, h, unit, solid) {
     if (!S.grain) return;
-    if (!grainTile) {
+    const ink = S.grainColor === 'custom' ? S.grainCustom : null, share = grainShare(), key = (ink || 'mono') + '|' + share;
+    if (key !== grainKey) {
       const N = 512, c = document.createElement('canvas'); c.width = c.height = N;
-      const g = c.getContext('2d'), img = g.createImageData(N, N), d = img.data;
+      const g = c.getContext('2d'), img = g.createImageData(N, N), d = img.data, rgb = ink && hexRgb(ink);
       let x = 0x9e3779b9;   // fixed seed: the same grain every time, in the view and in exports
       const rnd = () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296; };
+      const boost = 1 / Math.sqrt(share);
       for (let i = 0; i < d.length; i += 4) {
-        const v = rnd() * 2 - 1;
-        d[i] = d[i + 1] = d[i + 2] = v < 0 ? 0 : 255; d[i + 3] = Math.round(Math.abs(v) ** 1.5 * 255);
+        const v = rnd() * 2 - 1, keep = rnd() < share;
+        if (rgb) { d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; }
+        else d[i] = d[i + 1] = d[i + 2] = v < 0 ? 0 : 255;
+        d[i + 3] = keep ? Math.round(Math.min(1, Math.abs(v) ** 1.5 * boost) * 255) : 0;
       }
-      g.putImageData(img, 0, 0); grainTile = c;
+      g.putImageData(img, 0, 0); grainTile = c; grainKey = key;
     }
     const pat = ctx.createPattern(grainTile, 'repeat');
-    pat.setTransform(new DOMMatrix().scale(unit));   // one speck per unit: grain scales with the image
+    pat.setTransform(new DOMMatrix().scale(unit * S.grainSize));   // speck size scales with the image
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     ctx.globalAlpha = S.grain / 100;
@@ -1695,10 +1832,14 @@
     out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`);
     out.push(`<title>Geodesic sphere, ${geo.freq}v Class I, double layer</title>`);
     const defs = [];
-    if (S.exportBg && S.gBg) defs.push(svgGrad('bg-gradient', gradGeom(0, 0, size, size, S.gBgDir), S.bg, S.gBgTo));
-    if (fr.layers.some(L => L.color === GRAD)) defs.push(svgGrad(GRAD, strutGeom(fr), S.line, S.gLineTo));
+    if (S.exportBg && S.grad.bg.on) defs.push(svgGrad('bg-gradient', gradGeom(0, 0, size, size, S.grad.bg.dir), S.bg, S.grad.bg.to));
+    for (const col of new Set([...fr.layers, ...fr.fills, ...fr.dots].map(x => x.color).filter(isGrad))) {
+      const g = gradOf(roleOf(col));
+      defs.push(svgGrad('grad-' + roleOf(col), strutGeom(fr, g.dir), g.from, g.to));
+    }
+    const svgPaint = col => isGrad(col) ? `url(#grad-${roleOf(col)})` : col;
     if (defs.length) out.push(`<defs>${defs.join('')}</defs>`);
-    if (S.exportBg) out.push(`<rect width="100%" height="100%" fill="${S.gBg ? 'url(#bg-gradient)' : S.bg}"/>`);
+    if (S.exportBg) out.push(`<rect width="100%" height="100%" fill="${S.grad.bg.on ? 'url(#bg-gradient)' : S.bg}"/>`);
     out.push(`<g fill="none" stroke-linecap="${S.cap}" stroke-linejoin="round">`);
     const mix = S.blend === 'source-over' ? '' : ` style="mix-blend-mode:${S.blend === 'lighter' ? 'plus-lighter' : S.blend}"`;
     for (const front of sides()) {
@@ -1706,7 +1847,7 @@
       out.push(`<g id="${side}"${front ? '' : ` opacity="${S.backOp / 100}"${mix}`}>`);
       const fills = fr.fills.filter(F => F.alpha > 0 && isFront(polyZ(F)) === front);
       if (fills.length) out.push(`<g id="${side}-fills" stroke="none"${mix}>` + fills.map(F =>
-        `<polygon fill="${F.color}" fill-opacity="${F.alpha.toFixed(3)}" points="${F.pts.map(p => n(p[0]) + ',' + n(p[1])).join(' ')}"/>`).join('') + '</g>');
+        `<polygon fill="${svgPaint(F.color)}" fill-opacity="${F.alpha.toFixed(3)}" points="${F.pts.map(p => n(p[0]) + ',' + n(p[1])).join(' ')}"/>`).join('') + '</g>');
       for (const L of fr.layers) {
         if (L.alpha <= 0.001) continue;
         let d = '';
@@ -1718,12 +1859,12 @@
         if (!d) continue;
         const extra = (L.alpha < 1 ? ` stroke-opacity="${L.alpha.toFixed(3)}"` : '') +
                       (L.dash ? ` stroke-dasharray="${L.dash.map(v => v.toFixed(2)).join(' ')}"` : '');
-        out.push(`<path id="${side}-${L.id}" stroke="${L.color === GRAD ? `url(#${GRAD})` : L.color}" stroke-width="${L.w.toFixed(3)}"${extra}${mix} d="${d}"/>`);
+        out.push(`<path id="${side}-${L.id}" stroke="${svgPaint(L.color)}" stroke-width="${L.w.toFixed(3)}"${extra}${mix} d="${d}"/>`);
       }
       for (const D of fr.dots) {
         const pts = D.pts.filter(p => isFront(p[2]) === front);
         if (!pts.length || D.alpha <= 0.001) continue;
-        out.push(`<g id="${side}-${D.id}" fill="${D.color}"${D.alpha < 1 ? ` fill-opacity="${D.alpha.toFixed(3)}"` : ''}${mix}>` +
+        out.push(`<g id="${side}-${D.id}" fill="${svgPaint(D.color)}"${D.alpha < 1 ? ` fill-opacity="${D.alpha.toFixed(3)}"` : ''}${mix}>` +
           pts.map(p => `<circle cx="${n(p[0])}" cy="${n(p[1])}" r="${D.r.toFixed(2)}"/>`).join('') + '</g>');
       }
       out.push('</g>');
@@ -1738,8 +1879,7 @@
   const cv = $('cv'), ctx = cv.getContext('2d'), board = $('board');
   let boardSize = 600, dpr = 1;
   function resize() {
-    const r = board.getBoundingClientRect();
-    boardSize = Math.max(1, r.width); dpr = Math.min(devicePixelRatio || 1, 2);
+    boardSize = Math.max(1, board.clientWidth); dpr = Math.min(devicePixelRatio || 1, 2);   // layout size, not the scaled one
     cv.width = Math.round(boardSize * dpr); cv.height = Math.round(boardSize * dpr);
     draw();
   }
@@ -1893,70 +2033,124 @@
     $('reverse').querySelector('svg').style.transform = S.dir > 0 ? '' : 'scaleX(-1)';
     $('dial').querySelectorAll('span').forEach(t => t.classList.toggle('on', +t.dataset.n === S.freq));
     for (const key of ['line', 'accent', 'bg']) {
-      const v = S[key].toLowerCase(), which = v === WHITE ? 'white' : v === BLACK ? 'black' : 'custom';
+      const g = S.grad[key], grad = g && g.on, v = S[key].toLowerCase();
+      const which = grad ? 'custom' : v === WHITE ? 'white' : v === BLACK ? 'black' : 'custom';
       $('sw_' + key).querySelectorAll('.ckey').forEach(k => {
         k.classList.toggle('on', k.dataset.which === which);
-        if (k.tagName === 'BUTTON') k.setAttribute('aria-pressed', k.dataset.which === which);
+        k.setAttribute('aria-pressed', k.dataset.which === which);
+        if (k.dataset.which === 'custom') k.setAttribute('aria-expanded', cedRole === key);
       });
-      $('cdot_' + key).style.background = S.custom[key]; $('pick_' + key).value = S.custom[key];
+      $('cdot_' + key).style.background = grad ? `linear-gradient(90deg, ${S[key]}, ${g.to})` : S.custom[key];
     }
     $('blends').querySelectorAll('.bkey').forEach(b => { b.classList.toggle('on', b.dataset.mode === S.blend); b.setAttribute('aria-checked', b.dataset.mode === S.blend); });
     $('blendVal').textContent = previewBlend && previewBlend !== S.blend ? `${BLEND_NAME[previewBlend]} · preview` : BLEND_NAME[S.blend];
     $('grain').value = S.grain; $('grainVal').textContent = S.grain ? `${S.grain}%` : 'off';
-    const lc = layerColors();
-    for (const [id, key, v] of [['col_outer', 'cOuter', lc.outer], ['col_inner', 'cInner', lc.inner], ['col_web', 'cWeb', lc.web]]) {
-      $(id).value = v; $(id + '_chip').style.background = v; $(id + '_v').textContent = S[key] ? v.toUpperCase() : 'as struts';
+    $('sw_grain').querySelectorAll('.ckey').forEach(k => {
+      k.classList.toggle('on', k.dataset.which === S.grainColor);
+      if (k.tagName === 'BUTTON') k.setAttribute('aria-pressed', k.dataset.which === S.grainColor);
+    });
+    $('gdot_custom').style.background = S.grainCustom; $('pick_grain').value = S.grainCustom;
+    $('grainSize').value = S.grainSize; $('grainSizeVal').textContent = `${(+S.grainSize).toFixed(2).replace(/0$/, '')}×`;
+    const share = grainShare();
+    $('grainSpread').value = S.grainSpread; $('grainSpreadVal').textContent = share > 0.995 ? 'every pixel' : `1 in ${(1 / share).toFixed(1 / share < 10 ? 1 : 0)}`;
+    for (const id of ['grainColorRow', 'grainSizeRow', 'grainSpreadRow']) $(id).classList.toggle('dim', !S.grain);
+    const struts = S.grad.line.on ? `linear-gradient(90deg, ${S.line}, ${S.grad.line.to})` : S.line;
+    for (const role of ['outer', 'inner', 'web']) {
+      const own = S[LAYER_KEY[role]], g = S.grad[role];
+      $('chip_' + role).style.background = !own ? struts : g.on ? `linear-gradient(90deg, ${own}, ${g.to})` : own;
+      $('sub_' + role).textContent = !own ? 'as struts' : g.on ? 'gradient' : own.toUpperCase();
+      document.querySelector(`.lchip[data-role="${role}"]`).classList.toggle('on', cedRole === role);
     }
     $('matchStruts').disabled = !(S.cOuter || S.cInner || S.cWeb);
+    syncEditor();
     document.querySelector(`input[name="cap"][value="${S.cap}"]`).checked = true;
-    for (const g of ['gLine', 'gBg']) {
-      $(g).checked = S[g]; $(g + 'Opts').hidden = !S[g];
-      $(g + 'To').value = S[g + 'To']; $(g + 'To_chip').style.background = S[g + 'To']; $(g + 'To_v').textContent = S[g + 'To'].toUpperCase();
-      document.querySelector(`input[name="${g}Dir"][value="${S[g + 'Dir']}"]`).checked = true;
-    }
     readout(); legend(); syncAnim(); syncClip();
+    if (pin) pinLayout();
   }
 
-  // each colour role: White, Black, or a custom colour (remembered, so Custom brings it back)
+  // each colour role: White, Black, or Custom, which opens the colour editor under the row (Solid or Gradient).
+  // The custom colour is remembered, so Custom brings it back
+  let cedRole = null;   // the role the editor is open for: line, accent, bg, outer, inner or web
+  function keepLinesVisible(bg) {   // keep the default lines visible against a new background
+    const dark = luma(hexRgb(bg)) < 128, l = S.line.toLowerCase();
+    if (dark && (l === BLACK || l === '#1d1b18')) S.line = WHITE;
+    if (!dark && l === WHITE) S.line = BLACK;
+  }
+  function setBase(role, v) {
+    if (role in LAYER_KEY) S[LAYER_KEY[role]] = v;
+    else { S[role] = v; S.custom[role] = v; }
+    if (role === 'bg') keepLinesVisible(v);
+  }
+  function openEditor(role) {
+    cedRole = cedRole === role ? null : role;
+    if (cedRole) $(cedRole in LAYER_KEY ? 'slot_layers' : 'slot_' + cedRole).append($('ced'));
+    $('ced').hidden = !cedRole;
+    sync();
+  }
+  function syncEditor() {
+    if (!cedRole) return;
+    const role = cedRole, g = S.grad[role], canGrad = role !== 'accent', layer = role in LAYER_KEY;
+    const grad = canGrad && g.on && (!layer || !!S[LAYER_KEY[role]]), a = baseOf(role);
+    $('ced_tabs').hidden = !canGrad;
+    $('ced_tabs').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', (b.dataset.mode === 'gradient') === grad));
+    $('ced_struts').hidden = !layer; $('ced_struts').disabled = layer && !S[LAYER_KEY[role]];
+    $('ced_a').value = a; $('ced_a_chip').style.background = a; $('ced_a_v').textContent = a.toUpperCase();
+    $('ced_a_lbl').textContent = grad ? 'From' : 'Colour';
+    $('ced_b_wrap').hidden = $('ced_dirs').hidden = !grad;
+    if (grad) {
+      $('ced_b').value = g.to; $('ced_b_chip').style.background = g.to; $('ced_b_v').textContent = g.to.toUpperCase();
+      document.querySelector(`input[name="ced_dir"][value="${g.dir}"]`).checked = true;
+    }
+    const noDepth = role === 'bg';   // a background has no depth
+    $('ced_dir_depth').nextElementSibling.hidden = noDepth;
+    $('ced_dirs').classList.toggle('five', !noDepth); $('ced_dirs').classList.toggle('four', noDepth);
+    $('ced_note').hidden = !(grad && g.dir === 'depth');
+  }
   function swatches(key, label) {
     const host = $('sw_' + key);
     for (const [which, c, name] of [['white', WHITE, 'White'], ['black', BLACK, 'Black']]) {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'ckey'; b.dataset.which = which; b.setAttribute('aria-label', `${label}: ${name}`);
       b.innerHTML = `<span class="dot" style="background:${c}"></span>${name}`;
-      b.addEventListener('click', () => pickColor(key, c));
+      b.addEventListener('click', () => {
+        S[key] = c; if (S.grad[key]) S.grad[key].on = false;
+        if (key === 'bg') keepLinesVisible(c);
+        if (cedRole === key) openEditor(key); else { sync(); }
+        persist();
+      });
       host.append(b);
     }
-    const k = document.createElement('label');
-    k.className = 'ckey'; k.dataset.which = 'custom';
-    k.innerHTML = `<span class="dot" id="cdot_${key}"></span>Custom<input type="color" id="pick_${key}" aria-label="${label}: custom colour">`;
-    const pick = k.querySelector('input');
-    pick.addEventListener('click', () => pickColor(key, S.custom[key]));   // switch to the remembered colour; the picker opens to change it
-    pick.addEventListener('input', () => { S.custom[key] = pick.value; pickColor(key, pick.value); });
+    const k = document.createElement('button');
+    k.type = 'button'; k.className = 'ckey'; k.dataset.which = 'custom';
+    k.setAttribute('aria-label', `${label}: custom colour${key === 'accent' ? '' : ' or gradient'}`);
+    k.innerHTML = `<span class="dot" id="cdot_${key}"></span>Custom`;
+    k.addEventListener('click', () => {
+      // from White or Black, Custom brings back the remembered colour; a custom colour or gradient is left as it is
+      const v = S[key].toLowerCase(), plain = (v === WHITE || v === BLACK) && !(S.grad[key] && S.grad[key].on);
+      if (cedRole !== key && plain) { S[key] = S.custom[key]; if (key === 'bg') keepLinesVisible(S.bg); }
+      openEditor(key); persist();
+    });
     host.append(k);
-  }
-  function pickColor(key, c) {
-    if (key === 'line') S.cOuter = S.cInner = S.cWeb = null;
-    if (key === 'bg') {
-      // keep the default lines visible against the new background
-      const dark = luma(hexRgb(c)) < 128, l = S.line.toLowerCase();
-      if (dark && (l === BLACK || l === '#1d1b18')) S.line = WHITE;
-      if (!dark && l === WHITE) S.line = BLACK;
-    }
-    set(key, c);
   }
   swatches('line', 'Struts');
   swatches('accent', 'Highlights');
   swatches('bg', 'Background');
-  for (const [id, key] of [['col_outer', 'cOuter'], ['col_inner', 'cInner'], ['col_web', 'cWeb']])
-    $(id).addEventListener('input', e => set(key, e.target.value));
-  $('matchStruts').addEventListener('click', () => { S.cOuter = S.cInner = S.cWeb = null; sync(); persist(); });
+  document.querySelectorAll('.lchip').forEach(b => b.addEventListener('click', () => openEditor(b.dataset.role)));
+  $('ced_tabs').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    const role = cedRole, grad = b.dataset.mode === 'gradient';
+    if (grad && role in LAYER_KEY && !S[LAYER_KEY[role]]) S[LAYER_KEY[role]] = S.line;   // a layer's gradient starts from the strut colour
+    S.grad[role].on = grad; sync(); persist();
+  }));
+  $('ced_a').addEventListener('input', e => { setBase(cedRole, e.target.value); sync(); persist(); });
+  $('ced_b').addEventListener('input', e => { S.grad[cedRole].to = e.target.value; S.grad[cedRole].on = true; sync(); persist(); });
+  document.querySelectorAll('input[name="ced_dir"]').forEach(r => r.addEventListener('change', () => { S.grad[cedRole].dir = r.value; sync(); persist(); }));
+  $('ced_struts').addEventListener('click', () => { S[LAYER_KEY[cedRole]] = null; S.grad[cedRole].on = false; sync(); persist(); });
+  $('matchStruts').addEventListener('click', () => {
+    S.cOuter = S.cInner = S.cWeb = null;
+    for (const r of ['outer', 'inner', 'web']) S.grad[r].on = false;
+    sync(); persist();
+  });
   document.querySelectorAll('input[name="cap"]').forEach(r => r.addEventListener('change', () => set('cap', r.value)));
-  for (const g of ['gLine', 'gBg']) {
-    $(g).addEventListener('change', e => set(g, e.target.checked));
-    $(g + 'To').addEventListener('input', e => { S[g] = true; set(g + 'To', e.target.value); });
-    document.querySelectorAll(`input[name="${g}Dir"]`).forEach(r => r.addEventListener('change', () => { S[g] = true; set(g + 'Dir', r.value); }));
-  }
 
   function set(key, v) { S[key] = v; sync(); persist(); }
   // line weight runs 0.25× to 50× on a logarithmic slider, so the fine low end keeps its room
@@ -1966,7 +2160,10 @@
 
   const num = (id, key, f = Number) => $(id).addEventListener('input', e => set(key, f(e.target.value)));
   num('freq', 'freq', v => parseInt(v, 10));
-  num('depth', 'depth'); num('grain', 'grain');
+  num('depth', 'depth'); num('grain', 'grain'); num('grainSize', 'grainSize'); num('grainSpread', 'grainSpread');
+  $('sw_grain').querySelectorAll('button.ckey').forEach(b => b.addEventListener('click', () => set('grainColor', b.dataset.which)));
+  $('pick_grain').addEventListener('click', () => set('grainColor', 'custom'));   // the remembered colour; the picker opens to change it
+  $('pick_grain').addEventListener('input', e => { S.grainCustom = e.target.value; set('grainColor', 'custom'); });
   $('weight').addEventListener('input', e => set('weight', sliderToWeight(+e.target.value)));
   // blend keys: hovering or focusing one previews it; a click keeps it; leaving the keys goes back to the kept mode
   for (const [group, modes] of BLENDS) {
@@ -2205,7 +2402,8 @@
     // every colour the frame can draw: the three layers, the highlight, and strut-type colours
     const lc = layerColors(), typedInks = S.strutColor ? strutClasses(geo).classes.map(c => c.color) : [];
     const mixHex = (a, b, t) => '#' + hexRgb(a).map((v, d) => Math.round(v + (hexRgb(b)[d] - v) * t).toString(16).padStart(2, '0')).join('');
-    const gradInks = !S.gLine ? [] : S.gLineDir === 'depth' ? depthRamp() : Array.from({ length: 9 }, (_, i) => mixHex(S.line, S.gLineTo, i / 8));
+    const gradInks = ['line', 'outer', 'inner', 'web'].filter(r => S.grad[r].on && (r === 'line' || S[LAYER_KEY[r]]))
+      .flatMap(r => S.grad[r].dir === 'depth' ? depthRamp(r) : Array.from({ length: 9 }, (_, i) => mixHex(baseOf(r), S.grad[r].to, i / 8)));
     const inks = [...new Set([lc.outer, lc.inner, lc.web, S.accent, ...typedInks, ...gradInks].map(c => c.toLowerCase()))].map(hexRgb);
     const L = Math.max(2, Math.min(6, Math.floor(255 / inks.length)));   // coverage levels per ink
     // index 0 = transparent (or the solid background); then L tints per ink over the matte
@@ -2291,6 +2489,74 @@
   window.__studio = { build, V, PHI, FACES, GC, LCD, POLY, NET, FOLD_DEG, jbVerts, jbRadius, twistDeg, growChain, strutClasses,
     setAnim: (kind, x) => { S.animKind = kind; anim.x = x; anim.running = false; syncAnim(); },
     toSVG: () => toSVG(build(S.freq), 2000) };
+
+  // ───────────────────────── phones: the sphere stays in view ─────────────────────────
+  // Below 860 px the stage is pinned to the top of the screen. Scrolling the controls shrinks it, one for one with
+  // the scroll, to the top third of the screen, and fades the title and readout; the controls then slide under it.
+  // The board shrinks by a CSS transform, so the canvas keeps its full resolution and scrolling never redraws it.
+  const phone = matchMedia('(max-width: 860px)'), stageEl = document.querySelector('.stage');
+  const mastEl = document.querySelector('.masthead'), rootStyle = document.documentElement.style;
+  let pin = null;   // full-size measurements while pinned
+  function pinLayout() {
+    stageEl.style.height = ''; board.style.transform = ''; mastEl.style.opacity = $('readout').style.opacity = mastEl.style.pointerEvents = '';
+    if (!phone.matches) {
+      pin = null;
+      for (const v of ['--stage-full', '--stage-small', '--panel-min']) rootStyle.removeProperty(v);
+      return;
+    }
+    const full = stageEl.offsetHeight, small = Math.round(innerHeight / 3);
+    pin = { full, small, span: Math.max(1, full - small), top0: board.offsetTop, size: board.offsetWidth, pad: 10 };
+    rootStyle.setProperty('--stage-full', full + 'px');
+    rootStyle.setProperty('--stage-small', small + 'px');
+    rootStyle.setProperty('--panel-min', (full + innerHeight - small) + 'px');
+    pinScroll();
+  }
+  function pinScroll() {
+    if (!pin) return;
+    const p = Math.min(1, Math.max(0, scrollY) / pin.span), k = 1 + p * ((pin.small - 2 * pin.pad) / pin.size - 1);
+    stageEl.style.height = (pin.full - p * pin.span) + 'px';
+    board.style.transform = `translateY(${(p * (pin.pad - pin.top0)).toFixed(1)}px) scale(${k.toFixed(4)})`;
+    mastEl.style.opacity = $('readout').style.opacity = String(Math.max(0, 1 - 2 * p));
+    mastEl.style.pointerEvents = p > 0.4 ? 'none' : '';   // a faded title takes no taps
+  }
+  let pinFrame = 0;
+  addEventListener('scroll', () => { if (pin && !pinFrame) pinFrame = requestAnimationFrame(() => { pinFrame = 0; pinScroll(); }); }, { passive: true });
+  addEventListener('resize', pinLayout);
+  phone.addEventListener('change', pinLayout);
+
+  // ───────────────────────── panel: tabs and folding sections, both remembered ─────────────────────────
+  const TABS = ['shape', 'overlays', 'style', 'motion', 'export'];
+  function showTab(t, focus) {
+    S.tab = TABS.includes(t) ? t : 'shape';
+    for (const k of TABS) {
+      const on = k === S.tab, b = $('tab-' + k);
+      b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1;
+      $('pane-' + k).hidden = !on;
+    }
+    if (focus) $('tab-' + S.tab).focus();
+  }
+  TABS.forEach((k, i) => {
+    $('tab-' + k).addEventListener('click', () => {
+      showTab(k); document.querySelector('.panel').scrollTop = 0;
+      if (pin && scrollY > pin.span) scrollTo(0, pin.span);   // phones: tabs back to the top, under the small sphere
+      persist();
+    });
+    $('tab-' + k).addEventListener('keydown', e => {   // arrow keys move along the tabs
+      const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (!d) return;
+      e.preventDefault(); showTab(TABS[(i + d + TABS.length) % TABS.length], true); persist();
+    });
+  });
+  if (!Array.isArray(S.closed)) S.closed = [];
+  document.querySelectorAll('details.sec').forEach(d => {
+    d.open = !S.closed.includes(d.dataset.sec);
+    d.addEventListener('toggle', () => {
+      S.closed = [...document.querySelectorAll('details.sec')].filter(x => !x.open).map(x => x.dataset.sec);
+      persist();
+    });
+  });
+  showTab(S.tab);
+  pinLayout();
 
   sync();
 })();
