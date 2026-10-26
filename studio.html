@@ -1485,7 +1485,7 @@
         fills.push({ pts: [a, b, cc].map(q => PU.subarray(q*3, q*3+3)), color: acc, alpha: 0.07 });
       }
       layers.push({ id: 'net-faces', E: Uint32Array.from(outline), A: PU, B: PU, w: lw, color: acc, alpha: 1 });
-      return finishFrame({ layers, fills, dots, st, kind, R, c });
+      return finishFrame({ layers, fills, dots, st, kind, R, c, flat: true });   // the flat net faces you: all in front
     }
 
     if (gst) {
@@ -1782,8 +1782,16 @@
     return finishFrame({ layers, fills, dots, st, kind, R, c });
   }
 
-  const sides = () => S.L_back ? [false, true] : [true];
-  const isFront = z => z >= 0;
+  // depth: instead of a hard front/back split, a strut's opacity eases between the far-side opacity and full strength
+  // across a band around the sphere's edge, so nothing pops as it turns from front to back. Everything is sorted
+  // into DEPTH_K steps and drawn far to near, so nearer struts still lie on top
+  const DEPTH_K = 10, DEPTH_W = 0.18;   // steps, and the band's half-width in sphere radii
+  function depthBand(fr) {
+    const backA = S.L_back ? S.backOp / 100 : 0;
+    return { level: k => backA + (1 - backA) * ease(k / (DEPTH_K - 1)),
+             step: fr.flat ? () => DEPTH_K - 1 : z => Math.round(clamp01((z + DEPTH_W) / (2 * DEPTH_W)) * (DEPTH_K - 1)) };
+  }
+  const groupName = k => k === DEPTH_K - 1 ? 'front' : k === 0 ? 'back' : 'depth-' + k;
   const polyZ = F => { let z = 0; for (const p of F.pts) z += p[2]; return z / F.pts.length; };
 
   function paint(ctx, size, geo, withBg) {
@@ -1795,31 +1803,38 @@
     const paintOf = col => !isGrad(col) ? col : (grads[col] ||= (g => canvasGrad(ctx, strutGeom(fr, g.dir), g.from, g.to))(gradOf(roleOf(col))));
     ctx.lineCap = S.cap; ctx.lineJoin = 'round';
     ctx.globalCompositeOperation = exporting ? S.blend : (previewBlend || S.blend);   // each layer blends with what is drawn
-    for (const front of sides()) {
-      const sideA = front ? 1 : S.backOp / 100;
-      for (const F of fr.fills) {
-        if (isFront(polyZ(F)) !== front || F.alpha <= 0) continue;
-        ctx.globalAlpha = sideA * F.alpha; ctx.fillStyle = paintOf(F.color); ctx.beginPath();
+    const { level, step } = depthBand(fr), K = DEPTH_K;
+    // sort once into depth steps (one path per layer and step), then draw the steps far to near
+    const fillAt = Array.from({ length: K }, () => []);
+    for (const F of fr.fills) if (F.alpha > 0) fillAt[step(polyZ(F))].push(F);
+    const paths = fr.layers.map(L => {
+      if (L.alpha <= 0.001) return null;
+      const P = new Array(K).fill(null), E = L.E, A = L.A, B = L.B;
+      for (let e = 0; e < E.length; e += 2) {
+        const a = E[e] * 3, b = E[e+1] * 3, k = step((A[a+2] + B[b+2]) / 2), p = P[k] || (P[k] = new Path2D());
+        p.moveTo(A[a], A[a+1]); p.lineTo(B[b], B[b+1]);
+      }
+      return P;
+    });
+    for (let k = 0; k < K; k++) {
+      const la = level(k);
+      if (la <= 0.002) continue;
+      for (const F of fillAt[k]) {
+        ctx.globalAlpha = la * F.alpha; ctx.fillStyle = paintOf(F.color); ctx.beginPath();
         F.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
         ctx.closePath(); ctx.fill();
       }
-      for (const L of fr.layers) {
-        if (L.alpha <= 0.001) continue;
-        ctx.globalAlpha = sideA * L.alpha;
-        ctx.strokeStyle = paintOf(L.color); ctx.lineWidth = L.w; ctx.setLineDash(L.dash || []); ctx.beginPath();
-        const E = L.E, A = L.A, B = L.B;
-        for (let e = 0; e < E.length; e += 2) {
-          const a = E[e] * 3, b = E[e+1] * 3;
-          if (isFront(A[a+2] + B[b+2]) !== front) continue;
-          ctx.moveTo(A[a], A[a+1]); ctx.lineTo(B[b], B[b+1]);
-        }
-        ctx.stroke();
-      }
+      fr.layers.forEach((L, i) => {
+        const p = paths[i] && paths[i][k];
+        if (!p) return;
+        ctx.globalAlpha = la * L.alpha; ctx.strokeStyle = paintOf(L.color); ctx.lineWidth = L.w; ctx.setLineDash(L.dash || []);
+        ctx.stroke(p);
+      });
       ctx.setLineDash([]);
       for (const D of fr.dots) {
         if (D.alpha <= 0.001) continue;
-        ctx.globalAlpha = sideA * D.alpha; ctx.fillStyle = paintOf(D.color); ctx.beginPath();
-        for (const p of D.pts) if (isFront(p[2]) === front) { ctx.moveTo(p[0] + D.r, p[1]); ctx.arc(p[0], p[1], D.r, 0, Math.PI * 2); }
+        ctx.globalAlpha = la * D.alpha; ctx.fillStyle = paintOf(D.color); ctx.beginPath();
+        for (const p of D.pts) if (step(p[2]) === k) { ctx.moveTo(p[0] + D.r, p[1]); ctx.arc(p[0], p[1], D.r, 0, Math.PI * 2); }
         ctx.fill();
       }
     }
@@ -1876,32 +1891,34 @@
     if (S.exportBg) out.push(`<rect width="100%" height="100%" fill="${S.grad.bg.on ? 'url(#bg-gradient)' : S.bg}"/>`);
     out.push(`<g fill="none" stroke-linecap="${S.cap}" stroke-linejoin="round">`);
     const mix = S.blend === 'source-over' ? '' : ` style="mix-blend-mode:${S.blend === 'lighter' ? 'plus-lighter' : S.blend}"`;
-    for (const front of sides()) {
-      const side = front ? 'front' : 'back';
-      out.push(`<g id="${side}"${front ? '' : ` opacity="${S.backOp / 100}"${mix}`}>`);
-      const fills = fr.fills.filter(F => F.alpha > 0 && isFront(polyZ(F)) === front);
-      if (fills.length) out.push(`<g id="${side}-fills" stroke="none"${mix}>` + fills.map(F =>
+    const { level, step } = depthBand(fr), K = DEPTH_K;
+    for (let k = 0; k < K; k++) {   // one group per depth step, far to near: back, depth-1 … depth-8, front
+      const la = level(k), side = groupName(k);
+      if (la <= 0.002) continue;
+      const body = [];
+      const fills = fr.fills.filter(F => F.alpha > 0 && step(polyZ(F)) === k);
+      if (fills.length) body.push(`<g id="${side}-fills" stroke="none"${mix}>` + fills.map(F =>
         `<polygon fill="${svgPaint(F.color)}" fill-opacity="${F.alpha.toFixed(3)}" points="${F.pts.map(p => n(p[0]) + ',' + n(p[1])).join(' ')}"/>`).join('') + '</g>');
       for (const L of fr.layers) {
         if (L.alpha <= 0.001) continue;
         let d = '';
         for (let e = 0; e < L.E.length; e += 2) {
           const a = L.E[e] * 3, b = L.E[e+1] * 3;
-          if (isFront(L.A[a+2] + L.B[b+2]) !== front) continue;
+          if (step((L.A[a+2] + L.B[b+2]) / 2) !== k) continue;
           d += `M${n(L.A[a])} ${n(L.A[a+1])}L${n(L.B[b])} ${n(L.B[b+1])}`;
         }
         if (!d) continue;
         const extra = (L.alpha < 1 ? ` stroke-opacity="${L.alpha.toFixed(3)}"` : '') +
                       (L.dash ? ` stroke-dasharray="${L.dash.map(v => v.toFixed(2)).join(' ')}"` : '');
-        out.push(`<path id="${side}-${L.id}" stroke="${svgPaint(L.color)}" stroke-width="${L.w.toFixed(3)}"${extra}${mix} d="${d}"/>`);
+        body.push(`<path id="${side}-${L.id}" stroke="${svgPaint(L.color)}" stroke-width="${L.w.toFixed(3)}"${extra}${mix} d="${d}"/>`);
       }
       for (const D of fr.dots) {
-        const pts = D.pts.filter(p => isFront(p[2]) === front);
+        const pts = D.pts.filter(p => step(p[2]) === k);
         if (!pts.length || D.alpha <= 0.001) continue;
-        out.push(`<g id="${side}-${D.id}" fill="${svgPaint(D.color)}"${D.alpha < 1 ? ` fill-opacity="${D.alpha.toFixed(3)}"` : ''}${mix}>` +
+        body.push(`<g id="${side}-${D.id}" fill="${svgPaint(D.color)}"${D.alpha < 1 ? ` fill-opacity="${D.alpha.toFixed(3)}"` : ''}${mix}>` +
           pts.map(p => `<circle cx="${n(p[0])}" cy="${n(p[1])}" r="${D.r.toFixed(2)}"/>`).join('') + '</g>');
       }
-      out.push('</g>');
+      if (body.length) out.push(`<g id="${side}"${la < 0.999 ? ` opacity="${la.toFixed(3)}"` : ''}>`, ...body, '</g>');
     }
     out.push('</g></svg>');
     return out.join('\n');
