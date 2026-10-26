@@ -31,6 +31,12 @@ The control panel has five tabs: **Shape** (frequency, structure, strut types), 
 - **Animations**: the jitterbug (VE to sphere), the jitterbug's phases on the seven circles (VE, icosahedron, Jessen, octahedron), great circles sweeping in, unfolding to the icosahedral net, frequency growth by divisors, building from the crown, and a breathing truss; plus five studies (Facet, sphere to icosahedron to dodecahedron; Moiré, two neighbouring grids crossing; Scan; Scatter, cells tumbling off the shell; and Tune, which moves smoothly between any two frequencies) that start and end on the plain sphere, so their clips loop. Run or scrub any of them.
 - **Export**: SVG and PNG of the current frame (transparent by default), plus GIF and MP4 clips at 720, 1080 or 1600 square or as a 1080×1920 Reel, with Standard, High or Max video quality. Loops turn by the drawing's own symmetry angle, so they repeat seamlessly, and a loop clip can run 1–10 loops in a row. An animation clip can carry on for 1–10 seamless loops after the animation ends.
 
+### Keyboard and macropad
+
+`Space` plays or pauses; `[` and `]` step the frequency down and up (a short readout shows the new value). Keys are matched by position, so they work on any layout, and are ignored while typing in a field.
+
+To put the frequency on a Work Louder Creator Micro wheel: open [usevia.app](https://usevia.app) (or Work Louder's setup page) in Chrome or Edge, select the Creator Micro, click a wheel and set **clockwise** to `]` and **counter-clockwise** to `[` (Basic keycodes, KC_RBRC and KC_LBRC). Each detent then steps the frequency by one while the studio's window has focus.
+
 GIF and MP4 export load [gifenc](https://github.com/mattdesl/gifenc) and [mp4-muxer](https://github.com/Vanilagy/mp4-muxer) from jsDelivr on first use. MP4 needs WebCodecs (Chrome, Edge, Safari 16.4+).
 
 ## Other files

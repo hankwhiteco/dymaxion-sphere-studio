@@ -325,7 +325,7 @@
     <div class="masthead">
       <div class="brand"><span class="grille" aria-hidden="true"></span><h1>Dymaxion Sphere Studio</h1></div>
       <div class="mast-right">
-        <span class="hint">Drag the sphere to turn it · Space to play or pause</span>
+        <span class="hint">Drag the sphere to turn it · Space to play or pause · [ ] frequency</span>
         <a class="notes-key" href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html" target="_blank" rel="noopener">Geometry notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a>
       </div>
     </div>
@@ -2216,6 +2216,25 @@
   addEventListener('keydown', e => {
     if (e.code !== 'Space' || /INPUT|SELECT|BUTTON|TEXTAREA/.test(document.activeElement?.tagName || '')) return;
     e.preventDefault(); set('playing', !S.playing);
+  });
+  // keyboard and macropad shortcuts (a Work Louder Creator Micro's wheel, or any keyboard): [ and ] step the frequency.
+  // Matched by key position (e.code), so they work on any layout; ignored with a modifier held or while typing
+  const typing = () => {
+    const el = document.activeElement;
+    return !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable
+      || (el.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'color'].includes(el.type)));
+  };
+  function stepFreq(d) {
+    const f = Math.min(16, Math.max(2, S.freq + d));
+    if (f !== S.freq) set('freq', f);
+    toast(`${S.freq}v`);   // the value is in view whichever tab is open
+  }
+  const SHORTCUTS = { BracketLeft: () => stepFreq(-1), BracketRight: () => stepFreq(1) };
+  const BY_KEY = { '[': 'BracketLeft', ']': 'BracketRight' };   // for synthetic keystrokes that carry no key position
+  addEventListener('keydown', e => {
+    const run = SHORTCUTS[e.code || BY_KEY[e.key]];
+    if (!run || e.metaKey || e.ctrlKey || e.altKey || typing()) return;
+    e.preventDefault(); run();
   });
 
   // ───────────────────────── export ─────────────────────────
