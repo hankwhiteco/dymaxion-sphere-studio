@@ -339,7 +339,7 @@
     <div class="masthead">
       <div class="brand"><span class="grille" aria-hidden="true"></span><h1>Dymaxion Sphere Studio</h1></div>
       <div class="mast-right">
-        <span class="hint">Drag to turn · Space play · [ ] frequency · , . spin · − = depth · 1–0 layers · F full screen</span>
+        <span class="hint">Drag to turn · Space play · [ ] frequency · , . spin · ← → ↑ ↓ turn, tilt · Q E roll · − = depth · 1–0 layers · F full screen</span>
         <button type="button" class="notes-key" id="fullBtn" aria-label="Full screen (F)">Full screen <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 4 V1.5 H4 M6 1.5 H8.5 V4 M8.5 6 V8.5 H6 M4 8.5 H1.5 V6"/></svg></button>
         <a class="notes-key" href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html" target="_blank" rel="noopener">Geometry notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a>
       </div>
@@ -578,9 +578,18 @@
       <details class="sec" data-sec="view" open><summary><h2>View</h2></summary>
       <div class="sec-body">
       <div class="row">
-        <label for="tilt">Tilt</label><span class="val" id="tiltVal"></span>
-        <input type="range" id="tilt" min="-89" max="89" step="1" value="12">
+        <label for="turn">Turn</label><span class="val" id="turnVal"></span>
+        <input type="range" id="turn" min="0" max="359" step="1" value="0" aria-label="Turn about the spin axis">
       </div>
+      <div class="row">
+        <label for="tilt">Tilt</label><span class="val" id="tiltVal"></span>
+        <input type="range" id="tilt" min="-89" max="89" step="1" value="12" aria-label="Tilt toward you">
+      </div>
+      <div class="row">
+        <label for="roll">Roll</label><span class="val" id="rollVal"></span>
+        <input type="range" id="roll" min="-180" max="180" step="1" value="0" aria-label="Roll about the line of sight">
+      </div>
+      <p class="note">Turn goes around the spin axis (what Spin animates), Tilt tips that axis toward you, and Roll turns the picture in the screen. Drag the sphere to turn and tilt it; Shift-drag to roll.</p>
       <div class="row">
         <label for="zoom">Size in frame</label><span class="val" id="zoomVal"></span>
         <input type="range" id="zoom" min="30" max="100" step="1" value="94">
@@ -1228,7 +1237,7 @@
     playing: true, dir: 1, speed: 3, axis: '5', tilt: 12, wobble: 0, zoom: 94, exportBg: false, clip: 'loop',
     animKind: 'jitterbug', breathe: false, quality: 'high', motionSize: '1080', loops: 1,
     cOuter: null, cInner: null, cWeb: null,   // per-layer colours; null follows the strut colour
-    cap: 'round',
+    cap: 'round', roll: 0,   // roll: degrees about the line of sight
     // a gradient for each role, from the role's own colour to To; off means a solid colour
     grad: { line: { on: false, to: '#ef5a1f', dir: 'depth' }, outer: { on: false, to: '#ef5a1f', dir: 'depth' },
             inner: { on: false, to: '#ef5a1f', dir: 'depth' }, web: { on: false, to: '#ef5a1f', dir: 'depth' },
@@ -1277,7 +1286,9 @@
     const lat = Math.max(-89, Math.min(89, S.tilt + dragTilt + wob)) * Math.PI / 180;
     const ct = Math.cos(theta), st = Math.sin(theta), cl = Math.cos(lat), sl = Math.sin(lat);
     const f = [0, 1, 2].map(d => cl * (ct*B[d] + st*C[d]) + sl*A[d]);
-    const r = norm(cross(A, f)), u = cross(f, r);
+    const r0 = norm(cross(A, f)), u0 = cross(f, r0);
+    const ro = (S.roll || 0) * Math.PI / 180, cr = Math.cos(ro), sr = Math.sin(ro);   // roll about the line of sight
+    const r = [0, 1, 2].map(d => r0[d] * cr + u0[d] * sr), u = [0, 1, 2].map(d => u0[d] * cr - r0[d] * sr);
     return { f, r, u };
   }
   // gradients: a stroke coloured 'grad:<role>' is painted with that role's gradient, from the role's own colour to its
@@ -1926,6 +1937,7 @@
       if (anim.x >= 1) anim.running = false;
       syncAnim();
     }
+    syncTurn();
     requestAnimationFrame(tick);   // ask for the next frame first: a bad frame must never stop the loop
     try { draw(); } catch (e) { if (!tick.failed) { tick.failed = true; console.error(e); } }
   }
@@ -1940,8 +1952,11 @@
   board.addEventListener('pointermove', e => {
     if (!dragging) return;
     const k = 180 / boardSize;
-    theta -= (e.clientX - px0) * k * Math.PI / 180;
-    dragTilt = Math.max(-89 - S.tilt, Math.min(89 - S.tilt, dragTilt + (e.clientY - py0) * k));
+    if (e.shiftKey) S.roll = wrap180(S.roll + (e.clientX - px0) * k);   // shift-drag rolls the picture
+    else {
+      theta -= (e.clientX - px0) * k * Math.PI / 180;
+      dragTilt = Math.max(-89 - S.tilt, Math.min(89 - S.tilt, dragTilt + (e.clientY - py0) * k));
+    }
     px0 = e.clientX; py0 = e.clientY;
   });
   const endDrag = () => {
@@ -1949,6 +1964,7 @@
     dragging = false; board.classList.remove('dragging');
     // fold the drag tilt into the tilt control so it sticks
     S.tilt = Math.round(Math.max(-89, Math.min(89, S.tilt + dragTilt))); dragTilt = 0;
+    S.roll = Math.round(S.roll);
     sync(); persist();
   };
   board.addEventListener('pointerup', endDrag);
@@ -2033,7 +2049,9 @@
     $('tolMM').closest('.row').classList.toggle('dim', !S.strutColor);
     $('speed').value = S.dir * S.speed;   // one slider both ways: left of centre spins in reverse
     $('speedVal').textContent = S.speed > 0 ? `${S.dir > 0 ? 'forward' : 'reverse'} · ${(+S.speed).toFixed(1)}°/s · turn ${fmtTime(360 / S.speed)}` : 'still';
-    $('tilt').value = S.tilt; $('tiltVal').textContent = `${S.tilt}°`;
+    $('tilt').value = S.tilt; $('tiltVal').textContent = `${S.tilt}° toward you`;
+    $('roll').value = S.roll; $('rollVal').textContent = `${S.roll}°`;
+    syncTurn(true);
     $('wobble').value = S.wobble; $('wobbleVal').textContent = S.wobble ? `±${S.wobble}°` : 'off';
     $('zoom').value = S.zoom; $('zoomVal').textContent = `${S.zoom}%`;
     $('exportBg').checked = S.exportBg;
@@ -2169,6 +2187,20 @@
   document.querySelectorAll('input[name="cap"]').forEach(r => r.addEventListener('change', () => set('cap', r.value)));
 
   function set(key, v) { S[key] = v; sync(); persist(); }
+  // orientation: turn is the spin angle itself, shown in degrees
+  const wrap180 = a => ((a + 180) % 360 + 360) % 360 - 180;
+  const turnDeg = () => ((Math.round(theta * 180 / Math.PI) % 360) + 360) % 360;
+  let shownTurn = null;
+  function syncTurn(force) {
+    const d = turnDeg();
+    if (!force && d === shownTurn) return;
+    shownTurn = d; $('turn').value = d; $('turnVal').textContent = `${d}° about the axis`;
+  }
+  function stepOrient(kind, d) {
+    if (kind === 'turn') { theta += d * Math.PI / 180; syncTurn(); toast(`Turn ${turnDeg()}°`); return; }
+    if (kind === 'tilt') { set('tilt', Math.max(-89, Math.min(89, S.tilt + d))); toast(`Tilt ${S.tilt}°`); return; }
+    set('roll', wrap180(S.roll + d)); toast(`Roll ${S.roll}°`);
+  }
   // line weight runs 0.25× to 50× on a logarithmic slider, so the fine low end keeps its room
   const W_MIN = 0.25, W_MAX = 50, W_SPAN = Math.log(W_MAX / W_MIN);
   function sliderToWeight(v) { const w = W_MIN * Math.exp(v / 1000 * W_SPAN); return w < 10 ? Math.round(w * 100) / 100 : Math.round(w * 10) / 10; }
@@ -2209,7 +2241,8 @@
   // moving the far-side slider always works: it switches the far side back on
   $('backOp').addEventListener('input', e => { S.L_back = true; set('backOp', +e.target.value); });
   $('speed').addEventListener('input', e => setSpin(+e.target.value));
-  num('tilt', 'tilt'); num('wobble', 'wobble'); num('zoom', 'zoom');
+  num('tilt', 'tilt'); num('roll', 'roll');
+  $('turn').addEventListener('input', e => { theta = +e.target.value * Math.PI / 180; syncTurn(true); }); num('wobble', 'wobble'); num('zoom', 'zoom');
   $('freqDown').addEventListener('click', () => set('freq', Math.max(2, S.freq - 1)));
   $('freqUp').addEventListener('click', () => set('freq', Math.min(16, S.freq + 1)));
   for (const k of ['trueScale', 'L_outer', 'L_inner', 'L_web', 'L_net', 'L_poles', 'L_ve', 'L_back', 'L_gc', 'L_lcd', 'L_poly',
@@ -2222,7 +2255,7 @@
   document.querySelectorAll('input[name="axis"]').forEach(r => r.addEventListener('change', () => { theta = 0; set('axis', r.value); }));
   $('play').addEventListener('click', () => set('playing', !S.playing));
   $('reverse').addEventListener('click', () => set('dir', -S.dir));
-  $('reset').addEventListener('click', () => { theta = 0; clock = 0; dragTilt = 0; S.tilt = DEFAULTS.tilt; sync(); persist(); });
+  $('reset').addEventListener('click', () => { theta = 0; clock = 0; dragTilt = 0; S.tilt = DEFAULTS.tilt; S.roll = 0; sync(); persist(); });
   document.querySelectorAll('input[name="anim"]').forEach(r => r.addEventListener('change', () => {
     anim.x = 1; anim.running = false; S.animKind = r.value; tuneHome(); sync(); persist();
   }));
@@ -2296,15 +2329,21 @@
     Comma: () => stepSpin(-0.5), Period: () => stepSpin(0.5),
     Minus: () => stepDepth(-5), Equal: () => stepDepth(5), NumpadSubtract: () => stepDepth(-5), NumpadAdd: () => stepDepth(5),
     KeyF: () => setFull(!isFull()), Escape: () => setFull(false),
+    ArrowLeft: e => stepOrient('turn', e.shiftKey ? -1 : -5), ArrowRight: e => stepOrient('turn', e.shiftKey ? 1 : 5),
+    ArrowUp: e => stepOrient('tilt', e.shiftKey ? 1 : 5), ArrowDown: e => stepOrient('tilt', e.shiftKey ? -1 : -5),
+    KeyQ: e => stepOrient('roll', e.shiftKey ? -1 : -5), KeyE: e => stepOrient('roll', e.shiftKey ? 1 : 5),
   };
   for (let i = 0; i < 10; i++) SHORTCUTS['Digit' + ((i + 1) % 10)] = SHORTCUTS['Numpad' + ((i + 1) % 10)] = () => toggleLayer(i);
   // for synthetic keystrokes that carry no key position
   const BY_KEY = { '[': 'BracketLeft', ']': 'BracketRight', ',': 'Comma', '.': 'Period', '-': 'Minus', '=': 'Equal', '+': 'Equal',
-    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])) };
+    f: 'KeyF', F: 'KeyF', Escape: 'Escape', q: 'KeyQ', Q: 'KeyQ', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])) };
   addEventListener('keydown', e => {
     const run = SHORTCUTS[e.code || BY_KEY[e.key]];
     if (!run || e.metaKey || e.ctrlKey || e.altKey || typing()) return;
-    e.preventDefault(); run();
+    // arrow keys belong to a focused slider, tab or button; on the page itself they turn and tilt the sphere
+    const el = document.activeElement;
+    if (e.code.startsWith('Arrow') && el && el !== document.body && el !== board) return;
+    e.preventDefault(); run(e);
   });
 
   // ───────────────────────── export ─────────────────────────
