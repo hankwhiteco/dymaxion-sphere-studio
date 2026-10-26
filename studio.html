@@ -340,7 +340,7 @@
     <div class="masthead">
       <div class="brand"><span class="grille" aria-hidden="true"></span><h1>Dymaxion Sphere Studio</h1></div>
       <div class="mast-right">
-        <span class="hint">Drag to turn · Space play · [ ] frequency · , . spin · ← → ↑ ↓ turn, tilt · Q E roll · ; ' line weight · − = depth · 1–0 layers · R random colours · F full screen</span>
+        <span class="hint">Drag to turn · Space play · [ ] frequency · , . spin · ← → turn · ↑ ↓ tumble · Q E roll · ; ' line weight · − = depth · 1–0 layers · R random colours · F full screen</span>
         <button type="button" class="notes-key" id="fullBtn" aria-label="Full screen (F)">Full screen <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 4 V1.5 H4 M6 1.5 H8.5 V4 M8.5 6 V8.5 H6 M4 8.5 H1.5 V6"/></svg></button>
         <a class="notes-key" href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html" target="_blank" rel="noopener">Geometry notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a>
       </div>
@@ -1239,6 +1239,7 @@
     animKind: 'jitterbug', breathe: false, quality: 'high', motionSize: '1080', loops: 1,
     cOuter: null, cInner: null, cWeb: null,   // per-layer colours; null follows the strut colour
     cap: 'round', roll: 0,   // roll: degrees about the line of sight
+    body: null,   // the sphere's own rotation from tumbling (row-major 3×3), null for none
     // a gradient for each role, from the role's own colour to To; off means a solid colour
     grad: { line: { on: false, to: '#ef5a1f', dir: 'depth' }, outer: { on: false, to: '#ef5a1f', dir: 'depth' },
             inner: { on: false, to: '#ef5a1f', dir: 'depth' }, web: { on: false, to: '#ef5a1f', dir: 'depth' },
@@ -1263,6 +1264,7 @@
   }
   if (!['mono', 'custom'].includes(S.grainColor)) S.grainColor = 'mono';   // Struts was dropped
   if (!ANIMS[S.animKind]) S.animKind = 'jitterbug';
+  if (!(Array.isArray(S.body) && S.body.length === 9 && S.body.every(Number.isFinite))) S.body = null;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduced) S.playing = false;
   let saveT;
@@ -1388,6 +1390,7 @@
     const gridA = jst ? jst.gridA : pst ? pst.gridA : 1;
     const overlayA = (pst ? pst.gridA : 1) * (jst ? jst.inflate : 1) * (ust ? inflate * (1 - Math.max(ust.fold, ust.align)) : 1);
 
+    const Bm = S.body; let bodyOn = !!Bm;   // the sphere's own rotation (tumble)
     const projArr = (src, k, flatSrc, mix, rad) => {
       const o = new Float32Array(src.length), m = mix ?? inflate;
       for (let i = 0; i < src.length; i += 3) {
@@ -1398,6 +1401,7 @@
           z = flatSrc[i+2] + (z - flatSrc[i+2]) * m;
         }
         if (rad) { const q = rad(x, y, z); x *= q; y *= q; z *= q; }   // radial displacement (ripple)
+        if (bodyOn) { const X = Bm[0]*x + Bm[1]*y + Bm[2]*z, Y = Bm[3]*x + Bm[4]*y + Bm[5]*z; z = Bm[6]*x + Bm[7]*y + Bm[8]*z; x = X; y = Y; }
         x *= k; y *= k; z *= k;
         o[i]   = c + (x*r[0] + y*r[1] + z*r[2]) * R;
         o[i+1] = c - (x*u[0] + y*u[1] + z*u[2]) * R;
@@ -1464,6 +1468,7 @@
         const k = Math.floor(t / geo.fpt);
         In.set(apply([geo.innerFlat[t*3] * rIn, geo.innerFlat[t*3+1] * rIn, geo.innerFlat[t*3+2] * rIn], k), t * 3);
       }
+      bodyOn = false;
       const PU = projArr(U, 1, null, 1);   // the net shows the outer triangles only; the truss is folded away
       // keep the whole net in frame while it rolls open, easing its centre to the middle of the board
       let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
@@ -2241,9 +2246,23 @@
   // and each frame the sphere eases a share of it in (ease-out), so taps glide. A held key keeps feeding the
   // pending amount at a rate that ramps up, so several keys at once mix (turn and tilt together goes diagonally).
   // A flicked drag leaves a velocity that decays, so the sphere coasts to rest.
-  const ORIENT_KEYS = { ArrowLeft: ['turn', -1], ArrowRight: ['turn', 1], ArrowUp: ['tilt', 1], ArrowDown: ['tilt', -1],
+  const ORIENT_KEYS = { ArrowLeft: ['turn', -1], ArrowRight: ['turn', 1], ArrowUp: ['tumble', 1], ArrowDown: ['tumble', -1],
                         KeyQ: ['roll', -1], KeyE: ['roll', 1] };
-  const orient = { pend: { turn: 0, tilt: 0, roll: 0 }, vel: { turn: 0, tilt: 0, roll: 0 }, held: new Map(), moving: false };
+  const orient = { pend: { turn: 0, tilt: 0, roll: 0, tumble: 0 }, vel: { turn: 0, tilt: 0, roll: 0, tumble: 0 }, held: new Map(),
+                   moving: false, tumbleAxis: null };
+  // tumbling: ↑ ↓ turn the sphere itself about one of its six 5-fold axes, the one lying most nearly across the screen
+  // when the tumble starts; it stays on that axis until the motion settles, so a hold or a glide never jumps axes
+  const FIVE = uniqAxes(V);
+  const IDENT = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+  const bodyApply = (M, p) => [M[0]*p[0] + M[1]*p[1] + M[2]*p[2], M[3]*p[0] + M[4]*p[1] + M[5]*p[2], M[6]*p[0] + M[7]*p[1] + M[8]*p[2]];
+  function pickTumbleAxis() {
+    const { r } = camera(), M = S.body || IDENT;
+    let best = FIVE[0], bd = -1;
+    for (const a of FIVE) { const w = bodyApply(M, a), d = dot(w, r); if (Math.abs(d) > bd) { bd = Math.abs(d); best = d < 0 ? scl(w, -1) : w; } }
+    return norm(best);
+  }
+  // a turn that maps the icosahedron onto itself leaves loops seamless
+  const bodySymmetric = () => !S.body || V.every(v => { const w = bodyApply(S.body, v); return V.some(u => dot(u, w) > 1 - 1e-6); });
   function orientKey(e, down) {
     const k = ORIENT_KEYS[e.code]; if (!k) return;
     if (!down) {   // letting go of a held key carries its speed on into a glide
@@ -2253,6 +2272,10 @@
     }
     if (e.repeat) return;                                    // holds are timed here, not by key repeat
     const [axis, dir] = k;
+    if (axis === 'tumble' && (!orient.tumbleAxis || (Math.abs(orient.pend.tumble) < 0.01 && Math.abs(orient.vel.tumble) < 0.05))) {
+      orient.tumbleAxis = pickTumbleAxis();
+      toast('Tumbling on a 5-fold axis');
+    }
     orient.pend[axis] += dir * (e.shiftKey ? 1 : 5);         // a tap: one glide of 5°, or 1° with Shift
     orient.held.set(e.code, { axis, dir, fine: e.shiftKey, t: 0 });
   }
@@ -2260,6 +2283,14 @@
   function applyOrient(axis, d) {
     if (axis === 'turn') theta += d * Math.PI / 180;
     else if (axis === 'tilt') S.tilt = wrap180(S.tilt + d);
+    else if (axis === 'tumble') {
+      // ↑ rolls the front of the sphere upward: about the across-screen axis, by −d
+      const R = rotM(orient.tumbleAxis, -d * Math.PI / 180), M = S.body || IDENT;
+      const rows = [0, 1, 2].map(i => [0, 1, 2].map(j => R[i][0]*M[j] + R[i][1]*M[3 + j] + R[i][2]*M[6 + j]));
+      // keep it a pure rotation as small steps add up
+      const a = norm(rows[0]), b0 = rows[1].map((v, i) => v - dot(rows[1], a) * a[i]), b = norm(b0), c = cross(a, b);
+      S.body = [...a, ...b, ...c];
+    }
     else S.roll = wrap180(S.roll + d);
   }
   function stepOrientation(dt) {
@@ -2269,7 +2300,7 @@
       if (h.t > 0.18) orient.pend[h.axis] += h.dir * holdRate(h) * dt;
     }
     const ease = 1 - Math.exp(-dt * 5.5);                    // ease-out: the remaining amount, a share per frame
-    for (const axis of ['turn', 'tilt', 'roll']) {
+    for (const axis of ['turn', 'tilt', 'roll', 'tumble']) {
       let d = orient.pend[axis] * ease;
       if (Math.abs(orient.pend[axis]) < 0.002) { d = orient.pend[axis]; }
       orient.pend[axis] -= d;
@@ -2278,7 +2309,7 @@
       if (d) { applyOrient(axis, d); moved = true; }
     }
     if (moved) { syncOrient(); orient.moving = true; }
-    else if (orient.moving) { orient.moving = false; persist(); }   // save once the sphere comes to rest
+    else if (orient.moving) { orient.moving = false; persist(); syncClip(); }   // once at rest: save, and refresh the loop length
     return moved;
   }
   addEventListener('keyup', e => orientKey(e, false));
@@ -2342,7 +2373,8 @@
   document.querySelectorAll('input[name="axis"]').forEach(r => r.addEventListener('change', () => { theta = 0; set('axis', r.value); }));
   $('play').addEventListener('click', () => set('playing', !S.playing));
   $('reverse').addEventListener('click', () => set('dir', -S.dir));
-  $('reset').addEventListener('click', () => { theta = 0; clock = 0; dragTilt = 0; S.tilt = DEFAULTS.tilt; S.roll = 0; sync(); persist(); });
+  $('reset').addEventListener('click', () => { theta = 0; clock = 0; dragTilt = 0; S.tilt = DEFAULTS.tilt; S.roll = 0; S.body = null;
+    for (const a in orient.vel) orient.vel[a] = orient.pend[a] = 0; sync(); persist(); });
   document.querySelectorAll('input[name="anim"]').forEach(r => r.addEventListener('change', () => {
     anim.x = 1; anim.running = false; S.animKind = r.value; tuneHome(); sync(); persist();
   }));
@@ -2480,7 +2512,7 @@
   // ───────────────────────── motion export (GIF / MP4) ─────────────────────────
   const GIF_FPS = 20, MP4_FPS = 30;
   // smallest turn that maps the whole drawing onto itself
-  const loopAngle = () => (S.L_ve || (S.L_poly && ['octa', 've'].includes(S.poly)) ||
+  const loopAngle = () => (!bodySymmetric() || S.L_ve || (S.L_poly && ['octa', 've'].includes(S.poly)) ||
     (S.L_gc && S.seven)) ? 360 : ({ polar: 360, '5': 72, '3': 120, '2': 180 })[S.axis];
 
   // a clip is n frames and a function giving the stage values for frame i
