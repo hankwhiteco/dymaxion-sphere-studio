@@ -339,7 +339,7 @@
     <div class="masthead">
       <div class="brand"><span class="grille" aria-hidden="true"></span><h1>Dymaxion Sphere Studio</h1></div>
       <div class="mast-right">
-        <span class="hint">Drag to turn · Space play · [ ] frequency · , . spin · ← → ↑ ↓ turn, tilt · Q E roll · − = depth · 1–0 layers · F full screen</span>
+        <span class="hint">Drag to turn · Space play · [ ] frequency · , . spin · ← → ↑ ↓ turn, tilt · Q E roll · ; ' line weight · − = depth · 1–0 layers · F full screen</span>
         <button type="button" class="notes-key" id="fullBtn" aria-label="Full screen (F)">Full screen <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 4 V1.5 H4 M6 1.5 H8.5 V4 M8.5 6 V8.5 H6 M4 8.5 H1.5 V6"/></svg></button>
         <a class="notes-key" href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html" target="_blank" rel="noopener">Geometry notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a>
       </div>
@@ -2222,12 +2222,17 @@
   const orient = { pend: { turn: 0, tilt: 0, roll: 0 }, vel: { turn: 0, tilt: 0, roll: 0 }, held: new Map(), moving: false };
   function orientKey(e, down) {
     const k = ORIENT_KEYS[e.code]; if (!k) return;
-    if (!down) { orient.held.delete(e.code); return; }
+    if (!down) {   // letting go of a held key carries its speed on into a glide
+      const h = orient.held.get(e.code);
+      if (h && h.t > 0.18) orient.vel[h.axis] += h.dir * holdRate(h) * 0.25;
+      orient.held.delete(e.code); return;
+    }
     if (e.repeat) return;                                    // holds are timed here, not by key repeat
     const [axis, dir] = k;
     orient.pend[axis] += dir * (e.shiftKey ? 1 : 5);         // a tap: one glide of 5°, or 1° with Shift
     orient.held.set(e.code, { axis, dir, fine: e.shiftKey, t: 0 });
   }
+  const holdRate = h => (h.fine ? 12 : 70) * Math.min(1, Math.max(0, h.t - 0.18) / 0.5);   // degrees a second, ramping in
   function applyOrient(axis, d) {
     if (axis === 'turn') theta += d * Math.PI / 180;
     else if (axis === 'tilt') S.tilt = Math.max(-89, Math.min(89, S.tilt + d));
@@ -2237,15 +2242,15 @@
     let moved = false;
     for (const h of orient.held.values()) {                  // holding: after a beat, a steady rate that ramps in
       h.t += dt;
-      if (h.t > 0.18) orient.pend[h.axis] += h.dir * (h.fine ? 12 : 70) * Math.min(1, (h.t - 0.18) / 0.5) * dt;
+      if (h.t > 0.18) orient.pend[h.axis] += h.dir * holdRate(h) * dt;
     }
-    const ease = 1 - Math.exp(-dt * 9);                      // ease-out: the remaining amount, a share per frame
+    const ease = 1 - Math.exp(-dt * 5.5);                    // ease-out: the remaining amount, a share per frame
     for (const axis of ['turn', 'tilt', 'roll']) {
       let d = orient.pend[axis] * ease;
       if (Math.abs(orient.pend[axis]) < 0.002) { d = orient.pend[axis]; }
       orient.pend[axis] -= d;
       const v = orient.vel[axis];
-      if (Math.abs(v) > 0.05) { d += v * dt; orient.vel[axis] = v * Math.exp(-dt * 2.6); } else orient.vel[axis] = 0;
+      if (Math.abs(v) > 0.05) { d += v * dt; orient.vel[axis] = v * Math.exp(-dt * 2.1); } else orient.vel[axis] = 0;   // coast
       if (d) { applyOrient(axis, d); moved = true; }
     }
     if (moved) { syncOrient(); orient.moving = true; }
@@ -2349,6 +2354,10 @@
     setSpin(S.dir * S.speed + d);
     toast(S.speed ? `Spin ${S.dir > 0 ? 'forward' : 'reverse'} · ${S.speed.toFixed(1)}°/s` : 'Spin stopped');
   }
+  function stepWeight(dir, fine) {
+    set('weight', Math.max(W_MIN, Math.min(W_MAX, sliderToWeight(weightToSlider(S.weight) + dir * (fine ? 4 : 18)))));
+    toast(`Line weight ${S.weight.toFixed(S.weight < 10 ? 2 : 1)}×`);
+  }
   function stepDepth(d) {
     S.breathe = false;
     set('depth', Math.max(0, Math.min(150, Math.round((S.depth + d) / 5) * 5)));
@@ -2385,7 +2394,8 @@
   const SHORTCUTS = {
     BracketLeft: () => stepFreq(-1), BracketRight: () => stepFreq(1),
     Comma: () => stepSpin(-0.5), Period: () => stepSpin(0.5),
-    Minus: () => stepDepth(-5), Equal: () => stepDepth(5), NumpadSubtract: () => stepDepth(-5), NumpadAdd: () => stepDepth(5),
+    Minus: () => stepDepth(-5), Equal: () => stepDepth(5),
+    Semicolon: e => stepWeight(-1, e.shiftKey), Quote: e => stepWeight(1, e.shiftKey), NumpadSubtract: () => stepDepth(-5), NumpadAdd: () => stepDepth(5),
     KeyF: () => setFull(!isFull()), Escape: () => setFull(false),
     ArrowLeft: e => orientKey(e, true), ArrowRight: e => orientKey(e, true), ArrowUp: e => orientKey(e, true),
     ArrowDown: e => orientKey(e, true), KeyQ: e => orientKey(e, true), KeyE: e => orientKey(e, true),
@@ -2393,7 +2403,7 @@
   for (let i = 0; i < 10; i++) SHORTCUTS['Digit' + ((i + 1) % 10)] = SHORTCUTS['Numpad' + ((i + 1) % 10)] = () => toggleLayer(i);
   // for synthetic keystrokes that carry no key position
   const BY_KEY = { '[': 'BracketLeft', ']': 'BracketRight', ',': 'Comma', '.': 'Period', '-': 'Minus', '=': 'Equal', '+': 'Equal',
-    f: 'KeyF', F: 'KeyF', Escape: 'Escape', q: 'KeyQ', Q: 'KeyQ', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])) };
+    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ';': 'Semicolon', "'": 'Quote', q: 'KeyQ', Q: 'KeyQ', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])) };
   addEventListener('keydown', e => {
     const run = SHORTCUTS[e.code || BY_KEY[e.key]];
     if (!run || e.metaKey || e.ctrlKey || e.altKey || typing()) return;

@@ -39,6 +39,7 @@ The control panel has five tabs: **Shape** (frequency, structure, strut types), 
 | `[` / `]` | frequency down / up |
 | `,` / `.` | spin slower / faster, through stopped into reverse |
 | `-` / `=` | truss depth down / up by 5% (turns auto breathing off) |
+| `;` / `'` | line weight down / up, about 10% a press (Shift: 2%) |
 | `←` / `→` | turn the sphere about the spin axis |
 | `↑` / `↓` | tilt toward / away from you |
 | `Q` / `E` | roll the picture about the line of sight |
