@@ -2194,7 +2194,7 @@
   document.querySelectorAll('input[name="ced_dir"]').forEach(r => r.addEventListener('change', () => { S.grad[cedRole].dir = r.value; sync(); persist(); }));
   $('ced_struts').addEventListener('click', () => { S[LAYER_KEY[cedRole]] = null; S.grad[cedRole].on = false; sync(); persist(); });
   // random layer and highlight colours: a colour scheme from a random hue, with lightness set against the background so the
-  // lines stay readable; with gradients, each layer runs by depth from its colour to a deeper shade of the next
+  // lines stay readable; with gradients, each layer runs top to bottom from its colour into the next one of the scheme
   const hslHex = (h, sat, l) => {
     h = ((h % 360) + 360) % 360; sat /= 100; l /= 100;
     const k = n => (n + h / 30) % 12, a = sat * Math.min(l, 1 - l);
@@ -2209,8 +2209,8 @@
     const cols = offs.map(o => hslHex(h0 + o + rnd(-8, 8), rnd(55, 85), dark ? rnd(56, 72) : rnd(30, 46)));
     order.forEach((role, i) => {
       S[LAYER_KEY[role]] = cols[i];
-      const to = hslHex(h0 + offs[(i + 1) % 3] + rnd(-8, 8), rnd(45, 75), dark ? rnd(22, 34) : rnd(68, 82));   // recedes toward the background
-      S.grad[role] = { ...S.grad[role], on: gradient, to, dir: gradient ? 'depth' : S.grad[role].dir };
+      const to = hslHex(h0 + offs[(i + 1) % 3] + rnd(-8, 8), rnd(55, 85), dark ? rnd(56, 72) : rnd(30, 46));   // the next colour of the scheme
+      S.grad[role] = { ...S.grad[role], on: gradient, to, dir: gradient ? 'vertical' : S.grad[role].dir };
     });
     // the highlight: the base hue's complement, stronger than the layers so overlays stand out against them
     S.accent = S.custom.accent = hslHex(h0 + 180 + rnd(-15, 15), rnd(80, 95), dark ? rnd(58, 66) : rnd(44, 52));
