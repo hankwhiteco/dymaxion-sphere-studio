@@ -413,7 +413,7 @@
       <label class="check"><input type="checkbox" id="trueScale"><span>Keep strut size constant</span><small>sphere grows with frequency</small></label>
       <div class="row">
         <label for="depth">Truss depth</label><span class="val" id="depthVal"></span>
-        <input type="range" id="depth" min="0" max="150" step="5" value="100">
+        <input type="range" id="depth" min="0" max="500" step="5" value="100">
       </div>
       <label class="check"><input type="checkbox" id="breathe"><span>Auto breathing</span><small>truss depth swings 0–150% and back, one breath every 12.6 s</small></label>
       </div></details>
@@ -1457,7 +1457,7 @@
     const lst = kind === 'slice' ? st : null, xst = kind === 'scatter' ? st : null, tst = kind === 'tune' ? st : null;
     const scale = S.trueScale ? (tst ? tst.F : geo.freq) / 16 : 1;   // with constant struts, tune breathes the size too
     const R = size / 2 * (S.zoom / 100) * scale, c = size / 2;
-    const rIn = 1 - (depthNow() / 100) * geo.chord * Math.sqrt(2/3);
+    const rIn = Math.max(0.04, 1 - (depthNow() / 100) * geo.chord * Math.sqrt(2/3));   // deep trusses stop short of the centre
     const inflate = jst ? jst.inflate : ust ? ust.inflate : 1;
     const gridA = jst ? jst.gridA : pst ? pst.gridA : 1;
     const overlayA = (pst ? pst.gridA : 1) * (jst ? jst.inflate : 1) * (ust ? inflate * (1 - Math.max(ust.fold, ust.align)) : 1);
@@ -1689,7 +1689,7 @@
       // the Class I triangles and every one is full size, so the truss is the studio's own
       const fl = Math.floor(F), dl = F - fl;
       const chordF = build(Math.max(1, fl)).chord * (1 - dl) + build(Math.max(1, Math.ceil(F))).chord * dl;
-      const depth = (depthNow() / 100) * Math.sqrt(2/3) * chordF;
+      const depth = Math.min(0.96, (depthNow() / 100) * Math.sqrt(2/3) * chordF);
       const inn = [], cor = [], wE = [], iE = [], across = new Map();
       const unit = (q, r, out) => { const l = Math.hypot(q[0], q[1], q[2]); out.push(q[0] / l * r, q[1] / l * r, q[2] / l * r); return out.length / 3 - 1; };
       for (const ids of FACES) {
@@ -1864,6 +1864,40 @@
              step: fr.flat ? () => K - 1 : z => Math.round(clamp01((z + DEPTH_W) / (2 * DEPTH_W)) * (K - 1)) };
   }
   let inkCanvas = null;   // offscreen layer for Normal blending, reused between frames
+
+  // Flat and square ends. A real stroke has caps only where it stops and its corners joined where it turns, but the
+  // struts are drawn one by one, so where they meet at a node their flat ends leave notches (and square ends, spikes).
+  // So with those ends every node that two or more struts of a layer share gets a round joint, the struts end flat
+  // there, and a square end is added only where a strut ends on its own. Per depth step: the struts as x0 y0 x1 y1
+  // runs, and the joints as x y
+  const ARR_ID = new WeakMap(); let arrN = 0;
+  const arrId = a => ARR_ID.get(a) ?? (ARR_ID.set(a, ++arrN), arrN);
+  function strutPieces(L, step, K) {
+    const E = L.E, A = L.A, B = L.B, ia = arrId(A) * 1e7, ib = arrId(B) * 1e7, deg = new Map();
+    for (let e = 0; e < E.length; e += 2) {
+      deg.set(ia + E[e], (deg.get(ia + E[e]) || 0) + 1); deg.set(ib + E[e+1], (deg.get(ib + E[e+1]) || 0) + 1);
+    }
+    const segs = Array.from({ length: K }, () => []), joints = Array.from({ length: K }, () => []);
+    const ext = S.cap === 'square' ? L.w / 2 : 0;
+    for (let e = 0; e < E.length; e += 2) {
+      const a = E[e] * 3, b = E[e+1] * 3;
+      let ax = A[a], ay = A[a+1], bx = B[b], by = B[b+1];
+      const l = Math.hypot(bx - ax, by - ay);
+      if (ext && l > 1e-9) {
+        const ux = (bx - ax) / l * ext, uy = (by - ay) / l * ext;
+        if (deg.get(ia + E[e]) === 1) { ax -= ux; ay -= uy; }
+        if (deg.get(ib + E[e+1]) === 1) { bx += ux; by += uy; }
+      }
+      segs[step((A[a+2] + B[b+2]) / 2)].push(ax, ay, bx, by);
+    }
+    const seen = new Set();
+    for (let e = 0; e < E.length; e++) {
+      const P = e & 1 ? B : A, key = (e & 1 ? ib : ia) + E[e], i = E[e] * 3;
+      if (deg.get(key) < 2 || seen.has(key)) continue;
+      seen.add(key); joints[step(P[i+2])].push(P[i], P[i+1]);
+    }
+    return { segs, joints };
+  }
   const groupName = k => k === DEPTH_K - 1 ? 'front' : k === 0 ? 'back' : 'depth-' + k;
   const polyZ = F => { let z = 0; for (const p of F.pts) z += p[2]; return z / F.pts.length; };
 
@@ -1898,8 +1932,28 @@
     // sort once into depth steps (one path per layer and step), then draw the steps far to near
     const fillAt = Array.from({ length: K }, () => []);
     for (const F of fr.fills) if (F.alpha > 0) fillAt[step(polyZ(F))].push(F);
+    const joined = S.cap !== 'round';   // flat or square ends: see strutPieces
     const paths = fr.layers.map(L => {
       if (L.alpha <= 0.001) return null;
+      if (joined && !L.dash) {
+        // each step's struts and joints as one filled shape: every band and disc wound the same way, so they merge
+        // into one outline, with nothing doubled where they overlap
+        const { segs, joints } = strutPieces(L, step, K), h = L.w / 2, P = new Array(K).fill(null);
+        for (let k = 0; k < K; k++) {
+          const sg = segs[k], jt = joints[k];
+          if (!sg.length && !jt.length) continue;
+          const p = P[k] = new Path2D();
+          for (let i = 0; i < sg.length; i += 4) {
+            const ax = sg[i], ay = sg[i+1], bx = sg[i+2], by = sg[i+3], l = Math.hypot(bx - ax, by - ay);
+            if (l < 1e-9) continue;
+            const nx = -(by - ay) / l * h, ny = (bx - ax) / l * h;
+            p.moveTo(ax - nx, ay - ny); p.lineTo(bx - nx, by - ny); p.lineTo(bx + nx, by + ny); p.lineTo(ax + nx, ay + ny); p.closePath();
+          }
+          for (let i = 0; i < jt.length; i += 2) { p.moveTo(jt[i] + h, jt[i+1]); p.arc(jt[i], jt[i+1], h, 0, Math.PI * 2); }
+        }
+        P.filled = true;
+        return P;
+      }
       const P = new Array(K).fill(null), E = L.E, A = L.A, B = L.B;
       for (let e = 0; e < E.length; e += 2) {
         const a = E[e] * 3, b = E[e+1] * 3, k = step((A[a+2] + B[b+2]) / 2), p = P[k] || (P[k] = new Path2D());
@@ -1919,6 +1973,7 @@
       fr.layers.forEach((L, i) => {
         const p = paths[i] && paths[i][k];
         if (!p) return;
+        if (paths[i].filled) { put(la * L.alpha, () => { g.fillStyle = paintOf(L.color); }, () => g.fill(p)); return; }
         g.lineWidth = L.w; g.setLineDash(L.dash || []);
         put(la * L.alpha, () => { g.strokeStyle = paintOf(L.color); }, () => g.stroke(p));
       });
@@ -1988,6 +2043,9 @@
     out.push(`<g fill="none" stroke-linecap="${S.cap}" stroke-linejoin="round">`);
     const mix = S.blend === 'source-over' ? '' : ` style="mix-blend-mode:${S.blend === 'lighter' ? 'plus-lighter' : S.blend}"`;
     const { level, step } = depthBand(fr), K = DEPTH_K;
+    // flat or square ends: struts stay strokes (so their weight can still be edited) ending flat, plus a group of
+    // round joints at the nodes they share (see strutPieces)
+    const pieces = fr.layers.map(L => S.cap !== 'round' && !L.dash && L.alpha > 0.001 ? strutPieces(L, step, K) : null);
     for (let k = 0; k < K; k++) {   // one group per depth step, far to near: back, depth-1 … depth-8, front
       const la = level(k), side = groupName(k);
       if (la <= 0.002) continue;
@@ -1995,19 +2053,32 @@
       const fills = fr.fills.filter(F => F.alpha > 0 && step(polyZ(F)) === k);
       if (fills.length) body.push(`<g id="${side}-fills" stroke="none"${mix}>` + fills.map(F =>
         `<polygon fill="${svgPaint(F.color)}" fill-opacity="${F.alpha.toFixed(3)}" points="${F.pts.map(p => n(p[0]) + ',' + n(p[1])).join(' ')}"/>`).join('') + '</g>');
-      for (const L of fr.layers) {
-        if (L.alpha <= 0.001) continue;
+      fr.layers.forEach((L, li) => {
+        if (L.alpha <= 0.001) return;
+        const pc = pieces[li];
+        if (pc) {
+          const sg = pc.segs[k], jt = pc.joints[k], op = L.alpha < 1 ? L.alpha.toFixed(3) : null;
+          let d = '';
+          for (let i = 0; i < sg.length; i += 4) d += `M${n(sg[i])} ${n(sg[i+1])}L${n(sg[i+2])} ${n(sg[i+3])}`;
+          if (d) body.push(`<path id="${side}-${L.id}" stroke="${svgPaint(L.color)}" stroke-width="${L.w.toFixed(3)}" stroke-linecap="butt"${op ? ` stroke-opacity="${op}"` : ''}${mix} d="${d}"/>`);
+          if (jt.length) {
+            let c = '';
+            for (let i = 0; i < jt.length; i += 2) c += `<circle cx="${n(jt[i])}" cy="${n(jt[i+1])}" r="${(L.w / 2).toFixed(3)}"/>`;
+            body.push(`<g id="${side}-${L.id}-joints" fill="${svgPaint(L.color)}" stroke="none"${op ? ` fill-opacity="${op}"` : ''}${mix}>${c}</g>`);
+          }
+          return;
+        }
         let d = '';
         for (let e = 0; e < L.E.length; e += 2) {
           const a = L.E[e] * 3, b = L.E[e+1] * 3;
           if (step((L.A[a+2] + L.B[b+2]) / 2) !== k) continue;
           d += `M${n(L.A[a])} ${n(L.A[a+1])}L${n(L.B[b])} ${n(L.B[b+1])}`;
         }
-        if (!d) continue;
+        if (!d) return;
         const extra = (L.alpha < 1 ? ` stroke-opacity="${L.alpha.toFixed(3)}"` : '') +
                       (L.dash ? ` stroke-dasharray="${L.dash.map(v => v.toFixed(2)).join(' ')}"` : '');
         body.push(`<path id="${side}-${L.id}" stroke="${svgPaint(L.color)}" stroke-width="${L.w.toFixed(3)}"${extra}${mix} d="${d}"/>`);
-      }
+      });
       for (const D of fr.dots) {
         const pts = D.pts.filter(p => step(p[2]) === k);
         if (!pts.length || D.alpha <= 0.001) continue;
@@ -2553,7 +2624,7 @@
   }
   function stepDepth(d) {
     S.breathe = false;
-    set('depth', Math.max(0, Math.min(150, Math.round((S.depth + d) / 5) * 5)));
+    set('depth', Math.max(0, Math.min(500, Math.round((S.depth + d) / 5) * 5)));
     toast(`Truss depth ${S.depth}%`);
   }
   // 1 to 0 toggle the layers, in panel order
