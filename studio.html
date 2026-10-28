@@ -2676,14 +2676,27 @@
   // for synthetic keystrokes that carry no key position
   const BY_KEY = { '[': 'BracketLeft', ']': 'BracketRight', ',': 'Comma', '.': 'Period', '-': 'Minus', '=': 'Equal', '+': 'Equal',
     f: 'KeyF', F: 'KeyF', Escape: 'Escape', ';': 'Semicolon', "'": 'Quote', q: 'KeyQ', Q: 'KeyQ', r: 'KeyR', R: 'KeyR', v: 'KeyV', V: 'KeyV', b: 'KeyB', B: 'KeyB', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])), '!': 'Digit1', '@': 'Digit2', '#': 'Digit3', '$': 'Digit4' };
+  // Stepping keys repeat on their own timer while held, not by the keyboard's repeat: a keyboard repeats only the
+  // last key pressed, so pressing anything else would stop a held depth or spin key. Now several can be held at once
+  const STEPPED = new Set(['BracketLeft', 'BracketRight', 'Comma', 'Period', 'Minus', 'Equal', 'Semicolon', 'Quote', 'NumpadSubtract', 'NumpadAdd']);
+  const REPEAT_DELAY = 380, REPEAT_EVERY = 60;   // ms, close to a keyboard's own
+  const repeating = new Map();
+  const stopRepeat = code => { clearTimeout(repeating.get(code)); repeating.delete(code); };
   addEventListener('keydown', e => {
-    const run = SHORTCUTS[e.code || BY_KEY[e.key]];
+    const code = e.code || BY_KEY[e.key], run = SHORTCUTS[code];
     if (!run || e.metaKey || e.ctrlKey || e.altKey || typing()) return;
     // arrow keys belong to a focused slider, tab or button; on the page itself they turn and tilt the sphere
     const el = document.activeElement;
-    if (e.code.startsWith('Arrow') && el && el !== document.body && el !== board) return;
-    e.preventDefault(); run(e);
+    if (code.startsWith('Arrow') && el && el !== document.body && el !== board) return;
+    e.preventDefault();
+    if (!STEPPED.has(code)) { run(e); return; }
+    if (e.repeat || repeating.has(code)) return;
+    run(e);
+    const again = () => { run(e); repeating.set(code, setTimeout(again, REPEAT_EVERY)); };
+    repeating.set(code, setTimeout(again, REPEAT_DELAY));
   });
+  addEventListener('keyup', e => stopRepeat(e.code || BY_KEY[e.key]));
+  addEventListener('blur', () => [...repeating.keys()].forEach(stopRepeat));
 
   // ───────────────────────── presets ─────────────────────────
   // A preset is the look and motion as a short code: the settings that differ from the defaults, as JSON, compressed
