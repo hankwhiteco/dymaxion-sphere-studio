@@ -3092,8 +3092,8 @@
 })();
 </script>
 <script>
-// The mark: the vector equilibrium's four great circles (their axes are the cube diagonals), drawn as seen. It turns on
-// load and on hover, easing to rest at a new random angle, and never resets. And the version: v0.N, N being the number
+// The mark: the vector equilibrium's four great circles (their axes are the cube diagonals), drawn as seen. It turns
+// slowly all the time, faster while the pointer is over the name. And the version: v0.N, N being the number
 // of commits on GitHub, so it rises with every push (asked once per browser session).
 (() => {
   const NS = 'http://www.w3.org/2000/svg', s3 = Math.sqrt(3);
@@ -3104,27 +3104,40 @@
     return [[c + x*x*C, x*y*C - z*s, x*z*C + y*s], [y*x*C + z*s, c + y*y*C, y*z*C - x*s], [z*x*C - y*s, z*y*C + x*s, c + z*z*C]]; };
   const randAxis = () => { const z = Math.random() * 2 - 1, p = Math.random() * 2 * Math.PI, r = Math.sqrt(1 - z * z); return [r * Math.cos(p), r * Math.sin(p), z]; };
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const easeOut = k => 1 - (1 - k) ** 3, easeInOut = k => (1 - Math.cos(Math.PI * k)) / 2;
   const circles = [[1, 1, 1], [1, 1, -1], [1, -1, 1], [-1, 1, 1]].map(v => {
     const n = v.map(x => x / s3), a = unit(cross(n, [1, 0, 0])), b = cross(n, a);
     return Array.from({ length: 72 }, (_, k) => { const t = k / 72 * 2 * Math.PI; return [0, 1, 2].map(d => Math.cos(t) * a[d] + Math.sin(t) * b[d]); });
   });
   for (const svg of document.querySelectorAll('svg.mark')) {
     const paths = circles.map(() => svg.appendChild(document.createElementNS(NS, 'path')));
-    let R = rot(randAxis(), Math.random() * 2 * Math.PI), run = null;
+    let R = rot(randAxis(), Math.random() * 2 * Math.PI);
     const draw = () => circles.forEach((P, i) => {
       let d = '';
       P.forEach((p, k) => { d += (k ? 'L' : 'M') + (R[0][0]*p[0] + R[0][1]*p[1] + R[0][2]*p[2]).toFixed(3) + ' ' + (-(R[1][0]*p[0] + R[1][1]*p[1] + R[1][2]*p[2])).toFixed(3); });
       paths[i].setAttribute('d', d + 'Z');
     });
-    const turn = (dur, ease) => {   // from wherever it is now, about a random axis, by 110° to 270°
-      if (still) return;
-      const from = R, u = randAxis(), ang = (0.6 + Math.random() * 0.9) * Math.PI, t0 = performance.now(), id = run = {};
-      const step = now => { if (run !== id) return; const k = Math.min(1, (now - t0) / dur); R = mul(rot(u, ang * ease(k)), from); draw(); if (k < 1) requestAnimationFrame(step); };
-      requestAnimationFrame(step);
+    draw();
+    if (still) continue;
+    // always turning, slowly, about an axis that wanders toward a new random one every few seconds; hovering the name
+    // eases it up to a brisker turn, and leaving eases it back down
+    const SLOW = 0.22, FAST = 1.9;   // radians a second
+    let u = randAxis(), goal = randAxis(), nextGoal = 0, speed = SLOW, want = SLOW, last = performance.now(), frames = 0;
+    const brand = svg.closest('.brand') || svg;
+    brand.addEventListener('pointerenter', () => { want = FAST; });
+    brand.addEventListener('pointerleave', () => { want = SLOW; });
+    const step = now => {
+      const dt = Math.min(0.1, (now - last) / 1000); last = now;
+      if (now > nextGoal) { goal = randAxis(); nextGoal = now + 5000 + Math.random() * 5000; }
+      u = unit(u.map((v, d) => v + (goal[d] - v) * (1 - Math.exp(-dt * 0.35))));
+      speed += (want - speed) * (1 - Math.exp(-dt * (want > speed ? 3 : 1.6)));   // quick to speed up, gentle to settle
+      R = mul(rot(u, speed * dt), R);
+      if (++frames % 600 === 0) {   // keep the rotation exact over hours of turning
+        const a = unit(R[0]), b = unit(R[1].map((v, d) => v - a[d] * (a[0]*R[1][0] + a[1]*R[1][1] + a[2]*R[1][2])));
+        R = [a, b, cross(a, b)];
+      }
+      draw(); requestAnimationFrame(step);
     };
-    draw(); turn(1800, easeOut);
-    (svg.closest('.brand') || svg).addEventListener('pointerenter', () => turn(1300, easeInOut));
+    requestAnimationFrame(step);
   }
   const ver = document.getElementById('ver');
   if (ver) (async () => {
