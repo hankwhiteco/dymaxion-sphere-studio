@@ -52,6 +52,7 @@
             background: radial-gradient(circle, var(--fg) 1.1px, transparent 1.4px) 0 0 / 5.6px 5.4px; opacity: .8; }
   h1 { font: 500 17px/1 var(--font); margin: 0; letter-spacing: -0.005em; }
   .hint { color: var(--muted); font-size: 12px; }
+  @media (max-width: 1180px) { .hint { display: none; } }   /* the masthead keys need the room */
   .mast-right { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
   /* the reference opens in a new tab, so the studio keeps its state */
   .notes-key { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border-radius: 3px;
@@ -201,6 +202,37 @@
 
   /* colour editor: opens under its row from Custom or a layer chip; Solid or Gradient */
   .ced-slot:empty { display: none; }
+  /* presets: a small panel under the masthead key */
+  .presets { position: fixed; z-index: 20; width: 340px; max-width: calc(100vw - 24px); max-height: min(78vh, 620px); overflow-y: auto;
+             display: grid; gap: 10px; padding: 14px 16px 16px; border-radius: 6px; background: var(--panel); color: var(--fg);
+             box-shadow: 0 0 0 1px var(--line), 0 14px 36px rgba(0, 0, 0, .4); }
+  .pre-head { display: flex; align-items: center; justify-content: space-between; }
+  .pre-head h3 { margin: 0; font: 500 14px var(--font); }
+  .pre-label { display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; color: var(--muted); }
+  .pre-pins { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .pre-pin { display: grid; gap: 3px; min-width: 0; padding: 7px 8px; border: 0; border-radius: 3px; background: var(--well); color: var(--fg);
+             font: 500 11.5px var(--font); text-align: left; cursor: pointer; box-shadow: inset 0 -1px 0 var(--line); }
+  .pre-pin:hover { background: var(--line); }
+  .pre-pin kbd { font: 400 10px var(--font); color: var(--muted); }
+  .pre-pin span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pre-pin.empty { background: none; color: var(--muted); cursor: default; box-shadow: inset 0 0 0 1px var(--line); }
+  .pre-field { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+  .pre-field input { min-width: 0; height: 36px; padding: 0 10px; border: 0; border-radius: 3px; background: var(--well); color: var(--fg);
+                     font: 400 12.5px var(--font); box-shadow: inset 0 -1px 0 var(--line); }
+  .pre-field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .pre-list { display: grid; }
+  .pre-row { display: grid; grid-template-columns: 18px 1fr auto auto auto; align-items: center; gap: 6px; padding: 3px 0; border-top: 1px solid var(--line); }
+  .pre-row:first-child { border-top: 0; }
+  .pre-sw { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--line); }
+  .pre-name { min-width: 0; padding: 5px 0; border: 0; background: none; color: var(--fg); font: 400 12.5px var(--font); text-align: left;
+              cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pre-name:hover { text-decoration: underline; }
+  .pre-act { padding: 4px 5px; border: 0; background: none; color: var(--muted); font: 400 12px var(--font); cursor: pointer; }
+  .pre-act:hover { color: var(--fg); }
+  .pre-act.pin.on { color: var(--accent); }
+  .pre-act:focus-visible, .pre-name:focus-visible, .pre-pin:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .pre-empty { margin: 0; font-size: 12px; color: var(--muted); }
+  .pre-share { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 2px; }
   .ced { display: grid; gap: 10px; padding: 12px; border-radius: 4px; background: var(--well); box-shadow: inset 0 0 0 1px var(--line); }
   .ced-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 30px; }
   .ced-tabs { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 4px; background: var(--panel); }
@@ -341,8 +373,10 @@
     <div class="masthead">
       <div class="brand"><span class="grille" aria-hidden="true"></span><h1>Dymaxion Sphere Studio</h1></div>
       <div class="mast-right">
-        <span class="hint">Drag to turn · Space play · [ ] frequency · , . spin · ← → turn · ↑ ↓ tumble · Q E roll · ; ' line weight · − = depth · 1–0 layers · R random colours · V B blend · F full screen</span>
+        <span class="hint">Drag to turn · Space to play</span>
+        <button type="button" class="notes-key" id="presetsBtn" aria-haspopup="dialog" aria-expanded="false">Presets</button>
         <button type="button" class="notes-key" id="fullBtn" aria-label="Full screen (F)">Full screen <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 4 V1.5 H4 M6 1.5 H8.5 V4 M8.5 6 V8.5 H6 M4 8.5 H1.5 V6"/></svg></button>
+        <a class="notes-key" href="https://hankwhiteco.github.io/dymaxion-sphere-studio/shortcuts.html" target="_blank" rel="noopener">Shortcuts <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a>
         <a class="notes-key" href="https://hankwhiteco.github.io/dymaxion-sphere-studio/reference.html" target="_blank" rel="noopener">Geometry notes <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 H8.5 V7 M8.5 1.5 L1.5 8.5"/></svg></a>
       </div>
     </div>
@@ -666,6 +700,19 @@
       </div></details>
     </div>
   </aside>
+</div>
+<div class="presets" id="presets" role="dialog" aria-label="Presets" hidden>
+  <div class="pre-head"><h3>Presets</h3><button type="button" class="pre-act" id="preClose" aria-label="Close presets">×</button></div>
+  <div class="pre-label">Pinned <span>Shift + 1 to 4</span></div>
+  <div class="pre-pins" id="prePins"></div>
+  <div class="pre-label">Save this look</div>
+  <div class="pre-field"><input type="text" id="preName" placeholder="Name it" maxlength="40" autocomplete="off"><button type="button" class="btn primary" id="preSave">Save</button></div>
+  <div class="pre-label">Saved</div>
+  <div class="pre-list" id="preList"></div>
+  <p class="pre-empty" id="preEmpty">Nothing saved yet.</p>
+  <div class="pre-label">Load a code</div>
+  <div class="pre-field"><input type="text" id="preCode" placeholder="Paste a preset code or link" autocomplete="off" spellcheck="false"><button type="button" class="btn" id="preLoad">Load</button></div>
+  <div class="pre-share"><button type="button" class="linkbtn" id="preCopyCode">Copy this look as a code</button><button type="button" class="linkbtn" id="preCopyLink">Copy a link</button></div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -1249,23 +1296,45 @@
   const KEY = 'dymaxion-studio:v1';
   let S = { ...DEFAULTS };
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch {}
-  if (S.clip !== 'loop') S.clip = 'anim';
-  // older saves named the artboard (paper, ink, clear); it is a colour now
-  if (!/^#[0-9a-f]{6}$/i.test(S.bg)) S.bg = S.bg === 'ink' ? '#141413' : '#f2f1ed';
-  S.custom = { ...DEFAULTS.custom, ...S.custom };
-  for (const k of ['line', 'accent', 'bg']) if (![WHITE, BLACK].includes(S[k].toLowerCase())) S.custom[k] = S[k];
-  if (!BLEND_NAME[S.blend]) S.blend = 'source-over';
-  {   // one gradient per role; older saves had one strut and one background gradient
-    const g = { ...(S.grad || {}) };
-    if ('gLine' in S) g.line = { on: !!S.gLine, to: S.gLineTo || DEFAULTS.grad.line.to, dir: S.gLineDir || 'depth' };
-    if ('gBg' in S) g.bg = { on: !!S.gBg, to: S.gBgTo || DEFAULTS.grad.bg.to, dir: S.gBgDir || 'vertical' };
-    for (const k of ['gLine', 'gLineTo', 'gLineDir', 'gBg', 'gBgTo', 'gBgDir']) delete S[k];
-    S.grad = Object.fromEntries(Object.entries(DEFAULTS.grad).map(([r, d]) => [r, { ...d, ...(g[r] || {}) }]));
-    if (S.grad.bg.dir === 'depth') S.grad.bg.dir = 'vertical';
+  // make the settings safe to use: migrate older saves, and check every value's type, colour and choice, so a pasted
+  // preset code cannot break the page (run on load and on every preset)
+  const HEX6 = v => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+  const ENUMS = { axis: ['polar', '5', '3', '2'], cap: ['round', 'square', 'butt'], lcdMode: ['mirror', 'icosa', 'dodeca', 'rhomb'],
+                  poly: ['icosa', 'dodeca', 'triaconta', 'icosidodeca', 'octa', 've'] };
+  function tidyState() {
+    if (S.clip !== 'loop') S.clip = 'anim';
+    // older saves named the artboard (paper, ink, clear); it is a colour now
+    if (!/^#[0-9a-f]{6}$/i.test(S.bg)) S.bg = S.bg === 'ink' ? '#141413' : '#f2f1ed';
+    S.custom = { ...DEFAULTS.custom, ...S.custom };
+    for (const k of ['line', 'accent', 'bg']) if (![WHITE, BLACK].includes(S[k].toLowerCase())) S.custom[k] = S[k];
+    if (!BLEND_NAME[S.blend]) S.blend = 'source-over';
+    {   // one gradient per role; older saves had one strut and one background gradient
+      const g = { ...(S.grad || {}) };
+      if ('gLine' in S) g.line = { on: !!S.gLine, to: S.gLineTo || DEFAULTS.grad.line.to, dir: S.gLineDir || 'depth' };
+      if ('gBg' in S) g.bg = { on: !!S.gBg, to: S.gBgTo || DEFAULTS.grad.bg.to, dir: S.gBgDir || 'vertical' };
+      for (const k of ['gLine', 'gLineTo', 'gLineDir', 'gBg', 'gBgTo', 'gBgDir']) delete S[k];
+      S.grad = Object.fromEntries(Object.entries(DEFAULTS.grad).map(([r, d]) => [r, { ...d, ...(g[r] || {}) }]));
+      if (S.grad.bg.dir === 'depth') S.grad.bg.dir = 'vertical';
+    }
+    if (!['mono', 'custom'].includes(S.grainColor)) S.grainColor = 'mono';   // Struts was dropped
+    if (!ANIMS[S.animKind]) S.animKind = 'jitterbug';
+    if (!(Array.isArray(S.body) && S.body.length === 9 && S.body.every(Number.isFinite))) S.body = null;
+    for (const k of Object.keys(DEFAULTS)) {
+      const d = DEFAULTS[k];
+      if (typeof d === 'number') S[k] = Number.isFinite(+S[k]) ? +S[k] : d;
+      else if (typeof d === 'boolean') S[k] = !!S[k];
+      else if (HEX6(d) && !HEX6(S[k])) S[k] = d;
+    }
+    for (const [k, ok] of Object.entries(ENUMS)) if (!ok.includes(S[k])) S[k] = DEFAULTS[k];
+    for (const k of ['cOuter', 'cInner', 'cWeb']) if (S[k] !== null && !HEX6(S[k])) S[k] = null;
+    for (const [r, g] of Object.entries(S.grad)) {
+      g.on = !!g.on; if (!HEX6(g.to)) g.to = DEFAULTS.grad[r].to;
+      if (!['depth', 'vertical', 'horizontal', 'diagonal', 'radial'].includes(g.dir) || (r === 'bg' && g.dir === 'depth')) g.dir = DEFAULTS.grad[r].dir;
+    }
+    const f = v => Math.min(16, Math.max(2, Math.round(v)));
+    S.freq = f(S.freq); S.tuneLo = f(S.tuneLo); S.tuneHi = f(S.tuneHi);
   }
-  if (!['mono', 'custom'].includes(S.grainColor)) S.grainColor = 'mono';   // Struts was dropped
-  if (!ANIMS[S.animKind]) S.animKind = 'jitterbug';
-  if (!(Array.isArray(S.body) && S.body.length === 9 && S.body.every(Number.isFinite))) S.body = null;
+  tidyState();
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduced) S.playing = false;
   let saveT;
@@ -2522,10 +2591,11 @@
     ArrowLeft: e => orientKey(e, true), ArrowRight: e => orientKey(e, true), ArrowUp: e => orientKey(e, true),
     ArrowDown: e => orientKey(e, true), KeyQ: e => orientKey(e, true), KeyE: e => orientKey(e, true),
   };
-  for (let i = 0; i < 10; i++) SHORTCUTS['Digit' + ((i + 1) % 10)] = SHORTCUTS['Numpad' + ((i + 1) % 10)] = () => toggleLayer(i);
+  for (let i = 0; i < 10; i++) SHORTCUTS['Digit' + ((i + 1) % 10)] = SHORTCUTS['Numpad' + ((i + 1) % 10)] =
+    e => e.shiftKey && i < MAX_PINS ? recallPin(i) : toggleLayer(i);   // Shift + 1 to 4: the pinned presets
   // for synthetic keystrokes that carry no key position
   const BY_KEY = { '[': 'BracketLeft', ']': 'BracketRight', ',': 'Comma', '.': 'Period', '-': 'Minus', '=': 'Equal', '+': 'Equal',
-    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ';': 'Semicolon', "'": 'Quote', q: 'KeyQ', Q: 'KeyQ', r: 'KeyR', R: 'KeyR', v: 'KeyV', V: 'KeyV', b: 'KeyB', B: 'KeyB', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])) };
+    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ';': 'Semicolon', "'": 'Quote', q: 'KeyQ', Q: 'KeyQ', r: 'KeyR', R: 'KeyR', v: 'KeyV', V: 'KeyV', b: 'KeyB', B: 'KeyB', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])), '!': 'Digit1', '@': 'Digit2', '#': 'Digit3', '$': 'Digit4' };
   addEventListener('keydown', e => {
     const run = SHORTCUTS[e.code || BY_KEY[e.key]];
     if (!run || e.metaKey || e.ctrlKey || e.altKey || typing()) return;
@@ -2534,6 +2604,133 @@
     if (e.code.startsWith('Arrow') && el && el !== document.body && el !== board) return;
     e.preventDefault(); run(e);
   });
+
+  // ───────────────────────── presets ─────────────────────────
+  // A preset is the look and motion as a short code: the settings that differ from the defaults, as JSON, compressed
+  // (deflate) and written in URL-safe base64 after "ds1.". The panel tab, folded sections, export settings and play or
+  // pause stay as they are. Presets are saved by name in this browser, up to four pinned (Shift + 1 to 4), and travel as
+  // a code to paste or a link that opens with the preset applied.
+  const NOT_IN_PRESET = new Set(['tab', 'closed', 'custom', 'playing', 'exportBg', 'clip', 'quality', 'motionSize', 'loops', 'after']);
+  const PRESET_KEYS = Object.keys(DEFAULTS).filter(k => !NOT_IN_PRESET.has(k));
+  const PKEY = 'dymaxion-studio:presets', MAX_PINS = 4;
+  let presets = [];
+  try { presets = JSON.parse(localStorage.getItem(PKEY) || '[]').filter(q => q && typeof q.code === 'string' && typeof q.name === 'string'); } catch {}
+  const savePresets = () => { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch {} };
+  const b64u = bytes => { let t = ''; for (const x of bytes) t += String.fromCharCode(x); return btoa(t).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const unb64u = t => Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), ch => ch.charCodeAt(0));
+  const squeeze = async (bytes, stream) => new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
+  // only what differs from the defaults, down into nested settings (each gradient), with numbers rounded
+  const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
+  const round4 = v => typeof v === 'number' ? +v.toFixed(4) : Array.isArray(v) ? v.map(round4) : v;
+  function diffFrom(v, d) {
+    if (isObj(v) && isObj(d)) {
+      const o = {};
+      for (const k of Object.keys(v)) { const x = diffFrom(v[k], d[k]); if (x !== undefined) o[k] = x; }
+      return Object.keys(o).length ? o : undefined;
+    }
+    const r = round4(v);
+    return JSON.stringify(r) === JSON.stringify(d) ? undefined : r;
+  }
+  const mergeOver = (d, v) => isObj(d) && isObj(v)
+    ? Object.fromEntries([...new Set([...Object.keys(d), ...Object.keys(v)])].map(k => [k, mergeOver(d[k], v[k])]))
+    : structuredClone(v === undefined ? d : v);
+  async function presetCode() {
+    const diff = {};
+    for (const k of PRESET_KEYS) { const x = diffFrom(S[k], DEFAULTS[k]); if (x !== undefined) diff[k] = x; }
+    return 'ds1.' + b64u(await squeeze(new TextEncoder().encode(JSON.stringify(diff)), new CompressionStream('deflate-raw')));
+  }
+  async function readPreset(code) {   // a bare code, or a link that carries one
+    const m = String(code).trim().match(/(?:^|#p=)ds1\.([A-Za-z0-9_-]+)$/);
+    if (!m) throw new Error('not a preset code');
+    const diff = JSON.parse(new TextDecoder().decode(await squeeze(unb64u(m[1]), new DecompressionStream('deflate-raw'))));
+    if (!diff || typeof diff !== 'object' || Array.isArray(diff)) throw new Error('not a preset code');
+    return diff;
+  }
+  function applyPreset(diff) {
+    for (const k of PRESET_KEYS) S[k] = mergeOver(DEFAULTS[k], diff[k]);
+    tidyState();
+    for (const k of Object.keys(orient.pend)) orient.pend[k] = orient.vel[k] = 0;   // no glide left over from before
+    anim.x = 1; anim.running = false;
+    sync(); persist();
+  }
+  async function loadCode(code, name) {
+    try { applyPreset(await readPreset(code)); toast(name ? `Preset · ${name}` : 'Preset loaded'); return true; }
+    catch { toast('That isn’t a preset code'); return false; }
+  }
+  const pinned = () => presets.filter(q => q.pin).slice(0, MAX_PINS);
+  function recallPin(i) { const q = pinned()[i]; if (q) loadCode(q.code, q.name); else toast(`No preset pinned to Shift + ${i + 1}`); }
+  async function copyText(text, what) {
+    try { await navigator.clipboard.writeText(text); toast(`${what} copied`); }
+    catch { window.prompt(`Copy the ${what.toLowerCase()}:`, text); }
+  }
+  function renderPresets() {
+    const host = $('prePins'), pins = pinned();
+    host.replaceChildren();
+    for (let i = 0; i < MAX_PINS; i++) {
+      const q = pins[i], b = document.createElement('button');
+      b.type = 'button'; b.className = 'pre-pin' + (q ? '' : ' empty'); b.disabled = !q;
+      b.innerHTML = `<kbd>⇧ ${i + 1}</kbd><span></span>`;
+      b.querySelector('span').textContent = q ? q.name : 'empty';
+      if (q) b.addEventListener('click', () => loadCode(q.code, q.name));
+      host.append(b);
+    }
+    const list = $('preList');
+    list.replaceChildren();
+    presets.forEach((q, i) => {
+      const row = document.createElement('div'); row.className = 'pre-row';
+      row.innerHTML = '<span class="pre-sw"></span><button type="button" class="pre-name"></button>' +
+        '<button type="button" class="pre-act pin"></button><button type="button" class="pre-act copy">Copy</button>' +
+        '<button type="button" class="pre-act del">×</button>';
+      const [sw, nm, pin, cp, del] = row.children;
+      if (q.sw && q.sw.every(HEX6)) sw.style.background = `radial-gradient(circle, ${q.sw[1]} 0 34%, ${q.sw[0]} 36%)`;   // its strut colour on its background
+      nm.textContent = q.name; nm.title = 'Load ' + q.name;
+      nm.addEventListener('click', () => loadCode(q.code, q.name));
+      pin.textContent = q.pin ? '★' : '☆'; pin.classList.toggle('on', !!q.pin);
+      pin.setAttribute('aria-label', (q.pin ? 'Unpin ' : 'Pin ') + q.name);
+      pin.addEventListener('click', () => {
+        if (!q.pin && pinned().length >= MAX_PINS) { toast('Four pins at most: unpin one first'); return; }
+        q.pin = !q.pin; savePresets(); renderPresets();
+      });
+      cp.setAttribute('aria-label', 'Copy the code for ' + q.name);
+      cp.addEventListener('click', () => copyText(q.code, 'Code'));
+      del.setAttribute('aria-label', 'Delete ' + q.name);
+      del.addEventListener('click', () => {
+        if (!window.confirm(`Delete the preset “${q.name}”?`)) return;
+        presets.splice(i, 1); savePresets(); renderPresets();
+      });
+      list.append(row);
+    });
+    $('preEmpty').hidden = presets.length > 0;
+  }
+  function placePresets() {   // under the masthead key, right-aligned to it when it fits, and always on screen
+    const r = $('presetsBtn').getBoundingClientRect(), box = $('presets').style, w = Math.min(340, innerWidth - 24);
+    let left = r.right - w;
+    if (left < 12) left = Math.min(r.left, innerWidth - 12 - w);
+    box.top = Math.round(r.bottom + 8) + 'px'; box.left = Math.round(Math.max(12, left)) + 'px'; box.right = 'auto'; box.width = w + 'px';
+  }
+  function showPresets(on) {
+    $('presets').hidden = !on; $('presetsBtn').setAttribute('aria-expanded', on);
+    if (on) { renderPresets(); placePresets(); }
+  }
+  $('presetsBtn').addEventListener('click', () => showPresets($('presets').hidden));
+  $('preClose').addEventListener('click', () => showPresets(false));
+  addEventListener('pointerdown', e => { if (!$('presets').hidden && !$('presets').contains(e.target) && e.target !== $('presetsBtn')) showPresets(false); });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !$('presets').hidden) showPresets(false); });
+  addEventListener('resize', () => { if (!$('presets').hidden) placePresets(); });
+  async function saveCurrent() {
+    const name = $('preName').value.trim() || `Preset ${presets.length + 1}`;
+    presets.unshift({ name, code: await presetCode(), pin: false, sw: [S.bg, S.line] });
+    savePresets(); $('preName').value = ''; renderPresets(); toast(`Saved · ${name}`);
+  }
+  $('preSave').addEventListener('click', saveCurrent);
+  $('preName').addEventListener('keydown', e => { if (e.key === 'Enter') saveCurrent(); });
+  const loadFromField = async () => { if (await loadCode($('preCode').value)) $('preCode').value = ''; };
+  $('preLoad').addEventListener('click', loadFromField);
+  $('preCode').addEventListener('keydown', e => { if (e.key === 'Enter') loadFromField(); });
+  $('preCopyCode').addEventListener('click', async () => copyText(await presetCode(), 'Code'));
+  $('preCopyLink').addEventListener('click', async () => copyText(`${location.origin}${location.pathname}#p=${await presetCode()}`, 'Link'));
+  // a link that carries a preset opens with it applied; the code then leaves the address bar, so a reload keeps later changes
+  if (/#p=ds1\./.test(location.hash)) loadCode(location.hash).then(() => history.replaceState(null, '', location.pathname + location.search));
 
   // ───────────────────────── export ─────────────────────────
   const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show');

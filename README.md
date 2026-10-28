@@ -33,6 +33,8 @@ The control panel has five tabs: **Shape** (frequency, structure, strut types), 
 
 ### Keyboard and macropad
 
+[shortcuts.html](https://hankwhiteco.github.io/dymaxion-sphere-studio/shortcuts.html) lists every key with its VIA keycode, and a Creator Micro layout to start from.
+
 | Key | Does |
 |---|---|
 | `Space` | play or pause |
@@ -43,6 +45,7 @@ The control panel has five tabs: **Shape** (frequency, structure, strut types), 
 | `←` / `→` | turn the sphere about the spin axis |
 | `↑` / `↓` | tumble the sphere toward / away from you about one of its own 5-fold axes (the one lying most nearly across the screen); every 72° it lands on an identical view. Tilt stays on its slider and on vertical drags |
 | `Q` / `E` | roll the picture about the line of sight |
+| `Shift+1`–`4` | the four pinned presets |
 | `1`–`0` | toggle outer, inner, diagonals, far side, icosahedron net, five-fold nodes, vector equilibrium, great circles, LCD triangles, spherical polyhedron |
 | `R` | random colours for the outer, inner and diagonal layers and the highlight (a colour scheme from a random hue, readable on the background, with the highlight on the complementary hue); `Shift+R` gives the layers top-to-bottom gradients instead, each running into the next colour of the scheme. Match struts resets the layers |
 | `V` / `B` | blend mode back / forward through the Texture list, wrapping round |
@@ -51,6 +54,10 @@ The control panel has five tabs: **Shape** (frequency, structure, strut types), 
 The orientation keys glide rather than step: a tap eases 5° (1° with Shift), holding ramps up to a steady turn and glides to a stop on release, and keys combine, so → and ↑ together move diagonally. A flicked drag coasts to rest. Keys are matched by position, so they work on any layout, and are ignored while typing in a field or with Cmd, Ctrl or Alt held. Each shows a short readout of what changed.
 
 To put a control on a Work Louder Creator Micro wheel: open [usevia.app](https://usevia.app) in Chrome or Edge, select the Creator Micro, click a wheel's **clockwise** and **counter-clockwise** slots and choose the pair from Basic: `]` and `[` (KC_RBRC, KC_LBRC) for frequency, `.` and `,` (KC_DOT, KC_COMM) for spin, or `=` and `-` (KC_EQL, KC_MINS) for truss depth. Each detent then steps once while the studio's window has focus.
+
+### Presets
+
+**Presets** in the masthead saves the current look and motion by name. A preset travels as a short code (`ds1.` and about 150 characters: only the settings that differ from the defaults, compressed): copy it, paste it into the box, or copy a link that opens the studio with it applied. Pin up to four favourites; `Shift+1`–`4` recall them, so they fit on a macropad. The panel tab, folded sections, export settings and play or pause are left out, and every value in a pasted code is checked before it is used.
 
 GIF and MP4 export load [gifenc](https://github.com/mattdesl/gifenc) and [mp4-muxer](https://github.com/Vanilagy/mp4-muxer) from jsDelivr on first use. MP4 needs WebCodecs (Chrome, Edge, Safari 16.4+).
 
