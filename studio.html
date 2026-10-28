@@ -1870,12 +1870,17 @@
   // So with those ends every node that two or more struts of a layer share gets a round joint, the struts end flat
   // there, and a square end is added only where a strut ends on its own. Per depth step: the struts as x0 y0 x1 y1
   // runs, and the joints as x y
-  const ARR_ID = new WeakMap(); let arrN = 0;
-  const arrId = a => ARR_ID.get(a) ?? (ARR_ID.set(a, ++arrN), arrN);
+  // how many of a layer's struts meet at each node depends only on its edge list, so it is counted once per list
+  const DEGREES = new WeakMap();
   function strutPieces(L, step, K) {
-    const E = L.E, A = L.A, B = L.B, ia = arrId(A) * 1e7, ib = arrId(B) * 1e7, deg = new Map();
-    for (let e = 0; e < E.length; e += 2) {
-      deg.set(ia + E[e], (deg.get(ia + E[e]) || 0) + 1); deg.set(ib + E[e+1], (deg.get(ib + E[e+1]) || 0) + 1);
+    const E = L.E, A = L.A, B = L.B, ia = 0, ib = A === B ? 0 : 1e7;
+    let byE = DEGREES.get(E); if (!byE) DEGREES.set(E, byE = {});
+    let deg = byE[ib];
+    if (!deg) {
+      deg = byE[ib] = new Map();
+      for (let e = 0; e < E.length; e += 2) {
+        deg.set(ia + E[e], (deg.get(ia + E[e]) || 0) + 1); deg.set(ib + E[e+1], (deg.get(ib + E[e+1]) || 0) + 1);
+      }
     }
     const segs = Array.from({ length: K }, () => []), joints = Array.from({ length: K }, () => []);
     const ext = S.cap === 'square' ? L.w / 2 : 0;
@@ -1936,22 +1941,18 @@
     const paths = fr.layers.map(L => {
       if (L.alpha <= 0.001) return null;
       if (joined && !L.dash) {
-        // each step's struts and joints as one filled shape: every band and disc wound the same way, so they merge
-        // into one outline, with nothing doubled where they overlap
-        const { segs, joints } = strutPieces(L, step, K), h = L.w / 2, P = new Array(K).fill(null);
+        // each step's struts as flat-ended lines, and its joints as dots (a round-capped stroke of a point each):
+        // two plain strokes, which the browser draws far faster than one merged filled outline
+        const { segs, joints } = strutPieces(L, step, K), P = new Array(K).fill(null);
         for (let k = 0; k < K; k++) {
           const sg = segs[k], jt = joints[k];
           if (!sg.length && !jt.length) continue;
-          const p = P[k] = new Path2D();
-          for (let i = 0; i < sg.length; i += 4) {
-            const ax = sg[i], ay = sg[i+1], bx = sg[i+2], by = sg[i+3], l = Math.hypot(bx - ax, by - ay);
-            if (l < 1e-9) continue;
-            const nx = -(by - ay) / l * h, ny = (bx - ax) / l * h;
-            p.moveTo(ax - nx, ay - ny); p.lineTo(bx - nx, by - ny); p.lineTo(bx + nx, by + ny); p.lineTo(ax + nx, ay + ny); p.closePath();
-          }
-          for (let i = 0; i < jt.length; i += 2) { p.moveTo(jt[i] + h, jt[i+1]); p.arc(jt[i], jt[i+1], h, 0, Math.PI * 2); }
+          const lines = new Path2D(), dots = new Path2D();
+          for (let i = 0; i < sg.length; i += 4) { lines.moveTo(sg[i], sg[i+1]); lines.lineTo(sg[i+2], sg[i+3]); }
+          for (let i = 0; i < jt.length; i += 2) { dots.moveTo(jt[i], jt[i+1]); dots.lineTo(jt[i] + 0.001, jt[i+1]); }
+          P[k] = { lines: sg.length ? lines : null, dots: jt.length ? dots : null };
         }
-        P.filled = true;
+        P.joined = true;
         return P;
       }
       const P = new Array(K).fill(null), E = L.E, A = L.A, B = L.B;
@@ -1973,8 +1974,13 @@
       fr.layers.forEach((L, i) => {
         const p = paths[i] && paths[i][k];
         if (!p) return;
-        if (paths[i].filled) { put(la * L.alpha, () => { g.fillStyle = paintOf(L.color); }, () => g.fill(p)); return; }
         g.lineWidth = L.w; g.setLineDash(L.dash || []);
+        if (paths[i].joined) {   // drawn apart, so on the layer each clears what is under it and nothing doubles
+          const style = () => { g.strokeStyle = paintOf(L.color); };
+          if (p.lines) { g.lineCap = 'butt'; put(la * L.alpha, style, () => g.stroke(p.lines)); }
+          if (p.dots) { g.lineCap = 'round'; put(la * L.alpha, style, () => g.stroke(p.dots)); }
+          g.lineCap = S.cap; return;
+        }
         put(la * L.alpha, () => { g.strokeStyle = paintOf(L.color); }, () => g.stroke(p));
       });
       g.setLineDash([]);
