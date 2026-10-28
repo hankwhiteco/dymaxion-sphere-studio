@@ -53,7 +53,7 @@ The control panel has five tabs: **Shape** (frequency, structure, strut types), 
 
 The orientation keys glide rather than step: a tap eases 5° (1° with Shift), holding ramps up to a steady turn and glides to a stop on release, and keys combine, so → and ↑ together move diagonally. A flicked drag coasts to rest. Keys are matched by position, so they work on any layout, and are ignored while typing in a field or with Cmd, Ctrl or Alt held. Each shows a short readout of what changed.
 
-To put a control on a Work Louder Creator Micro wheel: open [usevia.app](https://usevia.app) in Chrome or Edge, select the Creator Micro, click a wheel's **clockwise** and **counter-clockwise** slots and choose the pair from Basic: `]` and `[` (KC_RBRC, KC_LBRC) for frequency, `.` and `,` (KC_DOT, KC_COMM) for spin, or `=` and `-` (KC_EQL, KC_MINS) for truss depth. Each detent then steps once while the studio's window has focus.
+To put a control on a Work Louder Creator Micro wheel: open [usevia.app](https://usevia.app) in Chrome or Edge, select the Creator Micro, click a wheel's **clockwise** and **counter-clockwise** slots and choose the pair from Basic: `]` and `[` (KC_RBRC, KC_LBRC) for frequency, `'` and `;` (KC_QUOT, KC_SCLN) for line weight, `.` and `,` (KC_DOT, KC_COMM) for spin, or `=` and `-` (KC_EQL, KC_MINS) for truss depth. Each detent then steps once while the studio's window has focus.
 
 ### Presets
 

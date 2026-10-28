@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Dymaxion Sphere Studio</title>
+<title>Dymaxion Sphere</title>
 <style>
   /* Layout: the sphere's artboard set into a grey housing, beside an off-white control face
      of keys, switches and a tuning scale (after Dieter Rams' Braun work); stacks on phones. */
@@ -47,9 +47,11 @@
            padding: 22px 28px; min-width: 0; min-height: 0; }
   .masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .brand { display: flex; align-items: center; gap: 12px; }
-  /* speaker-grille perforation, the one ornament */
-  .grille { width: 34px; height: 16px; flex: none;
-            background: radial-gradient(circle, var(--fg) 1.1px, transparent 1.4px) 0 0 / 5.6px 5.4px; opacity: .8; }
+  /* the mark: the vector equilibrium's four great circles; and the version, small beside the name */
+  .mark { width: 24px; height: 24px; flex: none; overflow: visible; fill: none; stroke: var(--fg); opacity: .8; }
+  .mark path { stroke-width: 1.15; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  .ver { align-self: center; margin-left: -4px; font-size: 10.5px; font-weight: 400; color: var(--muted); text-decoration: none; letter-spacing: .02em; }
+  .ver:hover { color: var(--fg); }
   h1 { font: 500 17px/1 var(--font); margin: 0; letter-spacing: -0.005em; }
   .hint { color: var(--muted); font-size: 12px; }
   @media (max-width: 1180px) { .hint { display: none; } }   /* the masthead keys need the room */
@@ -371,7 +373,7 @@
 <div class="app">
   <main class="stage">
     <div class="masthead">
-      <div class="brand"><span class="grille" aria-hidden="true"></span><h1>Dymaxion Sphere Studio</h1></div>
+      <div class="brand"><svg class="mark" viewBox="-1.08 -1.08 2.16 2.16" aria-hidden="true"></svg><h1>Dymaxion Sphere</h1><a class="ver" id="ver" href="https://github.com/hankwhiteco/dymaxion-sphere-studio/commits/main" target="_blank" rel="noopener" hidden></a></div>
       <div class="mast-right">
         <span class="hint">Drag to turn · Space to play</span>
         <button type="button" class="notes-key" id="presetsBtn" aria-haspopup="dialog" aria-expanded="false">Presets</button>
@@ -2237,6 +2239,7 @@
     document.querySelector(`input[name="cap"][value="${S.cap}"]`).checked = true;
     readout(); legend(); syncAnim(); syncClip();
     if (pin) pinLayout();
+    if (!$('presets').hidden) keepReady();   // the copy buttons always have the current look's code at hand
   }
 
   // each colour role: White, Black, or Custom, which opens the colour editor under the row (Solid or Gradient).
@@ -2659,9 +2662,22 @@
   }
   const pinned = () => presets.filter(q => q.pin).slice(0, MAX_PINS);
   function recallPin(i) { const q = pinned()[i]; if (q) loadCode(q.code, q.name); else toast(`No preset pinned to Shift + ${i + 1}`); }
-  async function copyText(text, what) {
-    try { await navigator.clipboard.writeText(text); toast(`${what} copied`); }
-    catch { window.prompt(`Copy the ${what.toLowerCase()}:`, text); }
+  // Copying: browsers allow the clipboard only during the click itself, and making a code takes a moment, so the
+  // current look's code is kept ready while the panel is open. A click copies it at once; if the look has just changed,
+  // the browser is handed the code as a promise to wait for (Safari and Chrome accept that). If both fail, the code is
+  // put in the code field, selected, to copy by hand.
+  let ready = { stamp: '', code: '' };
+  const lookStamp = () => JSON.stringify(PRESET_KEYS.map(k => S[k]));
+  async function keepReady() { const stamp = lookStamp(); if (stamp !== ready.stamp) ready = { stamp, code: await presetCode() }; return ready.code; }
+  const lookCode = () => ready.stamp === lookStamp() ? ready.code : keepReady();   // the code now, or a promise of it
+  const linkTo = code => `${location.origin}${location.pathname}#p=${code}`;
+  function copyText(get, what) {   // get: the text, or a promise of it
+    const done = () => toast(`${what} copied`);
+    const byHand = async () => { const f = $('preCode'); f.value = await get; f.focus(); f.select(); toast(`Press ⌘C to copy the ${what.toLowerCase()}`); };
+    const cb = navigator.clipboard;
+    if (typeof get === 'string') { if (cb && cb.writeText) cb.writeText(get).then(done, byHand); else byHand(); return; }
+    if (cb && cb.write && window.ClipboardItem) cb.write([new ClipboardItem({ 'text/plain': get.then(t => new Blob([t], { type: 'text/plain' })) })]).then(done, byHand);
+    else byHand();
   }
   function renderPresets() {
     const host = $('prePins'), pins = pinned();
@@ -2710,7 +2726,7 @@
   }
   function showPresets(on) {
     $('presets').hidden = !on; $('presetsBtn').setAttribute('aria-expanded', on);
-    if (on) { renderPresets(); placePresets(); }
+    if (on) { renderPresets(); placePresets(); keepReady(); }
   }
   $('presetsBtn').addEventListener('click', () => showPresets($('presets').hidden));
   $('preClose').addEventListener('click', () => showPresets(false));
@@ -2727,8 +2743,8 @@
   const loadFromField = async () => { if (await loadCode($('preCode').value)) $('preCode').value = ''; };
   $('preLoad').addEventListener('click', loadFromField);
   $('preCode').addEventListener('keydown', e => { if (e.key === 'Enter') loadFromField(); });
-  $('preCopyCode').addEventListener('click', async () => copyText(await presetCode(), 'Code'));
-  $('preCopyLink').addEventListener('click', async () => copyText(`${location.origin}${location.pathname}#p=${await presetCode()}`, 'Link'));
+  $('preCopyCode').addEventListener('click', () => copyText(lookCode(), 'Code'));
+  $('preCopyLink').addEventListener('click', () => { const c = lookCode(); copyText(typeof c === 'string' ? linkTo(c) : c.then(linkTo), 'Link'); });
   // a link that carries a preset opens with it applied; the code then leaves the address bar, so a reload keeps later changes
   if (/#p=ds1\./.test(location.hash)) loadCode(location.hash).then(() => history.replaceState(null, '', location.pathname + location.search));
 
@@ -3073,5 +3089,60 @@
   pinLayout();
 
   sync();
+})();
+</script>
+<script>
+// The mark: the vector equilibrium's four great circles (their axes are the cube diagonals), drawn as seen. It turns on
+// load and on hover, easing to rest at a new random angle, and never resets. And the version: v0.N, N being the number
+// of commits on GitHub, so it rises with every push (asked once per browser session).
+(() => {
+  const NS = 'http://www.w3.org/2000/svg', s3 = Math.sqrt(3);
+  const cross = (p, q) => [p[1]*q[2] - p[2]*q[1], p[2]*q[0] - p[0]*q[2], p[0]*q[1] - p[1]*q[0]];
+  const unit = p => { const l = Math.hypot(...p); return p.map(v => v / l); };
+  const mul = (A, B) => A.map(r => [0, 1, 2].map(j => r[0]*B[0][j] + r[1]*B[1][j] + r[2]*B[2][j]));
+  const rot = ([x, y, z], t) => { const c = Math.cos(t), s = Math.sin(t), C = 1 - c;
+    return [[c + x*x*C, x*y*C - z*s, x*z*C + y*s], [y*x*C + z*s, c + y*y*C, y*z*C - x*s], [z*x*C - y*s, z*y*C + x*s, c + z*z*C]]; };
+  const randAxis = () => { const z = Math.random() * 2 - 1, p = Math.random() * 2 * Math.PI, r = Math.sqrt(1 - z * z); return [r * Math.cos(p), r * Math.sin(p), z]; };
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const easeOut = k => 1 - (1 - k) ** 3, easeInOut = k => (1 - Math.cos(Math.PI * k)) / 2;
+  const circles = [[1, 1, 1], [1, 1, -1], [1, -1, 1], [-1, 1, 1]].map(v => {
+    const n = v.map(x => x / s3), a = unit(cross(n, [1, 0, 0])), b = cross(n, a);
+    return Array.from({ length: 72 }, (_, k) => { const t = k / 72 * 2 * Math.PI; return [0, 1, 2].map(d => Math.cos(t) * a[d] + Math.sin(t) * b[d]); });
+  });
+  for (const svg of document.querySelectorAll('svg.mark')) {
+    const paths = circles.map(() => svg.appendChild(document.createElementNS(NS, 'path')));
+    let R = rot(randAxis(), Math.random() * 2 * Math.PI), run = null;
+    const draw = () => circles.forEach((P, i) => {
+      let d = '';
+      P.forEach((p, k) => { d += (k ? 'L' : 'M') + (R[0][0]*p[0] + R[0][1]*p[1] + R[0][2]*p[2]).toFixed(3) + ' ' + (-(R[1][0]*p[0] + R[1][1]*p[1] + R[1][2]*p[2])).toFixed(3); });
+      paths[i].setAttribute('d', d + 'Z');
+    });
+    const turn = (dur, ease) => {   // from wherever it is now, about a random axis, by 110° to 270°
+      if (still) return;
+      const from = R, u = randAxis(), ang = (0.6 + Math.random() * 0.9) * Math.PI, t0 = performance.now(), id = run = {};
+      const step = now => { if (run !== id) return; const k = Math.min(1, (now - t0) / dur); R = mul(rot(u, ang * ease(k)), from); draw(); if (k < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    };
+    draw(); turn(1800, easeOut);
+    (svg.closest('.brand') || svg).addEventListener('pointerenter', () => turn(1300, easeInOut));
+  }
+  const ver = document.getElementById('ver');
+  if (ver) (async () => {
+    let n = null;
+    try { n = sessionStorage.getItem('dymaxion-version'); } catch {}
+    if (!n) try {
+      const r = await fetch('https://api.github.com/repos/hankwhiteco/dymaxion-sphere-studio/commits?sha=main&per_page=1');
+      if (r.ok) {
+        const last = (r.headers.get('Link') || '').match(/[?&]page=(\d+)>; rel="last"/);
+        n = last ? last[1] : String((await r.json()).length);
+        try { sessionStorage.setItem('dymaxion-version', n); } catch {}
+      }
+    } catch {}
+    if (!n) return;
+    const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    ver.textContent = 'v0.' + n + (local ? ' · local' : '');
+    ver.title = local ? `GitHub is at commit ${n}; this copy may differ` : `Commit ${n} on GitHub`;
+    ver.hidden = false;
+  })();
 })();
 </script>
