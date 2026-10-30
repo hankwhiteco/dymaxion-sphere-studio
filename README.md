@@ -57,7 +57,7 @@ To put a control on a Work Louder Creator Micro wheel: open [usevia.app](https:/
 
 ### Presets
 
-**Presets** in the masthead saves the current look and motion by name. A preset travels as a short code (`ds1.` and about 150 characters: only the settings that differ from the defaults, compressed): copy it, paste it into the box, or copy a link that opens the studio with it applied. Pin up to four favourites; `Shift+1`–`4` recall them, so they fit on a macropad. The panel tab, folded sections, export settings and play or pause are left out, and every value in a pasted code is checked before it is used.
+**Presets** in the masthead saves the current look and motion by name. A preset travels as a short code (`ds1.` and about 150 characters: only the settings that differ from the defaults, compressed): copy it, paste it into the box, or copy a link that opens the studio with it applied. Pin up to four favourites; `Shift+1`–`4` recall them, so they fit on a macropad. The studio ships with four, **Urchin**, **Pok**, **Blueprint** and **Melon**, pinned to `Shift+1`–`4`: each browser gets them once, beside any presets of its own, and one deleted stays deleted. The panel tab, folded sections, export settings and play or pause are left out, and every value in a pasted code is checked before it is used.
 
 GIF and MP4 export load [gifenc](https://github.com/mattdesl/gifenc) and [mp4-muxer](https://github.com/Vanilagy/mp4-muxer) from jsDelivr on first use. MP4 needs WebCodecs (Chrome, Edge, Safari 16.4+).
 

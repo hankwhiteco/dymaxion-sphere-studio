@@ -2709,6 +2709,27 @@
   let presets = [];
   try { presets = JSON.parse(localStorage.getItem(PKEY) || '[]').filter(q => q && typeof q.code === 'string' && typeof q.name === 'string'); } catch {}
   const savePresets = () => { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch {} };
+  // the studio ships with four presets, pinned to Shift + 1 to 4. Each browser gets them once, beside its own presets
+  // (a pin only where a slot is free); one deleted afterwards stays deleted
+  const BUILT_IN = [
+    ['Urchin', 'ds1.bZBNb9swEET_y-S6NSiJtKK99hSkQYD20GPAj5VDlBYdiYqBGP7vBe0ECJBcH-ZxhnvCOMsLeEsIcijPYKMU4ddTXovM4NGmRQiLvMoELvMqhJLTwwO4HQgh7-U32HQEZ_2_xwNYK8JR4u65gJuN1oQUJwHjRrvOuwEE671MpSIZjTMdCC7JFMDwOeX5R8hhJyDsZhunn-tS8r6mt8oMjfngf-KbgNWmN4TlIBLAbUMoMRXw7WbQuiccs3NJwM1AeMv1mRq3U9zfx0uhW2MKIPjH64dxsx2dH9uK7qbpiqS_bXpX0V9xFRjtRS7AHsBYXlY718FzTgnctOqyMYBPeD_kCfnTAS89TdCjAiHEWvIqc4neJpwJ8Vr81dF26IP_1jnWZV8NMX3bhW8Nt6vCNWbD0CmF8_n8Hw'],
+    ['Pok', 'ds1.bVBNawIxEP0vr9cgq5uoybWn0orQHnos-ZhdQ2Oy3Y0Kyv73klWhUOc07_E-hrmg6ekHqmZw1OUdFK8rhrevLgUaoHJ_oAJbe98HOlK8g5zCZgO1kAwu7ekdStQMRtvvbQfFK4YT-XaXoarZijMEHwkKT9zU1kgwaGsp5kIJ16y5BoNpC6ymKTBQdFAIJYciGNpe-wg1l7f1-TDktC-mZSXkXNwlH_5MU7FgGDoiByVmgiH7kKHWM8n5iuGUjAl0jTunklP0Ovr9q5-Kh-AtgcFuD5n6UkNrIUVdqJcYb1QjtHGF-iRTCMdX5Bow9CkEqPmimq5yUBeka9AF6c8jJ5NdGmfB4HxJPVKfvdUBI4O_Nv33UMONkA89p3LKgxbJrV48dJTfX24y7WRdVRjH8Rc'],
+    ['Blueprint', 'ds1.bVC9boMwGHyXy-pGBgLEXjtVbRSpHTpWxv4gVh2gYBIpiHevTIjUKtl8n-7PN8JQ6w-QSZ4yvH01g6cOslSup4BtXf_DlYb03UAMPZ2ovgHfuN0OMhYMpjnSO2SaMBRKf-9byFQwnMlWBw_J1yFIaU21h8Sq4KbkBIaiCnDLt3G2AUPVKVtDRmJ5Pg-9b46BkvFUROmN8mEvdHPtWyIDma5TBm-dh3zK1iLPMoZzUxSOrn6XJhjNNWp7fLW1gUTvrA419P66AFa5Udmco1-uI2CVJJFRKpw-qbhyIq6KcFBtMPkZVBdcusY5yCjmc0sDOWJZdkTzZ7X5yyKOdQQGY0PIiTpvtXKYGJb17zWZFjrOH2rOodm9YiPiRJQPFWH5caGVJektxzRNvw'],
+    ['Melon', 'ds1.bVDLasMwEPyXyVUE-SE_dO2ptCHQHnossrVJRBXJtZUEYvzvRXYChUQnzTAzuzsjdj39QpYMmrpwgCwEw_u3PwXqIXfKDhRx5y0NkKE_EcNAZ3J3ELzdbCDTmkH7I31AioyhUe3PtoPMOcOFzP4QIJOUwRpHkFjlTdY2NRhU25ILM8V3lVJgaPYR8vlFaMlpSNiYQg4M-14ZB5nUt-_LaQj-GE0FF3Ui7pJPcyVIvi4Fw9ARaUixFgzB2ABZres8LxkuvmksLXFXH3OiXjlzfDPz4MGalsDQbpdSsBJcN1UZqVfnFkqnhVCz6ouaSJDKsyISvbc2Hs_nrTTkiFu7I_y_GheTKKoEDNrE1DP1wbTKYmIwy6RHT15TXqunnktc5dGhd6JS6VNH7H68yZSuM84xTdMf'],
+  ];
+  const SEEDED = 'dymaxion-studio:presets-seeded';
+  async function seedPresets() {
+    try { if (localStorage.getItem(SEEDED)) return; } catch { return; }
+    for (const [name, code] of BUILT_IN) {
+      if (presets.some(q => q.code === code)) continue;
+      let sw = null;
+      try { const d = await readPreset(code); sw = [HEX6(d.bg) ? d.bg : DEFAULTS.bg, HEX6(d.line) ? d.line : DEFAULTS.line]; } catch { continue; }
+      presets.push({ name, code, pin: pinned().length < MAX_PINS, sw });
+    }
+    savePresets();
+    try { localStorage.setItem(SEEDED, '1'); } catch {}
+    if (!$('presets').hidden) renderPresets();
+  }
   const b64u = bytes => { let t = ''; for (const x of bytes) t += String.fromCharCode(x); return btoa(t).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
   const unb64u = t => Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), ch => ch.charCodeAt(0));
   const squeeze = async (bytes, stream) => new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
@@ -2835,6 +2856,7 @@
   $('preCode').addEventListener('keydown', e => { if (e.key === 'Enter') loadFromField(); });
   $('preCopyCode').addEventListener('click', () => copyText(lookCode(), 'Code'));
   $('preCopyLink').addEventListener('click', () => { const c = lookCode(); copyText(typeof c === 'string' ? linkTo(c) : c.then(linkTo), 'Link'); });
+  seedPresets();
   // a link that carries a preset opens with it applied; the code then leaves the address bar, so a reload keeps later changes
   if (/#p=ds1\./.test(location.hash)) loadCode(location.hash).then(() => history.replaceState(null, '', location.pathname + location.search));
 
