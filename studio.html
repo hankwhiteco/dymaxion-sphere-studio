@@ -325,6 +325,22 @@
   select { height: 36px; border-radius: 3px; border: 0; background: var(--well); color: var(--fg); font: 400 12px var(--font);
            padding: 0 8px; box-shadow: inset 0 -1px 0 var(--line); }
 
+  /* sound: four level meters, and links from a band to a control */
+  .meters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .meter { display: grid; gap: 5px; font-size: 10.5px; color: var(--muted); }
+  .meter i { position: relative; height: 4px; border-radius: 2px; background: var(--well); overflow: hidden; }
+  .meter b { position: absolute; inset: 0; background: var(--fg); transform: scaleX(0); transform-origin: left; }
+  .meter.beat b { background: var(--accent); }
+  .amaps { display: grid; gap: 10px; }
+  .amap { display: grid; grid-template-columns: 1fr 1fr 44px; gap: 6px; align-items: center; }
+  .amap + .amap { padding-top: 10px; border-top: 1px solid var(--line); }
+  .amap select { height: 30px; min-width: 0; }
+  .amap input[type="range"] { grid-column: 1 / 3; }
+  .amap .pre-act { justify-self: end; font-size: 15px; }
+  .track-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .asrc { display: grid; gap: 10px; }
+  body.dropping .board { box-shadow: inset 0 0 0 2px var(--accent); }
+
   /* jitterbug stages: a real sequence, so the steps are numbered */
   .stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; font-size: 10.5px; line-height: 1.3; color: var(--muted); }
   .stages span { border-top: 2px solid var(--track); padding-top: 6px; }
@@ -662,6 +678,51 @@
       </div>
       <div class="stages" id="stages"></div>
       </div></details>
+      <details class="sec" data-sec="audio" open><summary><h2>Audio</h2></summary>
+      <div class="sec-body">
+      <label class="check"><input type="checkbox" id="audioOn"><span>Respond to sound</span><small>A · sound moves the sphere around your settings and never changes them</small></label>
+      <div class="seg two" role="radiogroup" aria-label="Sound source">
+        <input type="radio" name="asrc" id="as_track" value="track" checked><label for="as_track">Track<small>an audio file</small></label>
+        <input type="radio" name="asrc" id="as_input" value="input"><label for="as_input">Input<small>line in, interface</small></label>
+      </div>
+      <div class="asrc" id="trackBox">
+        <div class="transport">
+          <button class="btn grow" id="trackPick">Choose a track</button>
+          <button class="btn" id="trackPlay" disabled>Play</button>
+        </div>
+        <input type="file" id="trackFile" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.opus,.flac,.aif,.aiff" hidden>
+        <div class="row">
+          <span class="lbl track-name" id="trackName">or drop one on the page</span><span class="val" id="trackTime"></span>
+          <input type="range" id="trackPos" min="0" max="1000" step="1" value="0" aria-label="Position in the track" disabled>
+        </div>
+        <button type="button" class="linkbtn" id="recSave" hidden>Save the recording as WAV</button>
+      </div>
+      <div class="asrc" id="inputBox" hidden>
+        <select id="inputDev" aria-label="Input device"><option value="">Default input</option></select>
+        <div class="transport">
+          <button class="btn grow" id="inputListen">Listen</button>
+          <button class="btn grow" id="inputRec" disabled>Record</button>
+        </div>
+        <p class="note">Pick the input your line in arrives on: an audio interface, a mixer&rsquo;s USB out, or a loopback. Nothing is played back, so there is no feedback. Record keeps what you hear as a track, to export with its sound.</p>
+      </div>
+      <div class="meters" id="meters" aria-hidden="true">
+        <span class="meter"><i><b></b></i>Bass</span><span class="meter"><i><b></b></i>Mids</span>
+        <span class="meter"><i><b></b></i>Highs</span><span class="meter beat"><i><b></b></i>Beat</span>
+      </div>
+      <div class="row"><span class="lbl">Sound moves</span><span class="val">at full level</span></div>
+      <div class="amaps" id="amaps"></div>
+      <p class="note" id="amapEmpty" hidden>Nothing yet. Add a link to let a band move a control.</p>
+      <div class="links"><button type="button" class="linkbtn" id="amapAdd">Add a link</button></div>
+      <div class="row">
+        <label for="audioGain">Sensitivity</label><span class="val" id="audioGainVal"></span>
+        <input type="range" id="audioGain" min="25" max="400" step="5" value="100">
+      </div>
+      <div class="row">
+        <label for="audioSmooth">Smoothing</label><span class="val" id="audioSmoothVal"></span>
+        <input type="range" id="audioSmooth" min="0" max="100" step="1" value="40">
+      </div>
+      <p class="note">Each band is measured against its own recent peak, so quiet and loud tracks both use the full range. Turn sound off and the sphere is exactly as set. To export with the sound, choose Track under Export.</p>
+      </div></details>
     </div>
     <div class="pane" id="pane-export" role="tabpanel" aria-labelledby="tab-export">
       <details class="sec" data-sec="image" open><summary><h2>Image</h2></summary>
@@ -677,10 +738,13 @@
       </div></details>
       <details class="sec" data-sec="clip" open><summary><h2>Clip</h2></summary>
       <div class="sec-body">
-      <div class="seg two" role="radiogroup" aria-label="Clip">
-        <input type="radio" name="clip" id="clip_loop" value="loop" checked><label for="clip_loop">Seamless loop<small>one symmetric turn</small></label>
+      <div class="seg three" role="radiogroup" aria-label="Clip">
+        <input type="radio" name="clip" id="clip_loop" value="loop" checked><label for="clip_loop">Loop<small>symmetric turn</small></label>
         <input type="radio" name="clip" id="clip_anim" value="anim"><label for="clip_anim">Animation<small id="clipAnimSub">jitterbug</small></label>
+        <input type="radio" name="clip" id="clip_audio" value="audio"><label for="clip_audio">Track<small id="clipTrackSub">with its sound</small></label>
       </div>
+      <div class="row" id="trackLenRow" hidden><label for="trackLen">Length</label>
+        <select id="trackLen" aria-label="How much of the track"><option value="whole">Whole track</option><option value="15">15 s from here</option><option value="30">30 s from here</option><option value="60">60 s from here</option></select></div>
       <div class="row" id="afterRow"><label for="after">Then loop</label>
         <select id="after" aria-label="Seamless loops after the animation"><option value="0">no</option><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option><option value="5">5×</option><option value="6">6×</option><option value="8">8×</option><option value="10">10×</option></select></div>
       <div class="row" id="loopsRow"><label for="loops">Loops</label>
@@ -698,6 +762,7 @@
         <input type="radio" name="quality" id="q_max" value="max"><label for="q_max">Max<small>for editing</small></label>
       </div>
       <div class="progress" id="progress" hidden><span id="progressBar"></span></div>
+      <p class="note" id="trackNote" hidden>A Track clip moves with the sound exactly, frame by frame, from the playhead (or the start, for the whole track). The MP4 carries the sound; a GIF has the motion only, in the colours as set.</p>
       <p class="note" id="clipNote">Reel is 1080×1920 with the sphere centred, ready for Instagram without rescaling. For the crispest video, raise Line weight to 1.5× or more. GIF is transparent unless the background is included; its soft edges are blended toward the background colour, so set it to match where the GIF will sit. MP4 always includes the background colour. A background gradient shows in PNG, SVG and MP4; a GIF uses the start colour.</p>
       </div></details>
     </div>
@@ -1276,6 +1341,10 @@
     ['invert', [['difference', 'Difference'], ['exclusion', 'Exclusion']]],
     ['colour', [['hue', 'Hue'], ['saturation', 'Saturation'], ['color', 'Colour'], ['luminosity', 'Luminosity']]]];
   const BLEND_NAME = Object.fromEntries(BLENDS.flatMap(([, m]) => m));
+  // sound: four bands, and the controls they can move. Each control's number is its change at full level and 100%
+  const AUDIO_BANDS = { bass: 'Bass', mids: 'Mids', highs: 'Highs', beat: 'Beat' };
+  const AUDIO_TARGETS = { depth: ['Truss depth', 150], weight: ['Line weight', 2], freq: ['Frequency', 6], size: ['Size', 0.25],
+                          spin: ['Spin', 40], hue: ['Hue', 180], tint: ['Tint', 1] };
   const DEFAULTS = {
     freq: 16, trueScale: false, depth: 100,
     L_outer: true, L_inner: true, L_web: true, L_net: false, L_poles: false, L_ve: false, L_back: true,
@@ -1294,6 +1363,10 @@
     grad: { line: { on: false, to: '#ef5a1f', dir: 'depth' }, outer: { on: false, to: '#ef5a1f', dir: 'depth' },
             inner: { on: false, to: '#ef5a1f', dir: 'depth' }, web: { on: false, to: '#ef5a1f', dir: 'depth' },
             bg: { on: false, to: '#c9c5bc', dir: 'vertical' } },
+    // sound: band to control links (amount -100 to 100%), sensitivity and smoothing; trackLen is how much of a track a clip takes
+    audioMap: [{ band: 'bass', target: 'depth', amount: 60 }, { band: 'beat', target: 'size', amount: 30 },
+               { band: 'mids', target: 'weight', amount: 40 }, { band: 'highs', target: 'tint', amount: 35 }],
+    audioGain: 100, audioSmooth: 40, trackLen: 'whole',
   };
   const KEY = 'dymaxion-studio:v1';
   let S = { ...DEFAULTS };
@@ -1302,9 +1375,9 @@
   // preset code cannot break the page (run on load and on every preset)
   const HEX6 = v => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
   const ENUMS = { axis: ['polar', '5', '3', '2'], cap: ['round', 'square', 'butt'], lcdMode: ['mirror', 'icosa', 'dodeca', 'rhomb'],
-                  poly: ['icosa', 'dodeca', 'triaconta', 'icosidodeca', 'octa', 've'] };
+                  poly: ['icosa', 'dodeca', 'triaconta', 'icosidodeca', 'octa', 've'], trackLen: ['whole', '15', '30', '60'] };
   function tidyState() {
-    if (S.clip !== 'loop') S.clip = 'anim';
+    if (!['loop', 'audio'].includes(S.clip)) S.clip = 'anim';
     // older saves named the artboard (paper, ink, clear); it is a colour now
     if (!/^#[0-9a-f]{6}$/i.test(S.bg)) S.bg = S.bg === 'ink' ? '#141413' : '#f2f1ed';
     S.custom = { ...DEFAULTS.custom, ...S.custom };
@@ -1335,8 +1408,13 @@
     }
     const f = v => Math.min(16, Math.max(2, Math.round(v)));
     S.freq = f(S.freq); S.tuneLo = f(S.tuneLo); S.tuneHi = f(S.tuneHi);
+    S.audioMap = (Array.isArray(S.audioMap) ? S.audioMap : DEFAULTS.audioMap)
+      .filter(m => m && m.band in AUDIO_BANDS && m.target in AUDIO_TARGETS).slice(0, 8)
+      .map(m => ({ band: m.band, target: m.target, amount: Math.max(-100, Math.min(100, Math.round(+m.amount || 0))) }));
+    S.audioGain = Math.max(25, Math.min(400, Math.round(S.audioGain))); S.audioSmooth = Math.max(0, Math.min(100, Math.round(S.audioSmooth)));
   }
   tidyState();
+  if (S.clip === 'audio') S.clip = 'loop';   // no track is loaded yet
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduced) S.playing = false;
   let saveT;
@@ -1349,6 +1427,85 @@
   const anim = { x: 1, running: false };
   let previewBlend = null;   // a blend mode under the pointer, shown on the artboard but not kept
   let exporting = null;   // the running GIF/MP4 job; the stage holds still meanwhile
+
+  // ───────────────────────── sound ─────────────────────────
+  // Audio mode sits on top of the settings: each frame the sound gives four levels (bass, mids, highs, and a beat
+  // pulse), and each link adds its level × amount to one control. These offsets are never written into the settings:
+  // with sound off, or silent, every one is zero and the sphere is exactly as set. The live view and Track clips run
+  // the same analysis on the 2048 samples ending at the moment drawn (Hann window, FFT, power per band in dB).
+  const audioMod = { depth: 0, weight: 0, freq: 0, size: 0, spin: 0, hue: 0, tint: 0 };
+  const zeroMods = () => { for (const k in audioMod) audioMod[k] = 0; };
+  const AUDIO = { ctx: null, an: null, el: null, url: null, track: null, stream: null, inNode: null, rec: null,
+                  src: 'track', on: false, env: null, buf: null };
+  const FFT_N = 2048;
+  const FFT = (() => {
+    const N = FFT_N, bits = Math.log2(N), rev = new Uint32Array(N), cos = new Float32Array(N / 2), sin = new Float32Array(N / 2), win = new Float32Array(N);
+    for (let i = 0; i < N; i++) { let r = 0; for (let b = 0; b < bits; b++) r |= ((i >> b) & 1) << (bits - 1 - b); rev[i] = r; }
+    for (let i = 0; i < N / 2; i++) { cos[i] = Math.cos(2 * Math.PI * i / N); sin[i] = -Math.sin(2 * Math.PI * i / N); }
+    for (let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1));
+    return { rev, cos, sin, win, re: new Float32Array(N), im: new Float32Array(N) };
+  })();
+  // power in each band (bass 20–150 Hz, mids 150–2000, highs 2000–12000) of 2048 samples; a full-scale sine is about 1
+  function bandPower(buf, rate) {
+    const N = FFT_N, { rev, cos, sin, win, re, im } = FFT;
+    for (let i = 0; i < N; i++) { re[rev[i]] = buf[i] * win[i]; im[rev[i]] = 0; }
+    for (let size = 2; size <= N; size <<= 1) {
+      const half = size >> 1, step = N / size;
+      for (let i = 0; i < N; i += size) for (let j = 0, k = 0; j < half; j++, k += step) {
+        const a = i + j, b = a + half, tr = re[b] * cos[k] - im[b] * sin[k], ti = re[b] * sin[k] + im[b] * cos[k];
+        re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+      }
+    }
+    const hz = rate / N, norm = 16 / (N * N);
+    const sum = (lo, hi) => { let p = 0; for (let k = Math.max(1, Math.round(lo / hz)), e = Math.min(N / 2, Math.round(hi / hz)); k < e; k++) p += (re[k] * re[k] + im[k] * im[k]) * norm; return p; };
+    return [sum(20, 150), sum(150, 2000), sum(2000, 12000)];
+  }
+  // levels, frame by frame: each band in dB against its own recent peak (30 dB below it is 0), eased by attack and
+  // release; the beat is bass power jumping well above its average over the last second, a pulse that decays
+  const newEnv = () => ({ peak: [-50, -50, -50], env: [0, 0, 0], avg: 0, since: 1, pulse: 0, lv: { bass: 0, mids: 0, highs: 0, beat: 0 } });
+  AUDIO.env = newEnv();
+  function stepEnv(E, P, dt) {
+    const RANGE = 30, gain = S.audioGain / 100, s = S.audioSmooth / 100;
+    const att = 0.015 + 0.1 * s, rel = 0.06 + 0.8 * s;
+    for (let b = 0; b < 3; b++) {
+      const db = 10 * Math.log10(P[b] + 1e-12);
+      E.peak[b] = Math.max(db, E.peak[b] - 3 * dt, -50);   // the loudest lately, falling 3 dB a second, never below -50 dB
+      const raw = clamp01(clamp01((db - E.peak[b] + RANGE) / RANGE) ** 1.5 * gain);
+      E.env[b] += (raw - E.env[b]) * (1 - Math.exp(-dt / (raw > E.env[b] ? att : rel)));
+    }
+    const bass = P[0];
+    E.since += dt;
+    if (bass > E.avg * (1 + 0.5 / gain) && E.since > 0.2 && 10 * Math.log10(bass + 1e-12) > E.peak[0] - 12) { E.pulse = 1; E.since = 0; }
+    E.avg += (bass - E.avg) * (1 - Math.exp(-dt));
+    E.pulse *= Math.exp(-dt / (0.08 + 0.3 * s));
+    E.lv.bass = E.env[0]; E.lv.mids = E.env[1]; E.lv.highs = E.env[2]; E.lv.beat = E.pulse;
+  }
+  function modsFrom(lv) {
+    zeroMods();
+    for (const m of S.audioMap) audioMod[m.target] += lv[m.band] * m.amount / 100 * AUDIO_TARGETS[m.target][1];
+  }
+  const freqNow = () => Math.min(16, Math.max(2, S.freq + Math.round(audioMod.freq)));
+  // colour from sound: every stroke and fill turns round the colour wheel (Hue; white, black and greys have none),
+  // or mixes toward the highlight colour (Tint). The background stays as set
+  function hueTurn(hex, deg) {
+    const [r, g, b] = hexRgb(hex).map(v => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
+    if (d < 1e-6) return hex;
+    const sat = d / (1 - Math.abs(2 * l - 1));
+    let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h = ((h * 60 + deg) % 360 + 360) % 360;
+    const c = (1 - Math.abs(2 * l - 1)) * sat, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2;
+    const [R, G, B] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+    return '#' + [R, G, B].map(v => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('');
+  }
+  const toneCache = new Map();
+  function tone(col) {
+    const h = Math.round(audioMod.hue), t = Math.round(clamp01(audioMod.tint) * 100) / 100;
+    if ((!h && !t) || !HEX6(col)) return col;
+    const key = col + h + '|' + t;
+    let v = toneCache.get(key);
+    if (!v) { if (toneCache.size > 4000) toneCache.clear(); v = mixHexC(hueTurn(col, h), S.accent, t); toneCache.set(key, v); }
+    return v;
+  }
 
   // ───────────────────────── projection & drawing ─────────────────────────
   // Base widths (px) for a 1000px artboard; tuned so 16v matches the SVG exports.
@@ -1426,7 +1583,7 @@
 
   // each layer's colour: its own override, or the strut colour
   const layerColors = () => ({ outer: S.cOuter || S.line, inner: S.cInner || S.line, web: S.cWeb || S.line });
-  const depthNow = () => S.breathe ? 75 * (1 - Math.cos(clock * 0.5)) : S.depth;
+  const depthNow = () => Math.max(0, Math.min(500, (S.breathe ? 75 * (1 - Math.cos(clock * 0.5)) : S.depth) + audioMod.depth));
 
   // split a layer's edges into groups by colour and by an alpha level (5 steps)
   function pushGrouped(layers, base, colorFn, alphaFn) {
@@ -1456,7 +1613,7 @@
     const fst = kind === 'facet' ? st : null, mst = kind === 'moire' ? st : null;
     const lst = kind === 'slice' ? st : null, xst = kind === 'scatter' ? st : null, tst = kind === 'tune' ? st : null;
     const scale = S.trueScale ? (tst ? tst.F : geo.freq) / 16 : 1;   // with constant struts, tune breathes the size too
-    const R = size / 2 * (S.zoom / 100) * scale, c = size / 2;
+    const R = size / 2 * (S.zoom / 100) * scale * Math.max(0.2, 1 + audioMod.size), c = size / 2;
     const rIn = Math.max(0.04, 1 - (depthNow() / 100) * geo.chord * Math.sqrt(2/3));   // deep trusses stop short of the centre
     const inflate = jst ? jst.inflate : ust ? ust.inflate : 1;
     const gridA = jst ? jst.gridA : pst ? pst.gridA : 1;
@@ -1485,7 +1642,7 @@
     const ring = n => { const E = []; for (let i = 0; i < n; i++) E.push(i, (i + 1) % n); return Uint32Array.from(E); };
     const polyline = n => { const E = []; for (let i = 0; i < n - 1; i++) E.push(i, i + 1); return Uint32Array.from(E); };
 
-    const px = size / 1000 * S.weight;
+    const px = size / 1000 * S.weight * Math.max(0.05, 1 + audioMod.weight);
     const lw = px;   // every stroke is the same width, set by Line weight
     const layers = [], fills = [], dots = [];
     const tok = (role, base) => S.grad[role].on ? 'grad:' + role : base;
@@ -1925,7 +2082,7 @@
       g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H); g.setTransform(ctx.getTransform());
     }
     const grads = {};
-    const paintOf = col => !isGrad(col) ? col : (grads[col] ||= (gr => canvasGrad(g, strutGeom(fr, gr.dir), gr.from, gr.to))(gradOf(roleOf(col))));
+    const paintOf = col => !isGrad(col) ? tone(col) : (grads[col] ||= (gr => canvasGrad(g, strutGeom(fr, gr.dir), tone(gr.from), tone(gr.to)))(gradOf(roleOf(col))));
     g.lineCap = S.cap; g.lineJoin = 'round';
     g.globalCompositeOperation = blend;   // each layer blends with what is drawn
     // clear the shape, then draw it (on the layer); directly, just draw it
@@ -2041,9 +2198,9 @@
     if (S.exportBg && S.grad.bg.on) defs.push(svgGrad('bg-gradient', gradGeom(0, 0, size, size, S.grad.bg.dir), S.bg, S.grad.bg.to));
     for (const col of new Set([...fr.layers, ...fr.fills, ...fr.dots].map(x => x.color).filter(isGrad))) {
       const g = gradOf(roleOf(col));
-      defs.push(svgGrad('grad-' + roleOf(col), strutGeom(fr, g.dir), g.from, g.to));
+      defs.push(svgGrad('grad-' + roleOf(col), strutGeom(fr, g.dir), tone(g.from), tone(g.to)));
     }
-    const svgPaint = col => isGrad(col) ? `url(#grad-${roleOf(col)})` : col;
+    const svgPaint = col => isGrad(col) ? `url(#grad-${roleOf(col)})` : tone(col);
     if (defs.length) out.push(`<defs>${defs.join('')}</defs>`);
     if (S.exportBg) out.push(`<rect width="100%" height="100%" fill="${S.grad.bg.on ? 'url(#bg-gradient)' : S.bg}"/>`);
     out.push(`<g fill="none" stroke-linecap="${S.cap}" stroke-linejoin="round">`);
@@ -2114,7 +2271,7 @@
 
   let lastLabel = null;
   function draw() {
-    const geo = build(S.freq);
+    const geo = build(freqNow());
     let fr;
     if (boardW === boardH) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -2138,7 +2295,7 @@
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
     if (exporting) { requestAnimationFrame(tick); return; }
     const frozen = anim.x < 1 && ANIMS[S.animKind].freezeSpin;
-    if (S.playing && !dragging && !frozen) theta += S.dir * S.speed * Math.PI / 180 * dt;
+    if (S.playing && !dragging && !frozen) theta += S.dir * (S.speed + audioMod.spin) * Math.PI / 180 * dt;
     if (S.playing && !dragging) clock += dt;
     if (anim.running) {
       anim.x = Math.min(1, anim.x + dt / ANIMS[S.animKind].dur());
@@ -2147,6 +2304,7 @@
     }
     if (!dragging) stepOrientation(dt);
     syncOrient();
+    hear(dt);
     requestAnimationFrame(tick);   // ask for the next frame first: a bad frame must never stop the loop
     try { draw(); } catch (e) { if (!tick.failed) { tick.failed = true; console.error(e); } }
   }
@@ -2314,7 +2472,7 @@
     $('matchStruts').disabled = !(S.cOuter || S.cInner || S.cWeb);
     syncEditor();
     document.querySelector(`input[name="cap"][value="${S.cap}"]`).checked = true;
-    readout(); legend(); syncAnim(); syncClip();
+    readout(); legend(); syncAnim(); syncClip(); syncAudioSettings();
     if (pin) pinLayout();
     if (!$('presets').hidden) keepReady();   // the copy buttons always have the current look's code at hand
   }
@@ -2667,7 +2825,7 @@
     Minus: () => stepDepth(-5), Equal: () => stepDepth(5),
     Semicolon: e => stepWeight(-1, e.shiftKey), Quote: e => stepWeight(1, e.shiftKey), NumpadSubtract: () => stepDepth(-5), NumpadAdd: () => stepDepth(5),
     KeyF: () => setFull(!isFull()), Escape: () => setFull(false), KeyR: e => randomLayers(e.shiftKey),
-    KeyV: () => stepBlend(-1), KeyB: () => stepBlend(1),
+    KeyV: () => stepBlend(-1), KeyB: () => stepBlend(1), KeyA: () => toggleSound(),
     ArrowLeft: e => orientKey(e, true), ArrowRight: e => orientKey(e, true), ArrowUp: e => orientKey(e, true),
     ArrowDown: e => orientKey(e, true), KeyQ: e => orientKey(e, true), KeyE: e => orientKey(e, true),
   };
@@ -2675,7 +2833,7 @@
     e => e.shiftKey && i < MAX_PINS ? recallPin(i) : toggleLayer(i);   // Shift + 1 to 4: the pinned presets
   // for synthetic keystrokes that carry no key position
   const BY_KEY = { '[': 'BracketLeft', ']': 'BracketRight', ',': 'Comma', '.': 'Period', '-': 'Minus', '=': 'Equal', '+': 'Equal',
-    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ';': 'Semicolon', "'": 'Quote', q: 'KeyQ', Q: 'KeyQ', r: 'KeyR', R: 'KeyR', v: 'KeyV', V: 'KeyV', b: 'KeyB', B: 'KeyB', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])), '!': 'Digit1', '@': 'Digit2', '#': 'Digit3', '$': 'Digit4' };
+    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ';': 'Semicolon', "'": 'Quote', q: 'KeyQ', Q: 'KeyQ', r: 'KeyR', R: 'KeyR', v: 'KeyV', V: 'KeyV', b: 'KeyB', B: 'KeyB', a: 'KeyA', A: 'KeyA', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])), '!': 'Digit1', '@': 'Digit2', '#': 'Digit3', '$': 'Digit4' };
   // Stepping keys repeat on their own timer while held, not by the keyboard's repeat: a keyboard repeats only the
   // last key pressed, so pressing anything else would stop a held depth or spin key. Now several can be held at once
   const STEPPED = new Set(['BracketLeft', 'BracketRight', 'Comma', 'Period', 'Minus', 'Equal', 'Semicolon', 'Quote', 'NumpadSubtract', 'NumpadAdd']);
@@ -2703,7 +2861,7 @@
   // (deflate) and written in URL-safe base64 after "ds1.". The panel tab, folded sections, export settings and play or
   // pause stay as they are. Presets are saved by name in this browser, up to four pinned (Shift + 1 to 4), and travel as
   // a code to paste or a link that opens with the preset applied.
-  const NOT_IN_PRESET = new Set(['tab', 'closed', 'custom', 'playing', 'exportBg', 'clip', 'quality', 'motionSize', 'loops', 'after']);
+  const NOT_IN_PRESET = new Set(['tab', 'closed', 'custom', 'playing', 'exportBg', 'clip', 'quality', 'motionSize', 'loops', 'after', 'trackLen']);
   const PRESET_KEYS = Object.keys(DEFAULTS).filter(k => !NOT_IN_PRESET.has(k));
   const PKEY = 'dymaxion-studio:presets', MAX_PINS = 4;
   let presets = [];
@@ -2888,14 +3046,14 @@
     return `geodesic_${S.freq}v${tag}${S.exportBg ? '_' + bgName : ''}`;
   };
   $('exSvg').addEventListener('click', () => {
-    const svg = toSVG(build(S.freq), 2000);
+    const svg = toSVG(build(freqNow()), 2000);
     offer(baseName() + '.svg', new Blob([svg], { type: 'image/svg+xml' }));
   });
   $('exPng').addEventListener('click', () => {
     const size = +$('pngSize').value, c = document.createElement('canvas');
     c.width = c.height = size;
     const cx = c.getContext('2d');
-    paint(cx, size, build(S.freq), S.exportBg);
+    paint(cx, size, build(freqNow()), S.exportBg);
     addGrain(cx, size, size, size / 1000, S.exportBg);
     c.toBlob(b => b ? offer(`${baseName()}_${size}.png`, b) : toast('Couldn’t render the PNG.'), 'image/png');
   });
@@ -2909,6 +3067,13 @@
   // a clip is n frames and a function giving the stage values for frame i
   function clipPlan(kind, fps) {
     const theta0 = theta, clock0 = clock;
+    if (kind === 'audio') {   // the track, or part of it from the playhead; frames come from audioSteps once it is decoded
+      const dur = trackDur();
+      if (!AUDIO.track || !dur) return null;
+      const from = S.trackLen === 'whole' ? 0 : Math.min(AUDIO.el.currentTime || 0, Math.max(0, dur - 1));
+      const T = S.trackLen === 'whole' ? dur : Math.min(+S.trackLen, dur - from);
+      return { kind, n: Math.max(2, Math.round(T * fps)), T, from, audio: true, at: null };
+    }
     if (kind === 'loop') {
       if (!(S.speed > 0)) return null;
       const sym = loopAngle(), T = sym / S.speed, per = Math.max(2, Math.round(T * fps)), k = S.loops || 1;
@@ -2930,6 +3095,30 @@
     } };
   }
 
+  // a Track clip, frame by frame: each frame hears the 2048 samples ending at its own moment, eased by the same
+  // envelopes as the live view (settled on the 3 s before the clip), so the clip moves exactly with its sound.
+  // Spin (with its sound offset) and the wobble clock run only if the sphere is playing, as they do live
+  function audioSteps(plan, pcm, fps) {
+    const rate = pcm.sampleRate, chans = Array.from({ length: pcm.numberOfChannels }, (_, c) => pcm.getChannelData(c));
+    const win = new Float32Array(FFT_N), E = newEnv(), dt = 1 / fps, moving = S.playing, x0 = anim.x;
+    const hearAt = t => {
+      const end = Math.round(t * rate);
+      for (let i = 0; i < FFT_N; i++) {
+        const j = end - FFT_N + i; let v = 0;
+        if (j >= 0 && j < pcm.length) for (const ch of chans) v += ch[j];
+        win[i] = v / chans.length;
+      }
+      stepEnv(E, bandPower(win, rate), dt);
+    };
+    for (let t = Math.max(0, plan.from - 3); t < plan.from - dt / 2; t += dt) hearAt(t);
+    let th = theta, ck = clock;
+    return i => {
+      hearAt(plan.from + i * dt); modsFrom(E.lv);
+      if (i && moving) { th += S.dir * (S.speed + audioMod.spin) * Math.PI / 180 * dt; ck += dt; }
+      return { theta: th, clock: ck, x: x0 };
+    };
+  }
+
   // video bits per pixel: line art moving every frame needs far more than camera footage
   const BPP = { standard: 0.3, high: 1.0, max: 1.6 };
   // output frame: square, or a 9:16 Reel with the square sphere frame centred
@@ -2944,7 +3133,7 @@
     cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, d.W, d.H);
     if (solid) fillBg(cx, 0, 0, d.W, d.H);   // the whole frame, so a Reel's gradient runs top to bottom
     cx.setTransform(1, 0, 0, 1, 0, d.offY);
-    paint(cx, d.side, geo, solid ? 'keep' : false);
+    paint(cx, d.side, build(freqNow()), solid ? 'keep' : false);   // sound can step the frequency
     cx.setTransform(1, 0, 0, 1, 0, 0);
     if (solid) addGrain(cx, d.W, d.H, d.side / 1000, true);
   }
@@ -2952,23 +3141,27 @@
   function syncClip() {
     document.querySelector(`input[name="clip"][value="${S.clip}"]`).checked = true;
     $('clipAnimSub').textContent = S.animKind;
+    $('clipTrackSub').textContent = AUDIO.track ? AUDIO.track.name : 'with its sound';
     const p = clipPlan(S.clip, MP4_FPS);
     const busy = !!exporting;
     if (!p) {
-      $('clipInfo').textContent = 'set a speed above 0';
+      $('clipInfo').textContent = S.clip === 'audio' ? (AUDIO.track ? 'reading the track…' : 'choose a track under Motion › Audio') : 'set a speed above 0';
     } else {
-      const secs = `${p.T.toFixed(p.T < 10 ? 1 : 0)} s`;
+      const secs = p.T < 60 ? `${p.T.toFixed(p.T < 10 ? 1 : 0)} s` : mmss(p.T);
       const mb = Math.max(1, Math.round(mp4Bitrate() * 1.05 * p.T / 8 / 1e6));
       $('clipInfo').textContent = (p.kind === 'loop' ? `${p.sym}° turn${p.loops > 1 ? ` × ${p.loops}` : ''} · ${secs}`
+        : p.kind === 'audio' ? `${p.from ? `from ${mmss(p.from)} · ` : ''}${secs}`
         : `${S.animKind}${p.after ? ` + ${p.after} × ${p.sym}°` : ''} · ${secs}`) + ` · MP4 ≈ ${mb} MB`;
     }
+    $('trackLenRow').hidden = $('trackNote').hidden = S.clip !== 'audio';
+    $('trackLen').value = S.trackLen; $('trackLen').disabled = busy;
     $('exGif').disabled = !p || (busy && exporting.kind !== 'gif');
     $('exMp4').disabled = !p || (busy && exporting.kind !== 'mp4');
     $('motionSize').disabled = busy;
     $('motionSize').value = S.motionSize;
     $('loops').value = String(S.loops); $('loops').disabled = busy;
     $('after').value = String(S.after); $('after').disabled = busy || !(S.speed > 0);
-    $('loopsRow').hidden = S.clip !== 'loop'; $('afterRow').hidden = S.clip === 'loop';
+    $('loopsRow').hidden = S.clip !== 'loop'; $('afterRow').hidden = S.clip !== 'anim';
     document.querySelector(`input[name="quality"][value="${S.quality}"]`).checked = true;
     document.querySelectorAll('input[name="quality"]').forEach(r => { r.disabled = busy; });
     $('qualityVal').textContent = `${Math.round(mp4Bitrate() / 1e6)} Mbps`;
@@ -3007,8 +3200,10 @@
       toast('MP4 export needs a browser with video encoding: Chrome, Edge or Safari 16.4 and later.'); return;
     }
     const dims = frameDims();
-    const saved = { theta, clock, x: anim.x, running: anim.running };
+    const saved = { theta, clock, x: anim.x, running: anim.running, mods: { ...audioMod } };
     exporting = { kind, cancel: false };
+    zeroMods();   // a loop or animation clip is the settings as set; a Track clip sets the offsets frame by frame
+    if (AUDIO.el && !AUDIO.el.paused) AUDIO.el.pause();
     anim.running = false;
     const btn = kind === 'gif' ? $('exGif') : $('exMp4');
     btn.classList.add('busy');
@@ -3019,12 +3214,17 @@
       const c = document.createElement('canvas'); c.width = dims.W; c.height = dims.H;
       const cx = c.getContext('2d', { willReadFrequently: kind === 'gif' });
       const geo = build(S.freq);
+      if (plan.audio) {
+        let pcm;
+        try { pcm = await AUDIO.track.pcm; } catch { throw new Error('the track couldn’t be decoded'); }
+        plan.at = audioSteps(plan, pcm, fps); plan.pcm = pcm;
+      }
       const frameAt = i => { const v = plan.at(i); theta = v.theta; clock = v.clock; anim.x = v.x; };
       blob = kind === 'gif' ? await encodeGif(plan, c, cx, geo, frameAt, fps, dims)
                             : await encodeMp4(plan, c, cx, geo, frameAt, fps, dims);
     } catch (e) { failed = e; console.error(e); }
-    theta = saved.theta; clock = saved.clock; anim.x = saved.x; anim.running = saved.running;
-    const cancelled = exporting.cancel;
+    theta = saved.theta; clock = saved.clock; anim.x = saved.x; anim.running = saved.running; Object.assign(audioMod, saved.mods);
+    const cancelled = exporting.cancel, silent = exporting.silent;
     btn.classList.remove('busy'); btn.textContent = kind === 'gif' ? 'GIF' : 'MP4';
     exporting = null; setProgress(null); syncClip(); syncAnim();
     if (cancelled) { toast('Export cancelled.'); return; }
@@ -3034,7 +3234,10 @@
         : `Couldn’t encode the ${kind.toUpperCase()}: ${failed.message || 'unknown error'}.`);
       return;
     }
-    if (blob) offer(`geodesic_${S.freq}v_${plan.kind === 'loop' ? 'loop' + (plan.loops > 1 ? 'x' + plan.loops : '') : S.animKind + (plan.after ? '+loop' + plan.after : '')}_${dims.tag}.${kind}`, blob);
+    const slug = () => AUDIO.track.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 32) || 'track';
+    if (blob) await offer(`geodesic_${S.freq}v_${plan.kind === 'loop' ? 'loop' + (plan.loops > 1 ? 'x' + plan.loops : '')
+      : plan.kind === 'audio' ? slug() : S.animKind + (plan.after ? '+loop' + plan.after : '')}_${dims.tag}.${kind}`, blob);
+    if (blob && silent) toast(silent);
   }
 
   async function encodeGif(plan, c, cx, geo, frameAt, fps, dims) {
@@ -3094,15 +3297,45 @@
       try { if ((await VideoEncoder.isConfigSupported(cand)).supported) { config = cand; break; } } catch {}
     }
     if (!config) throw new Error(`this browser can’t encode H.264 video at ${W}×${H}`);
+    // the sound of a Track clip: AAC where the browser can encode it, else Opus, else the video goes without
+    const pcm = plan.pcm, ach = pcm ? Math.min(2, pcm.numberOfChannels) : 0, rate = pcm ? pcm.sampleRate : 0;
+    let aconf = null;
+    if (pcm && typeof AudioEncoder !== 'undefined') {
+      for (const [codec, mux] of [['mp4a.40.2', 'aac'], ['opus', 'opus']]) {
+        const cand = { codec, sampleRate: rate, numberOfChannels: ach, bitrate: 192000 };
+        try { if ((await AudioEncoder.isConfigSupported(cand)).supported) { aconf = { cand, mux }; break; } } catch {}
+      }
+    }
+    if (pcm && !aconf) exporting.silent = 'Saved without sound: this browser can’t encode audio. Chrome or Edge can.';
+    else if (aconf && aconf.mux === 'opus') exporting.silent = 'The sound is Opus, which some players (QuickTime) can’t play. Chrome or Edge on a Mac or PC write AAC.';
     const muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(),
-      video: { codec: 'avc', width: W, height: H, frameRate: fps }, fastStart: 'in-memory' });
+      video: { codec: 'avc', width: W, height: H, frameRate: fps },
+      ...(aconf ? { audio: { codec: aconf.mux, sampleRate: rate, numberOfChannels: ach } } : {}),
+      fastStart: 'in-memory', firstTimestampBehavior: 'offset' });
     let encErr = null;
     const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: e => { encErr = e; } });
     enc.configure(config);
+    let aenc = null, sent = 0;
+    const s0 = pcm ? Math.round(plan.from * rate) : 0, total = pcm ? Math.max(0, Math.min(pcm.length - s0, Math.round(plan.T * rate))) : 0;
+    if (aconf) {
+      aenc = new AudioEncoder({ output: (chunk, meta) => muxer.addAudioChunk(chunk, meta), error: e => { encErr = e; } });
+      aenc.configure(aconf.cand);
+    }
+    const feedAudio = upTo => {   // sound up to upTo seconds into the clip
+      const end = Math.min(total, Math.round(upTo * rate));
+      while (aenc && sent < end) {
+        const len = Math.min(4096, end - sent), data = new Float32Array(len * ach);
+        for (let c = 0; c < ach; c++) data.set(pcm.getChannelData(c).subarray(s0 + sent, s0 + sent + len), c * len);
+        const ad = new AudioData({ format: 'f32-planar', sampleRate: rate, numberOfFrames: len, numberOfChannels: ach,
+                                   timestamp: Math.round(sent / rate * 1e6), data });
+        aenc.encode(ad); ad.close(); sent += len;
+      }
+    };
     const us = 1e6 / fps;
     for (let i = 0; i < plan.n; i++) {
-      if (exporting.cancel) { try { enc.close(); } catch {} return null; }
+      if (exporting.cancel) { try { enc.close(); aenc?.close(); } catch {} return null; }
       if (encErr) throw encErr;
+      feedAudio((i + 1) / fps);
       frameAt(i);
       drawFrame(cx, dims, geo, true);                 // video has no alpha: always on the background
       const vf = new VideoFrame(c, { timestamp: Math.round(i * us), duration: Math.round(us) });
@@ -3112,7 +3345,9 @@
       setProgress((i + 1) / plan.n * 0.97, `${Math.round((i + 1) / plan.n * 97)}% · cancel`);
       if (i % 3 === 2) await nextTick();
     }
+    feedAudio(plan.T + 1);
     await enc.flush();
+    if (aenc) { await aenc.flush(); aenc.close(); }
     if (encErr) throw encErr;
     enc.close();
     muxer.finalize();
@@ -3126,6 +3361,252 @@
   document.querySelectorAll('input[name="quality"]').forEach(r => r.addEventListener('change', () => set('quality', r.value)));
   $('exGif').addEventListener('click', () => runExport('gif'));
   $('exMp4').addEventListener('click', () => runExport('mp4'));
+  $('trackLen').addEventListener('change', e => set('trackLen', e.target.value));
+
+  // ───────────────────────── audio: track, input, recording ─────────────────────────
+  // A track plays through an <audio> element into the page's audio graph (heard, and measured); an input is only
+  // measured, never played back. Either feeds one analyser, read each frame by hear(). A track is also decoded once,
+  // for Track clips. A recording of the input becomes the track, as a WAV, so it seeks and exports like a file.
+  const mmss = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+  const trackDur = () => AUDIO.el && isFinite(AUDIO.el.duration) && AUDIO.el.duration > 0 ? AUDIO.el.duration : (AUDIO.track?.dur || 0);
+  function ensureAudio() {
+    const A = AUDIO;
+    if (!A.ctx) {
+      A.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      A.an = A.ctx.createAnalyser(); A.an.fftSize = FFT_N; A.buf = new Float32Array(FFT_N);
+      const mute = A.ctx.createGain(); mute.gain.value = 0;
+      A.an.connect(mute); mute.connect(A.ctx.destination);   // keeps the analyser running when nothing is played back
+      A.el = new Audio(); A.el.preload = 'auto';
+      const node = A.ctx.createMediaElementSource(A.el);
+      node.connect(A.an); node.connect(A.ctx.destination);
+      for (const ev of ['play', 'pause', 'ended']) A.el.addEventListener(ev, syncAudio);
+      for (const ev of ['loadedmetadata', 'durationchange']) A.el.addEventListener(ev, () => { syncAudio(); syncClip(); });
+    }
+    if (A.ctx.state === 'suspended') A.ctx.resume().catch(() => {});
+    return A.ctx;
+  }
+  const SILENT = [0, 0, 0];
+  function hear(dt) {
+    const A = AUDIO;
+    if (!A.ctx) return;
+    let P = SILENT;
+    if ((A.el && !A.el.paused) || A.stream) { A.an.getFloatTimeDomainData(A.buf); P = bandPower(A.buf, A.ctx.sampleRate); }
+    stepEnv(A.env, P, dt);
+    if (A.on) modsFrom(A.env.lv); else zeroMods();
+    const lv = A.env.lv, bars = hear.bars ||= [...document.querySelectorAll('#meters b')];
+    ['bass', 'mids', 'highs', 'beat'].forEach((b, i) => {
+      const v = Math.round(lv[b] * 100) / 100;
+      if (bars[i].v !== v) { bars[i].v = v; bars[i].style.transform = `scaleX(${v})`; }
+    });
+    const now = performance.now();
+    if (now - (hear.t || 0) > 150) { hear.t = now; showTrackTime(); }
+  }
+  let trackSeeking = false;
+  function showTrackTime() {
+    const A = AUDIO, d = trackDur();
+    $('trackTime').textContent = A.track ? `${mmss(A.el.currentTime || 0)} / ${d ? mmss(d) : '…'}` : '';
+    if (A.track && !trackSeeking) $('trackPos').value = d ? Math.round(A.el.currentTime / d * 1000) : 0;
+    if (A.rec) $('inputRec').textContent = `Stop · ${mmss((performance.now() - A.recT0) / 1000)}`;
+  }
+  function syncAudio() {
+    const A = AUDIO, tr = A.track, playing = !!(A.el && !A.el.paused);
+    $('audioOn').checked = A.on;
+    document.querySelector(`input[name="asrc"][value="${A.src}"]`).checked = true;
+    $('trackBox').hidden = A.src !== 'track'; $('inputBox').hidden = A.src !== 'input';
+    $('trackName').textContent = tr ? tr.name : 'or drop one on the page';
+    $('trackName').title = tr ? tr.name : '';
+    $('trackPick').textContent = tr ? 'Choose another' : 'Choose a track';
+    $('trackPlay').disabled = $('trackPos').disabled = !tr;
+    $('trackPlay').textContent = playing ? 'Pause' : 'Play';
+    $('recSave').hidden = !(tr && tr.rec);
+    $('inputListen').textContent = A.stream ? 'Stop listening' : 'Listen';
+    $('inputRec').disabled = !A.stream;
+    $('inputRec').classList.toggle('busy', !!A.rec);
+    if (!A.rec) $('inputRec').textContent = 'Record';
+    showTrackTime();
+  }
+  function syncAudioSettings() {
+    const host = $('amaps');
+    if (host.children.length !== S.audioMap.length) {
+      const opts = o => Object.entries(o).map(([v, t]) => `<option value="${v}">${Array.isArray(t) ? t[0] : t}</option>`).join('');
+      host.innerHTML = S.audioMap.map((m, i) => `<div class="amap" data-i="${i}">` +
+        `<select data-k="band" aria-label="Sound">${opts(AUDIO_BANDS)}</select>` +
+        `<select data-k="target" aria-label="Moves">${opts(AUDIO_TARGETS)}</select>` +
+        `<button type="button" class="pre-act" data-k="del" aria-label="Remove this link">×</button>` +
+        `<input type="range" data-k="amount" min="-100" max="100" step="1" aria-label="How much"><span class="val"></span></div>`).join('');
+    }
+    host.querySelectorAll('.amap').forEach((row, i) => {
+      const m = S.audioMap[i], [band, target] = row.querySelectorAll('select'), r = row.querySelector('input');
+      band.value = m.band; target.value = m.target;
+      if (document.activeElement !== r) r.value = m.amount;
+      row.querySelector('.val').textContent = amountText(m);
+    });
+    $('amapEmpty').hidden = S.audioMap.length > 0;
+    $('amapAdd').disabled = S.audioMap.length >= 8;
+    $('audioGain').value = S.audioGain; $('audioGainVal').textContent = `${S.audioGain}%`;
+    $('audioSmooth').value = S.audioSmooth; $('audioSmoothVal').textContent = S.audioSmooth ? `${S.audioSmooth}%` : 'none';
+  }
+  // what a link does at full level
+  function amountText({ target, amount }) {
+    const a = amount / 100, k = AUDIO_TARGETS[target][1] * a, sg = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v);
+    return target === 'depth' ? `${sg(Math.round(k))}%` : target === 'weight' ? `×${Math.max(0.05, 1 + k).toFixed(2)}`
+      : target === 'freq' ? `${sg(Math.round(k))}v` : target === 'size' ? `${sg(Math.round(k * 100))}%`
+      : target === 'spin' ? `${sg(Math.round(k))}°/s` : target === 'hue' ? `${sg(Math.round(k))}°` : `${Math.round(clamp01(k) * 100)}%`;
+  }
+  function setAudioOn(on) { AUDIO.on = on; if (!on) zeroMods(); syncAudio(); }
+  function pauseTrack() { if (AUDIO.el && !AUDIO.el.paused) AUDIO.el.pause(); }
+  function stopInput() {
+    const A = AUDIO;
+    if (A.rec && A.rec.state !== 'inactive') A.rec.stop();
+    if (A.inNode) { A.inNode.disconnect(); A.inNode = null; }
+    if (A.stream) { A.stream.getTracks().forEach(t => t.stop()); A.stream = null; }
+  }
+  function setSource(src) {
+    AUDIO.src = src;
+    if (src === 'track') stopInput(); else pauseTrack();
+    syncAudio();
+  }
+  async function useTrack(blob, name, opt = {}) {
+    const A = AUDIO, ctx = ensureAudio();
+    setSource('track');
+    if (A.url) URL.revokeObjectURL(A.url);
+    A.url = URL.createObjectURL(blob);
+    const tr = A.track = { name: name.replace(/\.[a-z0-9]{2,5}$/i, '') || 'Track', blob, rec: !!opt.rec, dur: opt.pcm ? opt.pcm.duration : 0 };
+    tr.pcm = opt.pcm ? Promise.resolve(opt.pcm) : blob.arrayBuffer().then(b => ctx.decodeAudioData(b));
+    tr.pcm.then(p => { tr.dur = p.duration; if (A.track === tr) { syncAudio(); syncClip(); } },
+                () => { if (A.track === tr) toast('This track plays, but can’t be read for a clip export.'); });
+    A.el.src = A.url;
+    A.on = true;
+    if (S.clip !== 'audio') { S.clip = 'audio'; persist(); }
+    syncAudio(); syncClip();
+    if (opt.play === false) return;
+    try { await A.el.play(); } catch { toast('Press Play to start the track.'); }
+  }
+  async function listInputs() {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    let devs = [];
+    try { devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput' && d.deviceId && d.deviceId !== 'default'); } catch {}
+    const sel = $('inputDev'), cur = sel.value;
+    sel.replaceChildren(new Option('Default input', ''), ...devs.map((d, i) => new Option(d.label || `Input ${i + 1}`, d.deviceId)));
+    sel.value = devs.some(d => d.deviceId === cur) ? cur : '';
+  }
+  async function listen() {
+    if (AUDIO.stream) { stopInput(); syncAudio(); return; }
+    if (!navigator.mediaDevices?.getUserMedia) { toast('This browser can’t open an audio input here.'); return; }
+    const ctx = ensureAudio(), id = $('inputDev').value;
+    pauseTrack();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { ...(id ? { deviceId: { exact: id } } : {}),
+        echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 2 } } });
+      AUDIO.stream = stream; AUDIO.inNode = ctx.createMediaStreamSource(stream); AUDIO.inNode.connect(AUDIO.an);
+      stream.getAudioTracks()[0]?.addEventListener('ended', () => { stopInput(); syncAudio(); });
+      AUDIO.on = true;
+      listInputs();
+    } catch (e) {
+      toast(e.name === 'NotAllowedError' ? 'The browser didn’t allow the input. Allow it for this site and try again.'
+        : ['NotFoundError', 'OverconstrainedError'].includes(e.name) ? 'No audio input found.' : 'Couldn’t open the input.');
+    }
+    syncAudio();
+  }
+  function record() {
+    const A = AUDIO;
+    if (A.rec) { A.rec.stop(); return; }
+    if (!A.stream || typeof MediaRecorder === 'undefined') { toast('This browser can’t record the input.'); return; }
+    const type = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg'].find(t => MediaRecorder.isTypeSupported?.(t)) || '';
+    const rec = new MediaRecorder(A.stream, type ? { mimeType: type, audioBitsPerSecond: 256000 } : undefined), parts = [];
+    rec.ondataavailable = e => { if (e.data.size) parts.push(e.data); };
+    rec.onstop = async () => {
+      A.rec = null; syncAudio();
+      try {
+        const pcm = await A.ctx.decodeAudioData(await new Blob(parts, { type: rec.mimeType || type }).arrayBuffer());
+        const name = `Recording ${new Date().toTimeString().slice(0, 5)}`;
+        await useTrack(wavOf(pcm), name, { pcm, rec: true, play: false });
+        toast(`${name} is the track now: play it, or export a Track clip with its sound.`);
+      } catch (e) { console.error(e); toast('Couldn’t read the recording.'); }
+    };
+    rec.start(1000); A.rec = rec; A.recT0 = performance.now();
+    syncAudio();
+  }
+  // 16-bit PCM WAV of a decoded buffer (up to two channels)
+  function wavOf(buf) {
+    const ch = Math.min(2, buf.numberOfChannels), n = buf.length, rate = buf.sampleRate, bytes = n * ch * 2;
+    const v = new DataView(new ArrayBuffer(44 + bytes)), str = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+    str(0, 'RIFF'); v.setUint32(4, 36 + bytes, true); str(8, 'WAVE'); str(12, 'fmt '); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, ch, true); v.setUint32(24, rate, true); v.setUint32(28, rate * ch * 2, true);
+    v.setUint16(32, ch * 2, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, bytes, true);
+    const data = Array.from({ length: ch }, (_, c) => buf.getChannelData(c));
+    for (let i = 0, o = 44; i < n; i++) for (let c = 0; c < ch; c++, o += 2) v.setInt16(o, Math.max(-1, Math.min(1, data[c][i])) * 0x7fff, true);
+    return new Blob([v], { type: 'audio/wav' });
+  }
+  function toggleSound() {
+    setAudioOn(!AUDIO.on);
+    toast(!AUDIO.on ? 'Sound off' : AUDIO.track || AUDIO.stream ? 'Sound on' : 'Sound on · choose a track or an input under Motion › Audio');
+  }
+
+  $('audioOn').addEventListener('change', e => setAudioOn(e.target.checked));
+  document.querySelectorAll('input[name="asrc"]').forEach(r => r.addEventListener('change', () => {
+    setSource(r.value);
+    if (r.value === 'input') listInputs();
+  }));
+  $('trackPick').addEventListener('click', () => { ensureAudio(); $('trackFile').click(); });
+  $('trackFile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) useTrack(f, f.name); });
+  $('trackPlay').addEventListener('click', () => {
+    const A = AUDIO;
+    if (!A.track) return;
+    ensureAudio();
+    if (!A.el.paused) { A.el.pause(); return; }
+    setSource('track');
+    A.el.play().catch(() => toast('Couldn’t play the track.'));
+  });
+  $('trackPos').addEventListener('input', e => {
+    trackSeeking = true;
+    const d = trackDur(); if (d) AUDIO.el.currentTime = e.target.value / 1000 * d;
+    showTrackTime();
+  });
+  $('trackPos').addEventListener('change', () => { trackSeeking = false; syncClip(); });
+  $('recSave').addEventListener('click', () => { const tr = AUDIO.track; if (tr) offer(`${tr.name.replace(/[^A-Za-z0-9]+/g, '-')}.wav`, tr.blob); });
+  $('inputListen').addEventListener('click', listen);
+  $('inputRec').addEventListener('click', record);
+  $('inputDev').addEventListener('change', async () => { if (AUDIO.stream) { stopInput(); await listen(); } });
+  navigator.mediaDevices?.addEventListener?.('devicechange', listInputs);
+  $('amaps').addEventListener('input', e => {
+    const row = e.target.closest('.amap');
+    if (!row || e.target.dataset.k !== 'amount') return;
+    const m = S.audioMap[+row.dataset.i]; m.amount = +e.target.value;
+    row.querySelector('.val').textContent = amountText(m); persist();
+  });
+  $('amaps').addEventListener('change', e => {
+    const row = e.target.closest('.amap'), k = e.target.dataset.k;
+    if (!row || !['band', 'target'].includes(k)) return;
+    S.audioMap[+row.dataset.i][k] = e.target.value; sync(); persist();
+  });
+  $('amaps').addEventListener('click', e => {
+    const b = e.target.closest('[data-k="del"]');
+    if (!b) return;
+    S.audioMap.splice(+b.closest('.amap').dataset.i, 1); sync(); persist();
+  });
+  $('amapAdd').addEventListener('click', () => {
+    const used = new Set(S.audioMap.map(m => m.target)), target = Object.keys(AUDIO_TARGETS).find(t => !used.has(t)) || 'depth';
+    S.audioMap.push({ band: 'beat', target, amount: 40 }); sync(); persist();
+  });
+  $('audioGain').addEventListener('input', e => set('audioGain', +e.target.value));
+  $('audioSmooth').addEventListener('input', e => set('audioSmooth', +e.target.value));
+  // drop an audio file anywhere on the page
+  const isAudioFile = f => /^audio\//.test(f.type) || /\.(mp3|wav|m4a|aac|ogg|oga|opus|flac|aiff?|caf|weba)$/i.test(f.name);
+  addEventListener('dragover', e => {
+    if (!e.dataTransfer?.types?.includes('Files')) return;
+    e.preventDefault(); document.body.classList.add('dropping');
+  });
+  addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('dropping'); });
+  addEventListener('drop', e => {
+    document.body.classList.remove('dropping');
+    const files = [...(e.dataTransfer?.files || [])];
+    if (!files.length) return;
+    e.preventDefault();
+    const f = files.find(isAudioFile);
+    if (!f) { toast('That isn’t an audio file.'); return; }
+    useTrack(f, f.name).then(() => toast(`Track · ${AUDIO.track.name}`));
+  });
 
   // test hook for the studio's own checks (no effect on the page)
   window.__studio = { build, V, PHI, FACES, GC, LCD, POLY, NET, FOLD_DEG, jbVerts, jbRadius, twistDeg, growChain, strutClasses,
