@@ -3552,15 +3552,29 @@
     sel.replaceChildren(new Option('All inputs', ''), ...names.map(nm => new Option(nm, nm)));
     sel.value = S.midiIn;
     if (MIDI.access) for (const i of MIDI.access.inputs.values()) i.onmidimessage = onMidi;
+    if (MIDI.on && !MIDI.voices.size) MIDI.info = listening();
   }
+  // what the panel says until a note or knob arrives: which inputs are heard, or why none are
+  function listening() {
+    const names = MIDI.access ? [...MIDI.access.inputs.values()].map(i => i.name) : [];
+    if (!names.length) return 'No MIDI input found: check the USB cable, then turn MIDI off and on';
+    const heard = S.midiIn ? names.filter(n => n === S.midiIn) : names;
+    return heard.length ? `Listening · ${heard.join(', ')}` : `${S.midiIn} isn’t connected`;
+  }
+  function midiStatus(text) { MIDI.info = text; $('noteInfo').textContent = text; }
   async function setMidiOn(on) {
     if (on && !MIDI.access) {
-      if (!navigator.requestMIDIAccess) { toast('This browser has no MIDI. Chrome or Edge do.'); on = false; }
-      else try { MIDI.access = await navigator.requestMIDIAccess(); MIDI.access.onstatechange = listMidiInputs; listMidiInputs(); }
-      catch { toast('MIDI wasn’t allowed here.'); on = false; }
+      if (!navigator.requestMIDIAccess) { midiStatus('This browser has no MIDI: open the studio in Chrome or Edge'); toast('This browser has no MIDI. Chrome or Edge do.'); on = false; }
+      else try { MIDI.access = await navigator.requestMIDIAccess(); MIDI.access.onstatechange = listMidiInputs; }
+      catch {
+        // refused by the person, or by the page holding the studio (an embedded preview or artifact frame)
+        midiStatus(window.top !== window ? 'MIDI is blocked inside this frame: open the studio in its own Chrome tab' : 'MIDI was refused: allow it from the site settings (the icon left of the address)');
+        toast('MIDI wasn’t allowed here.'); on = false;
+      }
     }
     MIDI.on = on;
     if (!on) { MIDI.voices.clear(); MIDI.held.clear(); MIDI.level = 0; }
+    else listMidiInputs();
     $('midiOn').checked = on;
     if (on) toast(MIDI.access && MIDI.access.inputs.size ? 'MIDI on · play a note' : 'MIDI on · no input found yet');
   }
@@ -3583,7 +3597,7 @@
     if (MIDI.info !== showNotes.info) { showNotes.info = MIDI.info; $('noteInfo').textContent = MIDI.info || 'no notes yet'; }
   }
   $('midiOn').addEventListener('change', e => { setMidiOn(e.target.checked).then(() => { if (MIDI.on && !S.audioMap.some(m => m.band === 'notes')) addNotesLink(); }); });
-  $('midiDev').addEventListener('change', e => { S.midiIn = e.target.value; MIDI.voices.clear(); MIDI.held.clear(); persist(); });
+  $('midiDev').addEventListener('change', e => { S.midiIn = e.target.value; MIDI.voices.clear(); MIDI.held.clear(); persist(); if (MIDI.on) midiStatus(listening()); });
   for (const [id, k] of [['envA', 'midiA'], ['envD', 'midiD'], ['envR', 'midiR']]) $(id).addEventListener('input', e => set(k, envMs(k, +e.target.value)));
   $('envS').addEventListener('input', e => set('midiS', +e.target.value));
   $('midiFollow').addEventListener('change', e => set('midiFollow', e.target.checked));
