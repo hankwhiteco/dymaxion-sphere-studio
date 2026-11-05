@@ -1670,7 +1670,13 @@
     if (!AUDIO.on && !MIDI.on) { zeroMods(); return; }
     modsFrom({ ...(AUDIO.on && lv ? lv : NO_SOUND), notes: MIDI.on ? MIDI.level : 0 });
   }
-  const freqNow = () => Math.min(16, Math.max(2, S.freq + Math.round(audioMod.freq)));
+  // sound steps the frequency from the one set; at an end of the range (2v, 16v) it bounces back rather than
+  // stopping, so a link that raises 16v still moves it (down)
+  const freqNow = () => {
+    let v = S.freq + Math.round(audioMod.freq);
+    if (v > 16) v = 32 - v; if (v < 2) v = 4 - v;
+    return Math.min(16, Math.max(2, v));
+  };
   // colour from sound: every stroke and fill turns round the colour wheel (Hue; white, black and greys have none),
   // or mixes toward the highlight colour (Tint). The background stays as set
   function hueTurn(hex, deg) {
