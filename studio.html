@@ -720,6 +720,15 @@
         <span class="meter" title="Where the tone's energy sits: follows a filter's cutoff"><i><b></b></i>Brightness<small>follows the cutoff knob</small></span><span class="meter" title="How sharply one frequency stands out: follows a filter's resonance"><i><b></b></i>Resonance<small>follows the resonance knob</small></span>
         <span class="meter shape" title="How steep the wave is: a sine is soft, a saw or square through an open filter is sharp"><i><b></b></i>Sharpness<small>soft to sharp</small></span><span class="meter shape" title="How much of each cycle sits at its extremes: a saw is pointy, a square is full"><i><b></b></i>Squareness<small>pointy to square</small></span><span class="meter shape" title="Extra wiggles each cycle, as a resonant filter rings"><i><b></b></i>Ringing<small>wiggles per cycle</small></span>
       </div>
+      <div class="row">
+        <label for="wrapAmt">Wrap the wave</label><span class="val" id="wrapAmtVal"></span>
+        <input type="range" id="wrapAmt" min="0" max="100" step="1">
+      </div>
+      <div class="row">
+        <label for="wrapCycles">Cycles around</label><span class="val" id="wrapCyclesVal"></span>
+        <input type="range" id="wrapCycles" min="1" max="12" step="1">
+      </div>
+      <p class="note">The scope&rsquo;s wave, wrapped round the sphere like a round scope: a sine swells smoothly, a square steps, a saw ramps, and resonance ripples. Turn the filter and the sphere changes shape with the wave.</p>
       <div class="row"><span class="lbl">Sound and notes move</span><span class="val">at full level</span></div>
       <div class="amaps" id="amaps"></div>
       <p class="note" id="amapEmpty" hidden>Nothing yet. Add a link to let a band, or MIDI notes, move a control.</p>
@@ -1407,6 +1416,7 @@
     audioMap: [{ band: 'bass', target: 'depth', amount: 60 }, { band: 'beat', target: 'size', amount: 30 },
                { band: 'mids', target: 'weight', amount: 40 }, { band: 'highs', target: 'tint', amount: 35 }],
     audioGain: 100, audioSmooth: 40, trackLen: 'whole',
+    wrapAmt: 0, wrapCycles: 3,   // the sound's wave wrapped round the sphere: how far it pushes (%), and cycles round
     // MIDI notes: one envelope per note (attack, decay and release in ms, sustain in %), velocity sets its height
     midiA: 10, midiD: 600, midiS: 40, midiR: 900, midiVel: true, midiFollow: true, midiIn: '',
   };
@@ -1456,6 +1466,7 @@
     S.audioGain = Math.max(25, Math.min(400, Math.round(S.audioGain))); S.audioSmooth = Math.max(0, Math.min(100, Math.round(S.audioSmooth)));
     for (const k of Object.keys(ENV_MS)) S[k] = Math.max(ENV_MS[k][0], Math.min(ENV_MS[k][1], Math.round(S[k])));
     S.midiS = Math.max(0, Math.min(100, Math.round(S.midiS)));
+    S.wrapAmt = Math.max(0, Math.min(100, Math.round(S.wrapAmt))); S.wrapCycles = Math.max(1, Math.min(12, Math.round(S.wrapCycles)));
     if (typeof S.midiIn !== 'string') S.midiIn = '';
   }
   tidyState();
@@ -1574,6 +1585,36 @@
     const sharp = Math.sqrt(ds / (N - 1)) / (rms * 2 * Math.sin(Math.PI * Math.min(f, rate / 4) / rate));
     return [sharp, rms / pk, turns / cross, f];
   }
+
+  // The wave, wrapped: one cycle of the sound, as the scope shows it, kept as 256 points from -1 to 1. A cycle runs
+  // from one rising crossing of the middle line to the next (each after a dip past half the trough, so a resonant
+  // wiggle doesn't start one); it is sized against the loudest of the last few seconds, so a quiet sound pushes
+  // less, and eased frame to frame by Smoothing. Under -55 dB, or with sound off, it eases to flat
+  const WAVE = new Float32Array(256);
+  let waveRef = 0.03;
+  function captureWave(buf, dt) {
+    const N = buf.length, k = 1 - Math.exp(-dt / (0.02 + 0.15 * S.audioSmooth / 100));
+    let mean = 0, top = 0, bot = 0;
+    for (let i = 0; i < N; i++) mean += buf[i]; mean /= N;
+    for (let i = 0; i < N; i++) { const v = buf[i] - mean; if (v > top) top = v; if (v < bot) bot = v; }
+    const pk = Math.max(top, -bot);
+    waveRef = Math.max(pk, waveRef * Math.exp(-dt * 0.9), 0.03);
+    let a = -1, b = -1;
+    if (pk >= 0.0018) {
+      let armed = false;
+      for (let i = 1; i < N; i++) {
+        const v = buf[i] - mean;
+        if (v < bot / 2) armed = true;
+        else if (armed && v >= 0 && buf[i - 1] - mean < 0) { if (a < 0) a = i; else { b = i; break; } armed = false; }
+      }
+    }
+    for (let j = 0; j < 256; j++) {
+      let v = 0;
+      if (b > a) { const t = a + j / 256 * (b - a), i = Math.floor(t), fr = t - i; v = ((buf[i] + (buf[i + 1] - buf[i]) * fr) - mean) / waveRef; }
+      WAVE[j] += (v - WAVE[j]) * k;
+    }
+  }
+  const waveAt = u => { const t = ((u % 1) + 1) % 1 * 256, i = Math.floor(t), fr = t - i; return WAVE[i] + (WAVE[(i + 1) & 255] - WAVE[i]) * fr; };
 
   // levels, frame by frame. Each band is read in dB against its own recent peak (30 dB below it is 0), so quiet and
   // loud material both use the range; but a band's peak never sinks more than 12 dB under the loudest band's, so a
@@ -1765,6 +1806,7 @@
     const overlayA = (pst ? pst.gridA : 1) * (jst ? jst.inflate : 1) * (ust ? inflate * (1 - Math.max(ust.fold, ust.align)) : 1);
 
     const Bm = S.body; let bodyOn = !!Bm;   // the sphere's own rotation (tumble)
+    const wrap = S.wrapAmt / 100 * 0.3;      // the sound's wave wrapped round it: up to 30% of the radius out or in
     const projArr = (src, k, flatSrc, mix, rad) => {
       const o = new Float32Array(src.length), m = mix ?? inflate;
       for (let i = 0; i < src.length; i += 3) {
@@ -1777,9 +1819,14 @@
         if (rad) { const q = rad(x, y, z); x *= q; y *= q; z *= q; }   // radial displacement (ripple)
         if (bodyOn) { const X = Bm[0]*x + Bm[1]*y + Bm[2]*z, Y = Bm[3]*x + Bm[4]*y + Bm[5]*z; z = Bm[6]*x + Bm[7]*y + Bm[8]*z; x = X; y = Y; }
         x *= k; y *= k; z *= k;
-        o[i]   = c + (x*r[0] + y*r[1] + z*r[2]) * R;
-        o[i+1] = c - (x*u[0] + y*u[1] + z*u[2]) * R;
-        o[i+2] = x*f[0] + y*f[1] + z*f[2];
+        let sx = x*r[0] + y*r[1] + z*r[2], sy = x*u[0] + y*u[1] + z*u[2], sz = x*f[0] + y*f[1] + z*f[2];
+        if (wrap) {   // the wave wrapped round the picture, like a round scope: out or in by its value at this angle
+          const q = 1 + wrap * waveAt(Math.atan2(sy, sx) / (2 * Math.PI) * S.wrapCycles);
+          sx *= q; sy *= q; sz *= q;
+        }
+        o[i]   = c + sx * R;
+        o[i+1] = c - sy * R;
+        o[i+2] = sz;
       }
       return o;
     };
@@ -3256,6 +3303,7 @@
         win[i] = v / chans.length;
       }
       stepEnv(E, bandPower(win, rate), dt);
+      captureWave(win, dt);
     };
     for (let t = Math.max(0, plan.from - 3); t < plan.from - dt / 2; t += dt) hearAt(t);
     let th = theta, ck = clock;
@@ -3532,7 +3580,7 @@
     if (A.ctx.state === 'suspended') A.ctx.resume().catch(() => {});
     return A.ctx;
   }
-  const SILENT = [0, 0, 0];
+  const SILENT = [0, 0, 0], SILENT_BUF = new Float32Array(FFT_N);
   // a small scope, like the synth's: two cycles from a rising zero crossing, so a steady note stands still
   function drawScope(buf, f0, rate, live) {
     const cv = $('scope'), w = cv.clientWidth, h = cv.clientHeight;
@@ -3563,11 +3611,12 @@
   }
   function hear(dt) {
     const A = AUDIO;
-    if (!A.ctx) { applyMods(null); return; }
+    if (!A.ctx) { applyMods(null); captureWave(SILENT_BUF, dt); return; }
     let P = SILENT;
     if ((A.el && !A.el.paused) || A.stream) { A.an.getFloatTimeDomainData(A.buf); P = bandPower(A.buf, A.ctx.sampleRate); }
     stepEnv(A.env, P, dt);
     applyMods(A.env.lv);
+    captureWave(A.on && ((A.el && !A.el.paused) || A.stream) ? A.buf : SILENT_BUF, dt);
     const lv = A.env.lv, bars = hear.bars ||= [...document.querySelectorAll('#meters b')];
     drawScope(A.buf, A.env.f0, A.ctx.sampleRate, (A.el && !A.el.paused) || !!A.stream);
     ['bass', 'mids', 'highs', 'beat', 'bright', 'reson', 'sharp', 'square', 'ring'].forEach((b, i) => {
@@ -3620,6 +3669,8 @@
     $('amapEmpty').hidden = S.audioMap.length > 0;
     $('amapAdd').disabled = S.audioMap.length >= 8;
     $('audioGain').value = S.audioGain; $('audioGainVal').textContent = `${S.audioGain}%`;
+    $('wrapAmt').value = S.wrapAmt; $('wrapAmtVal').textContent = S.wrapAmt ? `${S.wrapAmt}%` : 'off';
+    $('wrapCycles').value = S.wrapCycles; $('wrapCyclesVal').textContent = `${S.wrapCycles}×`;
     $('audioSmooth').value = S.audioSmooth; $('audioSmoothVal').textContent = S.audioSmooth ? `${S.audioSmooth}%` : 'none';
   }
   // what a link does at full level
@@ -3874,6 +3925,8 @@
     S.audioMap.push({ band: 'beat', target, amount: 40 }); sync(); persist();
   });
   $('audioGain').addEventListener('input', e => set('audioGain', +e.target.value));
+  $('wrapAmt').addEventListener('input', e => set('wrapAmt', +e.target.value));
+  $('wrapCycles').addEventListener('input', e => set('wrapCycles', +e.target.value));
   $('audioSmooth').addEventListener('input', e => set('audioSmooth', +e.target.value));
   // drop an audio file anywhere on the page
   const isAudioFile = f => /^audio\//.test(f.type) || /\.(mp3|wav|m4a|aac|ogg|oga|opus|flac|aiff?|caf|weba)$/i.test(f.name);
