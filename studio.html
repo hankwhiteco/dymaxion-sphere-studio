@@ -331,6 +331,7 @@
   .meter i { position: relative; height: 4px; border-radius: 2px; background: var(--well); overflow: hidden; }
   .meter b { position: absolute; inset: 0; background: var(--fg); transform: scaleX(0); transform-origin: left; }
   .meter.beat b { background: var(--accent); }
+  .midi-meter { grid-template-columns: 1fr; }
   .amaps { display: grid; gap: 10px; }
   .amap { display: grid; grid-template-columns: 1fr 1fr 44px; gap: 6px; align-items: center; }
   .amap + .amap { padding-top: 10px; border-top: 1px solid var(--line); }
@@ -709,9 +710,9 @@
         <span class="meter"><i><b></b></i>Bass</span><span class="meter"><i><b></b></i>Mids</span>
         <span class="meter"><i><b></b></i>Highs</span><span class="meter beat"><i><b></b></i>Beat</span>
       </div>
-      <div class="row"><span class="lbl">Sound moves</span><span class="val">at full level</span></div>
+      <div class="row"><span class="lbl">Sound and notes move</span><span class="val">at full level</span></div>
       <div class="amaps" id="amaps"></div>
-      <p class="note" id="amapEmpty" hidden>Nothing yet. Add a link to let a band move a control.</p>
+      <p class="note" id="amapEmpty" hidden>Nothing yet. Add a link to let a band, or MIDI notes, move a control.</p>
       <div class="links"><button type="button" class="linkbtn" id="amapAdd">Add a link</button></div>
       <div class="row">
         <label for="audioGain">Sensitivity</label><span class="val" id="audioGainVal"></span>
@@ -722,6 +723,31 @@
         <input type="range" id="audioSmooth" min="0" max="100" step="1" value="40">
       </div>
       <p class="note">Each band is measured against its own recent peak, so quiet and loud tracks both use the full range. Turn sound off and the sphere is exactly as set. To export with the sound, choose Track under Export.</p>
+      </div></details>
+      <details class="sec" data-sec="midi" open><summary><h2>MIDI</h2></summary>
+      <div class="sec-body">
+      <label class="check"><input type="checkbox" id="midiOn"><span>Play from MIDI</span><small>M · each note fires an envelope; link Notes to a control above</small></label>
+      <select id="midiDev" aria-label="MIDI input"><option value="">All inputs</option></select>
+      <div class="meters midi-meter" aria-hidden="true"><span class="meter beat"><i><b id="noteBar"></b></i><span id="noteInfo">no notes yet</span></span></div>
+      <div class="row">
+        <label for="envA">Attack</label><span class="val" id="envAVal"></span>
+        <input type="range" id="envA" min="0" max="100" step="1">
+      </div>
+      <div class="row">
+        <label for="envD">Decay</label><span class="val" id="envDVal"></span>
+        <input type="range" id="envD" min="0" max="100" step="1">
+      </div>
+      <div class="row">
+        <label for="envS">Sustain</label><span class="val" id="envSVal"></span>
+        <input type="range" id="envS" min="0" max="100" step="1">
+      </div>
+      <div class="row">
+        <label for="envR">Release</label><span class="val" id="envRVal"></span>
+        <input type="range" id="envR" min="0" max="100" step="1">
+      </div>
+      <label class="check"><input type="checkbox" id="midiFollow"><span>Follow the synth&rsquo;s amp envelope</span><small>its Attack, Decay, Sustain and Release knobs (CC 16&ndash;19) set these</small></label>
+      <label class="check"><input type="checkbox" id="midiVel"><span>Velocity</span><small>harder notes, bigger moves</small></label>
+      <p class="note">Each note gets its own envelope and chords stack, so a held chord moves further than one note. On a minilogue xd, turn on sending knobs as MIDI: Global settings, MIDI, Tx CC (and set MIDI Route to include USB). Works in Chrome and Edge; Safari has no MIDI.</p>
       </div></details>
     </div>
     <div class="pane" id="pane-export" role="tabpanel" aria-labelledby="tab-export">
@@ -1341,10 +1367,13 @@
     ['invert', [['difference', 'Difference'], ['exclusion', 'Exclusion']]],
     ['colour', [['hue', 'Hue'], ['saturation', 'Saturation'], ['color', 'Colour'], ['luminosity', 'Luminosity']]]];
   const BLEND_NAME = Object.fromEntries(BLENDS.flatMap(([, m]) => m));
-  // sound: four bands, and the controls they can move. Each control's number is its change at full level and 100%
-  const AUDIO_BANDS = { bass: 'Bass', mids: 'Mids', highs: 'Highs', beat: 'Beat' };
+  // sound: four bands, MIDI notes (their envelopes), and the controls they can move. Each control's number is its
+  // change at full level and 100%
+  const AUDIO_BANDS = { bass: 'Bass', mids: 'Mids', highs: 'Highs', beat: 'Beat', notes: 'Notes' };
   const AUDIO_TARGETS = { depth: ['Truss depth', 150], weight: ['Line weight', 2], freq: ['Frequency', 6], size: ['Size', 0.25],
                           spin: ['Spin', 40], hue: ['Hue', 180], tint: ['Tint', 1] };
+  // envelope times: [shortest, longest] in ms. Their sliders run on a curve, so short times get most of the travel
+  const ENV_MS = { midiA: [0, 4000], midiD: [20, 6000], midiR: [20, 8000] };
   const DEFAULTS = {
     freq: 16, trueScale: false, depth: 100,
     L_outer: true, L_inner: true, L_web: true, L_net: false, L_poles: false, L_ve: false, L_back: true,
@@ -1367,6 +1396,8 @@
     audioMap: [{ band: 'bass', target: 'depth', amount: 60 }, { band: 'beat', target: 'size', amount: 30 },
                { band: 'mids', target: 'weight', amount: 40 }, { band: 'highs', target: 'tint', amount: 35 }],
     audioGain: 100, audioSmooth: 40, trackLen: 'whole',
+    // MIDI notes: one envelope per note (attack, decay and release in ms, sustain in %), velocity sets its height
+    midiA: 10, midiD: 600, midiS: 40, midiR: 900, midiVel: true, midiFollow: true, midiIn: '',
   };
   const KEY = 'dymaxion-studio:v1';
   let S = { ...DEFAULTS };
@@ -1412,6 +1443,9 @@
       .filter(m => m && m.band in AUDIO_BANDS && m.target in AUDIO_TARGETS).slice(0, 8)
       .map(m => ({ band: m.band, target: m.target, amount: Math.max(-100, Math.min(100, Math.round(+m.amount || 0))) }));
     S.audioGain = Math.max(25, Math.min(400, Math.round(S.audioGain))); S.audioSmooth = Math.max(0, Math.min(100, Math.round(S.audioSmooth)));
+    for (const k of Object.keys(ENV_MS)) S[k] = Math.max(ENV_MS[k][0], Math.min(ENV_MS[k][1], Math.round(S[k])));
+    S.midiS = Math.max(0, Math.min(100, Math.round(S.midiS)));
+    if (typeof S.midiIn !== 'string') S.midiIn = '';
   }
   tidyState();
   if (S.clip === 'audio') S.clip = 'loop';   // no track is loaded yet
@@ -1482,7 +1516,13 @@
   }
   function modsFrom(lv) {
     zeroMods();
-    for (const m of S.audioMap) audioMod[m.target] += lv[m.band] * m.amount / 100 * AUDIO_TARGETS[m.target][1];
+    for (const m of S.audioMap) audioMod[m.target] += (lv[m.band] || 0) * m.amount / 100 * AUDIO_TARGETS[m.target][1];
+  }
+  // the live offsets: sound's bands while sound is on, and the notes' envelope while MIDI is on
+  const NO_SOUND = { bass: 0, mids: 0, highs: 0, beat: 0 };
+  function applyMods(lv) {
+    if (!AUDIO.on && !MIDI.on) { zeroMods(); return; }
+    modsFrom({ ...(AUDIO.on && lv ? lv : NO_SOUND), notes: MIDI.on ? MIDI.level : 0 });
   }
   const freqNow = () => Math.min(16, Math.max(2, S.freq + Math.round(audioMod.freq)));
   // colour from sound: every stroke and fill turns round the colour wheel (Hue; white, black and greys have none),
@@ -2304,7 +2344,9 @@
     }
     if (!dragging) stepOrientation(dt);
     syncOrient();
+    stepNotes(dt);
     hear(dt);
+    if (MIDI.on) showNotes();
     requestAnimationFrame(tick);   // ask for the next frame first: a bad frame must never stop the loop
     try { draw(); } catch (e) { if (!tick.failed) { tick.failed = true; console.error(e); } }
   }
@@ -2472,7 +2514,7 @@
     $('matchStruts').disabled = !(S.cOuter || S.cInner || S.cWeb);
     syncEditor();
     document.querySelector(`input[name="cap"][value="${S.cap}"]`).checked = true;
-    readout(); legend(); syncAnim(); syncClip(); syncAudioSettings();
+    readout(); legend(); syncAnim(); syncClip(); syncAudioSettings(); syncMidiSettings();
     if (pin) pinLayout();
     if (!$('presets').hidden) keepReady();   // the copy buttons always have the current look's code at hand
   }
@@ -2825,7 +2867,7 @@
     Minus: () => stepDepth(-5), Equal: () => stepDepth(5),
     Semicolon: e => stepWeight(-1, e.shiftKey), Quote: e => stepWeight(1, e.shiftKey), NumpadSubtract: () => stepDepth(-5), NumpadAdd: () => stepDepth(5),
     KeyF: () => setFull(!isFull()), Escape: () => setFull(false), KeyR: e => randomLayers(e.shiftKey),
-    KeyV: () => stepBlend(-1), KeyB: () => stepBlend(1), KeyA: () => toggleSound(),
+    KeyV: () => stepBlend(-1), KeyB: () => stepBlend(1), KeyA: () => toggleSound(), KeyM: () => toggleMidi(),
     ArrowLeft: e => orientKey(e, true), ArrowRight: e => orientKey(e, true), ArrowUp: e => orientKey(e, true),
     ArrowDown: e => orientKey(e, true), KeyQ: e => orientKey(e, true), KeyE: e => orientKey(e, true),
   };
@@ -2833,7 +2875,7 @@
     e => e.shiftKey && i < MAX_PINS ? recallPin(i) : toggleLayer(i);   // Shift + 1 to 4: the pinned presets
   // for synthetic keystrokes that carry no key position
   const BY_KEY = { '[': 'BracketLeft', ']': 'BracketRight', ',': 'Comma', '.': 'Period', '-': 'Minus', '=': 'Equal', '+': 'Equal',
-    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ';': 'Semicolon', "'": 'Quote', q: 'KeyQ', Q: 'KeyQ', r: 'KeyR', R: 'KeyR', v: 'KeyV', V: 'KeyV', b: 'KeyB', B: 'KeyB', a: 'KeyA', A: 'KeyA', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])), '!': 'Digit1', '@': 'Digit2', '#': 'Digit3', '$': 'Digit4' };
+    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ';': 'Semicolon', "'": 'Quote', q: 'KeyQ', Q: 'KeyQ', r: 'KeyR', R: 'KeyR', v: 'KeyV', V: 'KeyV', b: 'KeyB', B: 'KeyB', a: 'KeyA', A: 'KeyA', m: 'KeyM', M: 'KeyM', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])), '!': 'Digit1', '@': 'Digit2', '#': 'Digit3', '$': 'Digit4' };
   // Stepping keys repeat on their own timer while held, not by the keyboard's repeat: a keyboard repeats only the
   // last key pressed, so pressing anything else would stop a held depth or spin key. Now several can be held at once
   const STEPPED = new Set(['BracketLeft', 'BracketRight', 'Comma', 'Period', 'Minus', 'Equal', 'Semicolon', 'Quote', 'NumpadSubtract', 'NumpadAdd']);
@@ -2861,7 +2903,7 @@
   // (deflate) and written in URL-safe base64 after "ds1.". The panel tab, folded sections, export settings and play or
   // pause stay as they are. Presets are saved by name in this browser, up to four pinned (Shift + 1 to 4), and travel as
   // a code to paste or a link that opens with the preset applied.
-  const NOT_IN_PRESET = new Set(['tab', 'closed', 'custom', 'playing', 'exportBg', 'clip', 'quality', 'motionSize', 'loops', 'after', 'trackLen']);
+  const NOT_IN_PRESET = new Set(['tab', 'closed', 'custom', 'playing', 'exportBg', 'clip', 'quality', 'motionSize', 'loops', 'after', 'trackLen', 'midiIn', 'midiFollow']);
   const PRESET_KEYS = Object.keys(DEFAULTS).filter(k => !NOT_IN_PRESET.has(k));
   const PKEY = 'dymaxion-studio:presets', MAX_PINS = 4;
   let presets = [];
@@ -3388,11 +3430,11 @@
   const SILENT = [0, 0, 0];
   function hear(dt) {
     const A = AUDIO;
-    if (!A.ctx) return;
+    if (!A.ctx) { applyMods(null); return; }
     let P = SILENT;
     if ((A.el && !A.el.paused) || A.stream) { A.an.getFloatTimeDomainData(A.buf); P = bandPower(A.buf, A.ctx.sampleRate); }
     stepEnv(A.env, P, dt);
-    if (A.on) modsFrom(A.env.lv); else zeroMods();
+    applyMods(A.env.lv);
     const lv = A.env.lv, bars = hear.bars ||= [...document.querySelectorAll('#meters b')];
     ['bass', 'mids', 'highs', 'beat'].forEach((b, i) => {
       const v = Math.round(lv[b] * 100) / 100;
@@ -3453,6 +3495,100 @@
       : target === 'freq' ? `${sg(Math.round(k))}v` : target === 'size' ? `${sg(Math.round(k * 100))}%`
       : target === 'spin' ? `${sg(Math.round(k))}°/s` : target === 'hue' ? `${sg(Math.round(k))}°` : `${Math.round(clamp01(k) * 100)}%`;
   }
+  // ───────────────────────── MIDI notes ─────────────────────────
+  // Notes from any MIDI input (or the one chosen) each run an ADSR envelope: up over Attack, down to Sustain over
+  // Decay while held, and away over Release once let go (or once the sustain pedal lifts). Velocity scales each one.
+  // The envelopes add, so chords stack, and the sum eases off above 1 rather than clipping. The level is the Notes
+  // source for the links, an offset like sound's: with MIDI off, or nothing playing, the sphere is exactly as set
+  const MIDI = { on: false, access: null, level: 0, voices: new Map(), pedal: false, held: new Set(), info: '' };
+  const NOTE = n => ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'][n % 12] + (Math.floor(n / 12) - 1);
+  // slider position (0–100) ⇄ ms, on a curve
+  const envMs = (k, p) => { const [lo, hi] = ENV_MS[k], a = Math.max(lo, 5); return p <= 0 ? lo : Math.round(a * (hi / a) ** (p / 100)); };
+  const envPos = (k, ms) => { const [lo, hi] = ENV_MS[k], a = Math.max(lo, 5); return ms <= a ? 0 : Math.round(100 * Math.log(ms / a) / Math.log(hi / a)); };
+  const msText = ms => ms >= 1000 ? `${(ms / 1000).toFixed(ms >= 10000 ? 0 : 1)} s` : `${ms} ms`;
+  function stepNotes(dt) {
+    if (!MIDI.voices.size) { MIDI.level = 0; return; }
+    const A = S.midiA / 1000, D = S.midiD / 1000 / 4, R = S.midiR / 1000 / 4, sus = S.midiS / 100;   // decay and release: time constants, ~98% by the set time
+    let sum = 0;
+    for (const [n, v] of MIDI.voices) {
+      if (v.stage === 'a') { v.lvl = A > 0 ? v.lvl + dt / A : 1; if (v.lvl >= 1) { v.lvl = 1; v.stage = 'd'; } }
+      else if (v.stage === 'd') v.lvl = sus + (v.lvl - sus) * Math.exp(-dt / D);
+      else { v.lvl *= Math.exp(-dt / R); if (v.lvl < 0.002) { MIDI.voices.delete(n); continue; } }
+      sum += v.lvl * v.vel;
+    }
+    MIDI.level = sum <= 1 ? sum : 1 + 0.5 * Math.tanh((sum - 1) / 0.5);   // stacks past 1, easing toward 1.5
+  }
+  function noteOn(n, vel) {
+    const v = MIDI.voices.get(n);
+    MIDI.voices.set(n, { stage: 'a', lvl: v ? v.lvl : 0, vel: S.midiVel ? vel / 127 : 1 });   // a retrigger starts from where it is
+    MIDI.held.add(n); MIDI.info = `${NOTE(n)} · velocity ${vel}`;
+  }
+  function noteOff(n) {
+    MIDI.held.delete(n);
+    if (MIDI.pedal) return;
+    const v = MIDI.voices.get(n); if (v) v.stage = 'r';
+  }
+  const releaseAll = () => { for (const [n, v] of MIDI.voices) if (!MIDI.held.has(n)) v.stage = 'r'; };
+  function onMidi(e) {
+    if (!MIDI.on || (S.midiIn && e.target.name !== S.midiIn)) return;
+    const [st, d1 = 0, d2 = 0] = e.data, kind = st & 0xf0;
+    if (kind === 0x90 && d2 > 0) noteOn(d1, d2);
+    else if (kind === 0x80 || kind === 0x90) noteOff(d1);
+    else if (kind === 0xb0) {
+      if (d1 === 64) { MIDI.pedal = d2 >= 64; if (!MIDI.pedal) releaseAll(); }
+      else if (d1 === 120) { MIDI.voices.clear(); MIDI.held.clear(); }   // all sound off
+      else if (d1 === 123) { MIDI.held.clear(); releaseAll(); }         // all notes off
+      else if (S.midiFollow && d1 >= 16 && d1 <= 19) {                  // the amp envelope's knobs
+        const key = ['midiA', 'midiD', 'midiS', 'midiR'][d1 - 16], p = d2 / 127 * 100;
+        S[key] = key === 'midiS' ? Math.round(p) : envMs(key, p);
+        syncMidiSettings(); persist();
+      }
+      MIDI.info = `CC ${d1} = ${d2}`;
+    }
+  }
+  function listMidiInputs() {
+    const sel = $('midiDev'), names = MIDI.access ? [...MIDI.access.inputs.values()].map(i => i.name) : [];
+    if (S.midiIn && !names.includes(S.midiIn)) names.push(S.midiIn);   // remembered, though not plugged in now
+    sel.replaceChildren(new Option('All inputs', ''), ...names.map(nm => new Option(nm, nm)));
+    sel.value = S.midiIn;
+    if (MIDI.access) for (const i of MIDI.access.inputs.values()) i.onmidimessage = onMidi;
+  }
+  async function setMidiOn(on) {
+    if (on && !MIDI.access) {
+      if (!navigator.requestMIDIAccess) { toast('This browser has no MIDI. Chrome or Edge do.'); on = false; }
+      else try { MIDI.access = await navigator.requestMIDIAccess(); MIDI.access.onstatechange = listMidiInputs; listMidiInputs(); }
+      catch { toast('MIDI wasn’t allowed here.'); on = false; }
+    }
+    MIDI.on = on;
+    if (!on) { MIDI.voices.clear(); MIDI.held.clear(); MIDI.level = 0; }
+    $('midiOn').checked = on;
+    if (on) toast(MIDI.access && MIDI.access.inputs.size ? 'MIDI on · play a note' : 'MIDI on · no input found yet');
+  }
+  function toggleMidi() { setMidiOn(!MIDI.on); if (MIDI.on && !S.audioMap.some(m => m.band === 'notes')) addNotesLink(); }
+  function addNotesLink() {   // a first link, so a note does something straight away
+    if (S.audioMap.length >= 8) return;
+    S.audioMap.push({ band: 'notes', target: 'depth', amount: 60 }); sync(); persist();
+  }
+  function syncMidiSettings() {
+    for (const [id, k] of [['envA', 'midiA'], ['envD', 'midiD'], ['envR', 'midiR']]) {
+      if (document.activeElement !== $(id)) $(id).value = envPos(k, S[k]);
+      $(id + 'Val').textContent = msText(S[k]);
+    }
+    $('envS').value = S.midiS; $('envSVal').textContent = `${S.midiS}%`;
+    $('midiFollow').checked = S.midiFollow; $('midiVel').checked = S.midiVel;
+  }
+  function showNotes() {   // the meter and the last thing heard, once a frame
+    const v = Math.round(Math.min(1, MIDI.level) * 100) / 100, bar = $('noteBar');
+    if (bar.v !== v) { bar.v = v; bar.style.transform = `scaleX(${v})`; }
+    if (MIDI.info !== showNotes.info) { showNotes.info = MIDI.info; $('noteInfo').textContent = MIDI.info || 'no notes yet'; }
+  }
+  $('midiOn').addEventListener('change', e => { setMidiOn(e.target.checked).then(() => { if (MIDI.on && !S.audioMap.some(m => m.band === 'notes')) addNotesLink(); }); });
+  $('midiDev').addEventListener('change', e => { S.midiIn = e.target.value; MIDI.voices.clear(); MIDI.held.clear(); persist(); });
+  for (const [id, k] of [['envA', 'midiA'], ['envD', 'midiD'], ['envR', 'midiR']]) $(id).addEventListener('input', e => set(k, envMs(k, +e.target.value)));
+  $('envS').addEventListener('input', e => set('midiS', +e.target.value));
+  $('midiFollow').addEventListener('change', e => set('midiFollow', e.target.checked));
+  $('midiVel').addEventListener('change', e => set('midiVel', e.target.checked));
+
   function setAudioOn(on) { AUDIO.on = on; if (!on) zeroMods(); syncAudio(); }
   function pauseTrack() { if (AUDIO.el && !AUDIO.el.paused) AUDIO.el.pause(); }
   function stopInput() {
