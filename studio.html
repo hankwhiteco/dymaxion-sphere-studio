@@ -331,6 +331,7 @@
   .meter { display: grid; gap: 5px; font-size: 10.5px; color: var(--muted); }
   .meter i { position: relative; height: 4px; border-radius: 2px; background: var(--well); overflow: hidden; }
   .meter b { position: absolute; inset: 0; background: var(--fg); transform: scaleX(0); transform-origin: left; }
+  .meter small { display: block; margin-top: -3px; font-size: 9.5px; opacity: .75; }
   .meter.beat b { background: var(--accent); }
   .midi-meter { grid-template-columns: 1fr; }
   .amaps { display: grid; gap: 10px; }
@@ -708,9 +709,9 @@
         <p class="note">Pick the input your line in arrives on: an audio interface, a mixer&rsquo;s USB out, or a loopback. Nothing is played back, so there is no feedback. Record keeps what you hear as a track, to export with its sound.</p>
       </div>
       <div class="meters" id="meters" aria-hidden="true">
-        <span class="meter"><i><b></b></i>Bass</span><span class="meter"><i><b></b></i>Mids</span>
-        <span class="meter"><i><b></b></i>Highs</span><span class="meter beat"><i><b></b></i>Beat</span>
-        <span class="meter"><i><b></b></i>Brightness</span><span class="meter"><i><b></b></i>Resonance</span>
+        <span class="meter" title="Low end, 20–150 Hz"><i><b></b></i>Bass<small>20–150 Hz</small></span><span class="meter" title="Body, 150 Hz–2 kHz"><i><b></b></i>Mids<small>150 Hz–2 kHz</small></span>
+        <span class="meter" title="Air, 2–12 kHz"><i><b></b></i>Highs<small>2–12 kHz</small></span><span class="meter beat" title="A pulse on each sudden rise in the bass"><i><b></b></i>Beat<small>bass hits</small></span>
+        <span class="meter" title="Where the tone's energy sits: follows a filter's cutoff"><i><b></b></i>Brightness<small>follows the cutoff knob</small></span><span class="meter" title="How sharply one frequency stands out: follows a filter's resonance"><i><b></b></i>Resonance<small>follows the resonance knob</small></span>
       </div>
       <div class="row"><span class="lbl">Sound and notes move</span><span class="val">at full level</span></div>
       <div class="amaps" id="amaps"></div>
@@ -1531,32 +1532,42 @@
     }
     return [sum(20, 150), sum(150, 2000), sum(2000, 12000), wsum > 0 ? cen / wsum : 0, prom, tot];
   }
-  // levels, frame by frame: each band in dB against its own recent peak (30 dB below it is 0), eased by attack and
-  // release; the beat is bass power jumping well above its average over the last second, a pulse that decays
-  const newEnv = () => ({ peak: [-50, -50, -50], env: [0, 0, 0], avg: 0, since: 1, pulse: 0, tim: [0, 0],
+  // levels, frame by frame. Each band is read in dB against its own recent peak (30 dB below it is 0), so quiet and
+  // loud material both use the range; but a band's peak never sinks more than 12 dB under the loudest band's, so a
+  // band that is only a trace beside the others reads low, and anything under -55 dB is silence. The beat is the
+  // bass rising fast: 6 dB (less with more Sensitivity) over its own level of the last half second, while loud
+  // beside the rest. A held note, or a slow swell, is no beat
+  const newEnv = () => ({ peak: [-50, -50, -50], env: [0, 0, 0], slow: -120, since: 1, pulse: 0, tim: [0, 0], loud: -120,
                           lv: { bass: 0, mids: 0, highs: 0, beat: 0, bright: 0, reson: 0 } });
   AUDIO.env = newEnv();
+  const QUIET = -55;   // dB: below this a band, or the whole sound, counts as silence
   function stepEnv(E, P, dt) {
     const RANGE = 30, gain = S.audioGain / 100, s = S.audioSmooth / 100;
     const att = 0.015 + 0.1 * s, rel = 0.06 + 0.8 * s;
+    const dbs = [0, 1, 2].map(b => 10 * Math.log10(P[b] + 1e-12)), top = Math.max(...dbs);
+    for (let b = 0; b < 3; b++) E.peak[b] = Math.max(dbs[b], E.peak[b] - 3 * dt, -50);   // the loudest lately, falling 3 dB a second
+    const lead = Math.max(...E.peak);
     for (let b = 0; b < 3; b++) {
-      const db = 10 * Math.log10(P[b] + 1e-12);
-      E.peak[b] = Math.max(db, E.peak[b] - 3 * dt, -50);   // the loudest lately, falling 3 dB a second, never below -50 dB
-      const raw = clamp01(clamp01((db - E.peak[b] + RANGE) / RANGE) ** 1.5 * gain);
+      const ref = Math.max(E.peak[b], lead - 12);
+      const raw = dbs[b] < QUIET ? 0 : clamp01(clamp01((dbs[b] - ref + RANGE) / RANGE) ** 1.5 * gain);
       E.env[b] += (raw - E.env[b]) * (1 - Math.exp(-dt / (raw > E.env[b] ? att : rel)));
     }
-    const bass = P[0];
     E.since += dt;
-    if (bass > E.avg * (1 + 0.5 / gain) && E.since > 0.2 && 10 * Math.log10(bass + 1e-12) > E.peak[0] - 12) { E.pulse = 1; E.since = 0; }
-    E.avg += (bass - E.avg) * (1 - Math.exp(-dt));
+    if (dbs[0] > QUIET + 10 && dbs[0] - E.slow > 6 / gain && dbs[0] > top - 10 && E.since > 0.15) { E.pulse = 1; E.since = 0; }
+    E.slow = Math.max(dbs[0], -120) * (1 - Math.exp(-dt / 0.5)) + E.slow * Math.exp(-dt / 0.5);
     E.pulse *= Math.exp(-dt / (0.08 + 0.3 * s));
     E.lv.bass = E.env[0]; E.lv.mids = E.env[1]; E.lv.highs = E.env[2]; E.lv.beat = E.pulse;
     // timbre is read as it is, not against recent peaks, so a knob's position always lands in the same place:
     // Brightness 0 at a centroid of 150 Hz, 1 at 6 kHz (a log scale, like the cutoff knob); Resonance 0 for a peak
-    // 3 dB above its surroundings, 1 at 18 dB. Below -60 dB (silence, or a note's tail) they hold where they were
-    if (P.length > 3 && P[5] > 1e-6) {
-      const raw = [clamp01(Math.log2(Math.max(P[3], 1) / 150) / Math.log2(40)), clamp01((P[4] - 3) / 15)];
-      for (let i = 0; i < 2; i++) E.tim[i] += (raw[i] - E.tim[i]) * (1 - Math.exp(-dt / (0.03 + 0.3 * s)));
+    // 4 dB above its surroundings, 1 at 30 dB. They update only while the sound is within 24 dB of its recent
+    // loudest and above -55 dB, and otherwise hold, so a fade or a note's tail does not swing them
+    if (P.length > 3) {
+      const tot = 10 * Math.log10(P[5] + 1e-12);
+      E.loud = Math.max(tot, E.loud - 6 * dt);
+      if (tot > QUIET && tot > E.loud - 24) {
+        const raw = [clamp01(Math.log2(Math.max(P[3], 1) / 150) / Math.log2(40)), clamp01((P[4] - 4) / 26)];
+        for (let i = 0; i < 2; i++) E.tim[i] += (raw[i] - E.tim[i]) * (1 - Math.exp(-dt / (0.03 + 0.3 * s)));
+      }
     }
     E.lv.bright = E.tim[0]; E.lv.reson = E.tim[1];
   }
