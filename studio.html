@@ -331,14 +331,14 @@
   #meters { grid-template-columns: repeat(12, 1fr); }
   #meters .meter { grid-column: span 3; }
   #meters .meter:nth-child(5), #meters .meter:nth-child(6) { grid-column: span 6; }
-  #meters .meter.shape { grid-column: span 4; }   /* the wave's shape: a third row */
+  #meters .meter.shape { grid-column: span 6; }   /* the wave's shape: a third row */
   .scope { display: block; width: 100%; height: 64px; border-radius: 3px; background: var(--well); color: var(--fg); }
   .meter { display: grid; gap: 5px; font-size: 10.5px; color: var(--muted); }
   .meter i { position: relative; height: 4px; border-radius: 2px; background: var(--well); overflow: hidden; }
   .meter b { position: absolute; inset: 0; background: var(--fg); transform: scaleX(0); transform-origin: left; }
+  .by-sound { color: var(--accent); font-size: .92em; }
   .meter small { display: block; margin-top: -3px; font-size: 9.5px; opacity: .75; }
   .meter.beat b { background: var(--accent); }
-  .midi-meter { grid-template-columns: 1fr; }
   .amaps { display: grid; gap: 10px; }
   .amap { display: grid; grid-template-columns: 1fr 1fr 44px; gap: 6px; align-items: center; }
   .amap + .amap { padding-top: 10px; border-top: 1px solid var(--line); }
@@ -718,20 +718,16 @@
         <span class="meter" title="Low end, 20–150 Hz"><i><b></b></i>Bass<small>20–150 Hz</small></span><span class="meter" title="Body, 150 Hz–2 kHz"><i><b></b></i>Mids<small>150 Hz–2 kHz</small></span>
         <span class="meter" title="Air, 2–12 kHz"><i><b></b></i>Highs<small>2–12 kHz</small></span><span class="meter beat" title="A pulse on each sudden rise in the bass"><i><b></b></i>Beat<small>bass hits</small></span>
         <span class="meter" title="Where the tone's energy sits: follows a filter's cutoff"><i><b></b></i>Brightness<small>follows the cutoff knob</small></span><span class="meter" title="How sharply one frequency stands out: follows a filter's resonance"><i><b></b></i>Resonance<small>follows the resonance knob</small></span>
-        <span class="meter shape" title="How steep the wave is: a sine is soft, a saw or square through an open filter is sharp"><i><b></b></i>Sharpness<small>soft to sharp</small></span><span class="meter shape" title="How much of each cycle sits at its extremes: a saw is pointy, a square is full"><i><b></b></i>Squareness<small>pointy to square</small></span><span class="meter shape" title="Extra wiggles each cycle, as a resonant filter rings"><i><b></b></i>Ringing<small>wiggles per cycle</small></span>
+        <span class="meter shape" title="How steep the wave is: a sine is soft, a saw or square through an open filter is sharp"><i><b></b></i>Sharpness<small>soft to sharp</small></span><span class="meter shape" title="Extra wiggles each cycle, as a resonant filter rings"><i><b></b></i>Ringing<small>wiggles per cycle</small></span>
       </div>
-      <div class="row">
-        <label for="wrapAmt">Wrap the wave</label><span class="val" id="wrapAmtVal"></span>
-        <input type="range" id="wrapAmt" min="0" max="100" step="1">
+      <div class="transport">
+        <button class="btn grow" id="learnBtn">Learn my knobs</button>
+        <button class="btn" id="learnForget" disabled>Forget</button>
       </div>
-      <div class="row">
-        <label for="wrapCycles">Cycles around</label><span class="val" id="wrapCyclesVal"></span>
-        <input type="range" id="wrapCycles" min="1" max="12" step="1">
-      </div>
-      <p class="note">The scope&rsquo;s wave, wrapped round the sphere like a round scope: a sine swells smoothly, a square steps, a saw ramps, and resonance ripples. Turn the filter and the sphere changes shape with the wave.</p>
-      <div class="row"><span class="lbl">Sound and notes move</span><span class="val">at full level</span></div>
+      <p class="note" id="learnNote">Play a held note, press Learn, and turn the cutoff and resonance knobs from one end to the other. Their full turn then moves Brightness, Resonance, Sharpness and Ringing all the way.</p>
+      <div class="row"><span class="lbl">Sound moves</span><span class="val">at full level</span></div>
       <div class="amaps" id="amaps"></div>
-      <p class="note" id="amapEmpty" hidden>Nothing yet. Add a link to let a band, or MIDI notes, move a control.</p>
+      <p class="note" id="amapEmpty" hidden>Nothing yet. Add a link to let a band move a control.</p>
       <div class="links"><button type="button" class="linkbtn" id="amapAdd">Add a link</button></div>
       <div class="row">
         <label for="audioGain">Sensitivity</label><span class="val" id="audioGainVal"></span>
@@ -742,31 +738,6 @@
         <input type="range" id="audioSmooth" min="0" max="100" step="1" value="40">
       </div>
       <p class="note">Each band is measured against its own recent peak, so quiet and loud tracks both use the full range. Turn sound off and the sphere is exactly as set. To export with the sound, choose Track under Export.</p>
-      </div></details>
-      <details class="sec" data-sec="midi" open><summary><h2>MIDI</h2></summary>
-      <div class="sec-body">
-      <label class="check"><input type="checkbox" id="midiOn"><span>Play from MIDI</span><small>M · each note fires an envelope; link Notes to a control above</small></label>
-      <select id="midiDev" aria-label="MIDI input"><option value="">All inputs</option></select>
-      <div class="meters midi-meter" aria-hidden="true"><span class="meter beat"><i><b id="noteBar"></b></i><span id="noteInfo">no notes yet</span></span></div>
-      <div class="row">
-        <label for="envA">Attack</label><span class="val" id="envAVal"></span>
-        <input type="range" id="envA" min="0" max="100" step="1">
-      </div>
-      <div class="row">
-        <label for="envD">Decay</label><span class="val" id="envDVal"></span>
-        <input type="range" id="envD" min="0" max="100" step="1">
-      </div>
-      <div class="row">
-        <label for="envS">Sustain</label><span class="val" id="envSVal"></span>
-        <input type="range" id="envS" min="0" max="100" step="1">
-      </div>
-      <div class="row">
-        <label for="envR">Release</label><span class="val" id="envRVal"></span>
-        <input type="range" id="envR" min="0" max="100" step="1">
-      </div>
-      <label class="check"><input type="checkbox" id="midiFollow"><span>Follow the synth&rsquo;s amp envelope</span><small>its Attack, Decay, Sustain and Release knobs (CC 16&ndash;19) set these</small></label>
-      <label class="check"><input type="checkbox" id="midiVel"><span>Velocity</span><small>harder notes, bigger moves</small></label>
-      <p class="note">Each note gets its own envelope and chords stack, so a held chord moves further than one note. On a minilogue xd, turn on sending knobs as MIDI: Global settings, MIDI, Tx CC (and set MIDI Route to include USB). Works in Chrome and Edge; Safari has no MIDI.</p>
       </div></details>
     </div>
     <div class="pane" id="pane-export" role="tabpanel" aria-labelledby="tab-export">
@@ -1386,14 +1357,13 @@
     ['invert', [['difference', 'Difference'], ['exclusion', 'Exclusion']]],
     ['colour', [['hue', 'Hue'], ['saturation', 'Saturation'], ['color', 'Colour'], ['luminosity', 'Luminosity']]]];
   const BLEND_NAME = Object.fromEntries(BLENDS.flatMap(([, m]) => m));
-  // sound: four bands, MIDI notes (their envelopes), and the controls they can move. Each control's number is its
-  // change at full level and 100%
+  // sound: what is read from it (bands, beat, tone and wave shape), and the controls they can move. Each control's
+  // number is its change at full level and 100%
+  const TONE_KEYS = ['bright', 'reson', 'sharp', 'ring'];   // the readings of the tone itself, which can be learned
   const AUDIO_BANDS = { bass: 'Bass', mids: 'Mids', highs: 'Highs', beat: 'Beat', bright: 'Brightness', reson: 'Resonance',
-                        sharp: 'Sharpness', square: 'Squareness', ring: 'Ringing', notes: 'Notes' };
+                        sharp: 'Sharpness', ring: 'Ringing' };
   const AUDIO_TARGETS = { depth: ['Truss depth', 150], weight: ['Line weight', 2], freq: ['Frequency', 6], size: ['Size', 0.25],
                           spin: ['Spin', 40], hue: ['Hue', 180], tint: ['Tint', 1] };
-  // envelope times: [shortest, longest] in ms. Their sliders run on a curve, so short times get most of the travel
-  const ENV_MS = { midiA: [0, 4000], midiD: [20, 6000], midiR: [20, 8000] };
   const DEFAULTS = {
     freq: 16, trueScale: false, depth: 100,
     L_outer: true, L_inner: true, L_web: true, L_net: false, L_poles: false, L_ve: false, L_back: true,
@@ -1416,9 +1386,7 @@
     audioMap: [{ band: 'bass', target: 'depth', amount: 60 }, { band: 'beat', target: 'size', amount: 30 },
                { band: 'mids', target: 'weight', amount: 40 }, { band: 'highs', target: 'tint', amount: 35 }],
     audioGain: 100, audioSmooth: 40, trackLen: 'whole',
-    wrapAmt: 0, wrapCycles: 3,   // the sound's wave wrapped round the sphere: how far it pushes (%), and cycles round
-    // MIDI notes: one envelope per note (attack, decay and release in ms, sustain in %), velocity sets its height
-    midiA: 10, midiD: 600, midiS: 40, midiR: 900, midiVel: true, midiFollow: true, midiIn: '',
+    cal: {},   // learned ranges of the tone readings, from a sweep of the synth's knobs: { bright: [lo, hi], … }
   };
   const KEY = 'dymaxion-studio:v1';
   let S = { ...DEFAULTS };
@@ -1463,11 +1431,10 @@
     S.audioMap = (Array.isArray(S.audioMap) ? S.audioMap : DEFAULTS.audioMap)
       .filter(m => m && m.band in AUDIO_BANDS && m.target in AUDIO_TARGETS).slice(0, 8)
       .map(m => ({ band: m.band, target: m.target, amount: Math.max(-100, Math.min(100, Math.round(+m.amount || 0))) }));
+    S.cal = Object.fromEntries(Object.entries(S.cal && typeof S.cal === 'object' ? S.cal : {})
+      .filter(([k, v]) => TONE_KEYS.includes(k) && Array.isArray(v) && v.length === 2 && v.every(Number.isFinite) && v[1] - v[0] >= 0.05)
+      .map(([k, [a, b]]) => [k, [clamp01(a), clamp01(b)]]));
     S.audioGain = Math.max(25, Math.min(400, Math.round(S.audioGain))); S.audioSmooth = Math.max(0, Math.min(100, Math.round(S.audioSmooth)));
-    for (const k of Object.keys(ENV_MS)) S[k] = Math.max(ENV_MS[k][0], Math.min(ENV_MS[k][1], Math.round(S[k])));
-    S.midiS = Math.max(0, Math.min(100, Math.round(S.midiS)));
-    S.wrapAmt = Math.max(0, Math.min(100, Math.round(S.wrapAmt))); S.wrapCycles = Math.max(1, Math.min(12, Math.round(S.wrapCycles)));
-    if (typeof S.midiIn !== 'string') S.midiIn = '';
   }
   tidyState();
   if (S.clip === 'audio') S.clip = 'loop';   // no track is loaded yet
@@ -1557,11 +1524,9 @@
   // once the wave swings past half its peak on that side (a resonant wave is lopsided), so a resonant filter's smaller wiggles are not cycles
   //   Sharpness: how steep the wave is, as the RMS of its slope against a sine's crossing as often. A sine is 1;
   //     every harmonic added steepens the edges, so it rises as a filter's cutoff opens (log scale, 1 to 8)
-  //   Squareness: RMS against peak. A saw or triangle is 0.58, a sine 0.71, a square 1: how much of each cycle the
-  //     wave spends out at its extremes rather than passing through
   //   Ringing: turning points (moves of 8% of the peak) per crossing. A clean wave turns once between crossings;
   //     a resonant filter rings after every edge, adding wiggles that turn without crossing
-  // Returns [sharpness, squareness, ringing, cycles a second], or nothing while the sound is under -60 dB
+  // Returns [sharpness, ringing, cycles a second], or nothing while the sound is under -60 dB
   function waveShape(buf, rate) {
     const N = buf.length;
     let mean = 0; for (let i = 0; i < N; i++) mean += buf[i]; mean /= N;
@@ -1583,47 +1548,18 @@
     if (cross < 2) return [];   // under a cycle in view: nothing to measure
     const f = cross / 2 * rate / N;
     const sharp = Math.sqrt(ds / (N - 1)) / (rms * 2 * Math.sin(Math.PI * Math.min(f, rate / 4) / rate));
-    return [sharp, rms / pk, turns / cross, f];
+    return [sharp, turns / cross, f];
   }
-
-  // The wave, wrapped: one cycle of the sound, as the scope shows it, kept as 256 points from -1 to 1. A cycle runs
-  // from one rising crossing of the middle line to the next (each after a dip past half the trough, so a resonant
-  // wiggle doesn't start one); it is sized against the loudest of the last few seconds, so a quiet sound pushes
-  // less, and eased frame to frame by Smoothing. Under -55 dB, or with sound off, it eases to flat
-  const WAVE = new Float32Array(256);
-  let waveRef = 0.03;
-  function captureWave(buf, dt) {
-    const N = buf.length, k = 1 - Math.exp(-dt / (0.02 + 0.15 * S.audioSmooth / 100));
-    let mean = 0, top = 0, bot = 0;
-    for (let i = 0; i < N; i++) mean += buf[i]; mean /= N;
-    for (let i = 0; i < N; i++) { const v = buf[i] - mean; if (v > top) top = v; if (v < bot) bot = v; }
-    const pk = Math.max(top, -bot);
-    waveRef = Math.max(pk, waveRef * Math.exp(-dt * 0.9), 0.03);
-    let a = -1, b = -1;
-    if (pk >= 0.0018) {
-      let armed = false;
-      for (let i = 1; i < N; i++) {
-        const v = buf[i] - mean;
-        if (v < bot / 2) armed = true;
-        else if (armed && v >= 0 && buf[i - 1] - mean < 0) { if (a < 0) a = i; else { b = i; break; } armed = false; }
-      }
-    }
-    for (let j = 0; j < 256; j++) {
-      let v = 0;
-      if (b > a) { const t = a + j / 256 * (b - a), i = Math.floor(t), fr = t - i; v = ((buf[i] + (buf[i + 1] - buf[i]) * fr) - mean) / waveRef; }
-      WAVE[j] += (v - WAVE[j]) * k;
-    }
-  }
-  const waveAt = u => { const t = ((u % 1) + 1) % 1 * 256, i = Math.floor(t), fr = t - i; return WAVE[i] + (WAVE[(i + 1) & 255] - WAVE[i]) * fr; };
 
   // levels, frame by frame. Each band is read in dB against its own recent peak (30 dB below it is 0), so quiet and
   // loud material both use the range; but a band's peak never sinks more than 12 dB under the loudest band's, so a
   // band that is only a trace beside the others reads low, and anything under -55 dB is silence. The beat is the
   // bass rising fast: 6 dB (less with more Sensitivity) over its own level of the last half second, while loud
   // beside the rest. A held note, or a slow swell, is no beat
-  const newEnv = () => ({ peak: [-50, -50, -50], env: [0, 0, 0], slow: -120, since: 1, pulse: 0, tim: [0, 0, 0, 0, 0], loud: -120, f0: 0,
-                          lv: { bass: 0, mids: 0, highs: 0, beat: 0, bright: 0, reson: 0, sharp: 0, square: 0, ring: 0 } });
+  const newEnv = () => ({ peak: [-50, -50, -50], env: [0, 0, 0], slow: -120, since: 1, pulse: 0, tim: [0, 0, 0, 0], loud: -120, f0: 0,
+                          lv: { bass: 0, mids: 0, highs: 0, beat: 0, bright: 0, reson: 0, sharp: 0, ring: 0 } });
   AUDIO.env = newEnv();
+  const LEARN = { on: false, lo: [1, 1, 1, 1], hi: [0, 0, 0, 0] };
   const QUIET = -55;   // dB: below this a band, or the whole sound, counts as silence
   function stepEnv(E, P, dt) {
     const RANGE = 30, gain = S.audioGain / 100, s = S.audioSmooth / 100;
@@ -1650,26 +1586,29 @@
       E.loud = Math.max(tot, E.loud - 6 * dt);
       if (tot > QUIET && tot > E.loud - 24) {
         const raw = [clamp01(Math.log2(Math.max(P[3], 1) / 150) / Math.log2(40)), clamp01((P[4] - 4) / 26)];
-        // the wave's shape: Sharpness 1 (a sine) to 8 on a log scale; Squareness from a saw's 0.58 to a square's 0.95;
-        // Ringing from a clean wave's 1 turning point a crossing to 4
-        if (P.length > 9) raw.push(clamp01(Math.log2(Math.max(P[6], 1)) / 3), clamp01((P[7] - 0.58) / 0.37), clamp01((P[8] - 1) / 3));
+        // the wave's shape: Sharpness 1 (a sine) to 8 on a log scale; Ringing from a clean wave's 1 turning point a
+        // crossing to 4
+        if (P.length > 8) raw.push(clamp01(Math.log2(Math.max(P[6], 1)) / 3), clamp01((P[7] - 1) / 3));
+        // learning: note the lowest and highest each reading reaches. Learned: stretch that range to 0–1, so a full
+        // turn of the knob moves the reading all the way
+        for (let i = 0; i < raw.length; i++) {
+          const key = TONE_KEYS[i];
+          if (LEARN.on && E === AUDIO.env) { LEARN.lo[i] = Math.min(LEARN.lo[i], raw[i]); LEARN.hi[i] = Math.max(LEARN.hi[i], raw[i]); }
+          else if (S.cal[key]) { const [a, b] = S.cal[key]; raw[i] = clamp01((raw[i] - a) / (b - a)); }
+        }
         const k = 1 - Math.exp(-dt / (0.03 + 0.3 * s));
         for (let i = 0; i < raw.length; i++) E.tim[i] += (raw[i] - E.tim[i]) * k;
-        if (P.length > 9) E.f0 = P[9];
+        if (P.length > 8) E.f0 = P[8];
       }
     }
-    E.lv.bright = E.tim[0]; E.lv.reson = E.tim[1]; E.lv.sharp = E.tim[2]; E.lv.square = E.tim[3]; E.lv.ring = E.tim[4];
+    E.lv.bright = E.tim[0]; E.lv.reson = E.tim[1]; E.lv.sharp = E.tim[2]; E.lv.ring = E.tim[3];
   }
   function modsFrom(lv) {
     zeroMods();
     for (const m of S.audioMap) audioMod[m.target] += (lv[m.band] || 0) * m.amount / 100 * AUDIO_TARGETS[m.target][1];
   }
-  // the live offsets: sound's bands while sound is on, and the notes' envelope while MIDI is on
-  const NO_SOUND = { bass: 0, mids: 0, highs: 0, beat: 0, bright: 0, reson: 0, sharp: 0, square: 0, ring: 0 };
-  function applyMods(lv) {
-    if (!AUDIO.on && !MIDI.on) { zeroMods(); return; }
-    modsFrom({ ...(AUDIO.on && lv ? lv : NO_SOUND), notes: MIDI.on ? MIDI.level : 0 });
-  }
+  // the live offsets, while sound is on
+  function applyMods(lv) { if (AUDIO.on && lv) modsFrom(lv); else zeroMods(); }
   // sound steps the frequency from the one set; at an end of the range (2v, 16v) it bounces back rather than
   // stopping, so a link that raises 16v still moves it (down)
   const freqNow = () => {
@@ -1812,7 +1751,6 @@
     const overlayA = (pst ? pst.gridA : 1) * (jst ? jst.inflate : 1) * (ust ? inflate * (1 - Math.max(ust.fold, ust.align)) : 1);
 
     const Bm = S.body; let bodyOn = !!Bm;   // the sphere's own rotation (tumble)
-    const wrap = S.wrapAmt / 100 * 0.3;      // the sound's wave wrapped round it: up to 30% of the radius out or in
     const projArr = (src, k, flatSrc, mix, rad) => {
       const o = new Float32Array(src.length), m = mix ?? inflate;
       for (let i = 0; i < src.length; i += 3) {
@@ -1825,14 +1763,9 @@
         if (rad) { const q = rad(x, y, z); x *= q; y *= q; z *= q; }   // radial displacement (ripple)
         if (bodyOn) { const X = Bm[0]*x + Bm[1]*y + Bm[2]*z, Y = Bm[3]*x + Bm[4]*y + Bm[5]*z; z = Bm[6]*x + Bm[7]*y + Bm[8]*z; x = X; y = Y; }
         x *= k; y *= k; z *= k;
-        let sx = x*r[0] + y*r[1] + z*r[2], sy = x*u[0] + y*u[1] + z*u[2], sz = x*f[0] + y*f[1] + z*f[2];
-        if (wrap) {   // the wave wrapped round the picture, like a round scope: out or in by its value at this angle
-          const q = 1 + wrap * waveAt(Math.atan2(sy, sx) / (2 * Math.PI) * S.wrapCycles);
-          sx *= q; sy *= q; sz *= q;
-        }
-        o[i]   = c + sx * R;
-        o[i+1] = c - sy * R;
-        o[i+2] = sz;
+        o[i]   = c + (x*r[0] + y*r[1] + z*r[2]) * R;
+        o[i+1] = c - (x*u[0] + y*u[1] + z*u[2]) * R;
+        o[i+2] = x*f[0] + y*f[1] + z*f[2];
       }
       return o;
     };
@@ -2502,9 +2435,8 @@
     }
     if (!dragging) stepOrientation(dt);
     syncOrient();
-    stepNotes(dt);
     hear(dt);
-    if (MIDI.on) showNotes();
+    if (freqNow() !== readout.f) readout();   // sound stepped the frequency: the readout follows
     requestAnimationFrame(tick);   // ask for the next frame first: a bad frame must never stop the loop
     try { draw(); } catch (e) { if (!tick.failed) { tick.failed = true; console.error(e); } }
   }
@@ -2553,11 +2485,11 @@
   const letter = i => i < 26 ? String.fromCharCode(65 + i) : String.fromCharCode(65 + Math.floor(i / 26) - 1) + String.fromCharCode(65 + i % 26);
 
   function readout() {
-    const g = build(S.freq);
+    const fv = readout.f = freqNow(), g = build(fv);   // as drawn: sound may have stepped it from the one set
     const struts = g.outerE.length/2 + g.innerE.length/2 + g.webE.length/2;
     const types = S.strutColor && S.tolMM > 0 ? strutClasses(g).classes.length : g.strutTypes;
     $('readout').innerHTML = [
-      `<span><b>${S.freq}v</b> Class I</span>`,
+      `<span><b>${fv}v</b> Class I${fv !== S.freq ? ` <span class="by-sound">sound · set ${S.freq}v</span>` : ''}</span>`,
       `<span><b>${nf.format(g.nNodes + g.nTris)}</b> nodes</span>`,
       `<span><b>${nf.format(struts)}</b> struts</span>`,
       `<span><b>${types}</b> outer strut lengths${S.strutColor && S.tolMM > 0 ? ` at ±${S.tolMM} mm` : ''}</span>`,
@@ -2672,7 +2604,7 @@
     $('matchStruts').disabled = !(S.cOuter || S.cInner || S.cWeb);
     syncEditor();
     document.querySelector(`input[name="cap"][value="${S.cap}"]`).checked = true;
-    readout(); legend(); syncAnim(); syncClip(); syncAudioSettings(); syncMidiSettings();
+    readout(); legend(); syncAnim(); syncClip(); syncAudioSettings();
     if (pin) pinLayout();
     if (!$('presets').hidden) keepReady();   // the copy buttons always have the current look's code at hand
   }
@@ -3025,7 +2957,7 @@
     Minus: () => stepDepth(-5), Equal: () => stepDepth(5),
     Semicolon: e => stepWeight(-1, e.shiftKey), Quote: e => stepWeight(1, e.shiftKey), NumpadSubtract: () => stepDepth(-5), NumpadAdd: () => stepDepth(5),
     KeyF: () => setFull(!isFull()), Escape: () => setFull(false), KeyR: e => randomLayers(e.shiftKey),
-    KeyV: () => stepBlend(-1), KeyB: () => stepBlend(1), KeyA: () => toggleSound(), KeyM: () => toggleMidi(),
+    KeyV: () => stepBlend(-1), KeyB: () => stepBlend(1), KeyA: () => toggleSound(),
     ArrowLeft: e => orientKey(e, true), ArrowRight: e => orientKey(e, true), ArrowUp: e => orientKey(e, true),
     ArrowDown: e => orientKey(e, true), KeyQ: e => orientKey(e, true), KeyE: e => orientKey(e, true),
   };
@@ -3033,7 +2965,7 @@
     e => e.shiftKey && i < MAX_PINS ? recallPin(i) : toggleLayer(i);   // Shift + 1 to 4: the pinned presets
   // for synthetic keystrokes that carry no key position
   const BY_KEY = { '[': 'BracketLeft', ']': 'BracketRight', ',': 'Comma', '.': 'Period', '-': 'Minus', '=': 'Equal', '+': 'Equal',
-    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ';': 'Semicolon', "'": 'Quote', q: 'KeyQ', Q: 'KeyQ', r: 'KeyR', R: 'KeyR', v: 'KeyV', V: 'KeyV', b: 'KeyB', B: 'KeyB', a: 'KeyA', A: 'KeyA', m: 'KeyM', M: 'KeyM', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])), '!': 'Digit1', '@': 'Digit2', '#': 'Digit3', '$': 'Digit4' };
+    f: 'KeyF', F: 'KeyF', Escape: 'Escape', ';': 'Semicolon', "'": 'Quote', q: 'KeyQ', Q: 'KeyQ', r: 'KeyR', R: 'KeyR', v: 'KeyV', V: 'KeyV', b: 'KeyB', B: 'KeyB', a: 'KeyA', A: 'KeyA', e: 'KeyE', E: 'KeyE', ...Object.fromEntries([...'1234567890'].map(d => [d, 'Digit' + d])), '!': 'Digit1', '@': 'Digit2', '#': 'Digit3', '$': 'Digit4' };
   // Stepping keys repeat on their own timer while held, not by the keyboard's repeat: a keyboard repeats only the
   // last key pressed, so pressing anything else would stop a held depth or spin key. Now several can be held at once
   const STEPPED = new Set(['BracketLeft', 'BracketRight', 'Comma', 'Period', 'Minus', 'Equal', 'Semicolon', 'Quote', 'NumpadSubtract', 'NumpadAdd']);
@@ -3061,7 +2993,7 @@
   // (deflate) and written in URL-safe base64 after "ds1.". The panel tab, folded sections, export settings and play or
   // pause stay as they are. Presets are saved by name in this browser, up to four pinned (Shift + 1 to 4), and travel as
   // a code to paste or a link that opens with the preset applied.
-  const NOT_IN_PRESET = new Set(['tab', 'closed', 'custom', 'playing', 'exportBg', 'clip', 'quality', 'motionSize', 'loops', 'after', 'trackLen', 'midiIn', 'midiFollow']);
+  const NOT_IN_PRESET = new Set(['tab', 'closed', 'custom', 'playing', 'exportBg', 'clip', 'quality', 'motionSize', 'loops', 'after', 'trackLen', 'cal']);
   const PRESET_KEYS = Object.keys(DEFAULTS).filter(k => !NOT_IN_PRESET.has(k));
   const PKEY = 'dymaxion-studio:presets', MAX_PINS = 4;
   let presets = [];
@@ -3309,7 +3241,6 @@
         win[i] = v / chans.length;
       }
       stepEnv(E, bandPower(win, rate), dt);
-      captureWave(win, dt);
     };
     for (let t = Math.max(0, plan.from - 3); t < plan.from - dt / 2; t += dt) hearAt(t);
     let th = theta, ck = clock;
@@ -3586,7 +3517,7 @@
     if (A.ctx.state === 'suspended') A.ctx.resume().catch(() => {});
     return A.ctx;
   }
-  const SILENT = [0, 0, 0], SILENT_BUF = new Float32Array(FFT_N);
+  const SILENT = [0, 0, 0];
   // a small scope, like the synth's: two cycles from a rising zero crossing, so a steady note stands still
   function drawScope(buf, f0, rate, live) {
     const cv = $('scope'), w = cv.clientWidth, h = cv.clientHeight;
@@ -3617,15 +3548,14 @@
   }
   function hear(dt) {
     const A = AUDIO;
-    if (!A.ctx) { applyMods(null); captureWave(SILENT_BUF, dt); return; }
+    if (!A.ctx) { applyMods(null); return; }
     let P = SILENT;
     if ((A.el && !A.el.paused) || A.stream) { A.an.getFloatTimeDomainData(A.buf); P = bandPower(A.buf, A.ctx.sampleRate); }
     stepEnv(A.env, P, dt);
     applyMods(A.env.lv);
-    captureWave(A.on && ((A.el && !A.el.paused) || A.stream) ? A.buf : SILENT_BUF, dt);
     const lv = A.env.lv, bars = hear.bars ||= [...document.querySelectorAll('#meters b')];
     drawScope(A.buf, A.env.f0, A.ctx.sampleRate, (A.el && !A.el.paused) || !!A.stream);
-    ['bass', 'mids', 'highs', 'beat', 'bright', 'reson', 'sharp', 'square', 'ring'].forEach((b, i) => {
+    ['bass', 'mids', 'highs', 'beat', 'bright', 'reson', 'sharp', 'ring'].forEach((b, i) => {
       const v = Math.round(lv[b] * 100) / 100;
       if (bars[i].v !== v) { bars[i].v = v; bars[i].style.transform = `scaleX(${v})`; }
     });
@@ -3675,8 +3605,7 @@
     $('amapEmpty').hidden = S.audioMap.length > 0;
     $('amapAdd').disabled = S.audioMap.length >= 8;
     $('audioGain').value = S.audioGain; $('audioGainVal').textContent = `${S.audioGain}%`;
-    $('wrapAmt').value = S.wrapAmt; $('wrapAmtVal').textContent = S.wrapAmt ? `${S.wrapAmt}%` : 'off';
-    $('wrapCycles').value = S.wrapCycles; $('wrapCyclesVal').textContent = `${S.wrapCycles}×`;
+    syncLearn();
     $('audioSmooth').value = S.audioSmooth; $('audioSmoothVal').textContent = S.audioSmooth ? `${S.audioSmooth}%` : 'none';
   }
   // what a link does at full level
@@ -3686,113 +3615,30 @@
       : target === 'freq' ? `${sg(Math.round(k))}v` : target === 'size' ? `${sg(Math.round(k * 100))}%`
       : target === 'spin' ? `${sg(Math.round(k))}°/s` : target === 'hue' ? `${sg(Math.round(k))}°` : `${Math.round(clamp01(k) * 100)}%`;
   }
-  // ───────────────────────── MIDI notes ─────────────────────────
-  // Notes from any MIDI input (or the one chosen) each run an ADSR envelope: up over Attack, down to Sustain over
-  // Decay while held, and away over Release once let go (or once the sustain pedal lifts). Velocity scales each one.
-  // The envelopes add, so chords stack, and the sum eases off above 1 rather than clipping. The level is the Notes
-  // source for the links, an offset like sound's: with MIDI off, or nothing playing, the sphere is exactly as set
-  const MIDI = { on: false, access: null, level: 0, voices: new Map(), pedal: false, held: new Set(), info: '' };
-  const NOTE = n => ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'][n % 12] + (Math.floor(n / 12) - 1);
-  // slider position (0–100) ⇄ ms, on a curve
-  const envMs = (k, p) => { const [lo, hi] = ENV_MS[k], a = Math.max(lo, 5); return p <= 0 ? lo : Math.round(a * (hi / a) ** (p / 100)); };
-  const envPos = (k, ms) => { const [lo, hi] = ENV_MS[k], a = Math.max(lo, 5); return ms <= a ? 0 : Math.round(100 * Math.log(ms / a) / Math.log(hi / a)); };
-  const msText = ms => ms >= 1000 ? `${(ms / 1000).toFixed(ms >= 10000 ? 0 : 1)} s` : `${ms} ms`;
-  function stepNotes(dt) {
-    if (!MIDI.voices.size) { MIDI.level = 0; return; }
-    const A = S.midiA / 1000, D = S.midiD / 1000 / 4, R = S.midiR / 1000 / 4, sus = S.midiS / 100;   // decay and release: time constants, ~98% by the set time
-    let sum = 0;
-    for (const [n, v] of MIDI.voices) {
-      if (v.stage === 'a') { v.lvl = A > 0 ? v.lvl + dt / A : 1; if (v.lvl >= 1) { v.lvl = 1; v.stage = 'd'; } }
-      else if (v.stage === 'd') v.lvl = sus + (v.lvl - sus) * Math.exp(-dt / D);
-      else { v.lvl *= Math.exp(-dt / R); if (v.lvl < 0.002) { MIDI.voices.delete(n); continue; } }
-      sum += v.lvl * v.vel;
+  const TONE_NAME = { bright: 'Brightness', reson: 'Resonance', sharp: 'Sharpness', ring: 'Ringing' };
+  function syncLearn() {
+    const learned = Object.keys(S.cal);
+    $('learnBtn').textContent = LEARN.on ? 'Done' : learned.length ? 'Learn again' : 'Learn my knobs';
+    $('learnBtn').classList.toggle('primary', LEARN.on);
+    $('learnForget').disabled = LEARN.on || !learned.length;
+    $('learnNote').textContent = LEARN.on ? 'Learning: turn the cutoff and resonance knobs slowly from end to end while a note sounds, then press Done.'
+      : learned.length ? `Learned: ${learned.map(k => TONE_NAME[k]).join(', ')}. A full turn of the knob moves each all the way.`
+      : 'Play a held note, press Learn, and turn the cutoff and resonance knobs from one end to the other. Their full turn then moves Brightness, Resonance, Sharpness and Ringing all the way.';
+  }
+  $('learnBtn').addEventListener('click', () => {
+    if (!LEARN.on) {
+      if (!AUDIO.on || (!(AUDIO.el && !AUDIO.el.paused) && !AUDIO.stream)) { toast('Start the sound first: Listen to an input, or play a track'); return; }
+      LEARN.on = true; LEARN.lo.fill(1); LEARN.hi.fill(0); syncLearn(); return;
     }
-    MIDI.level = sum <= 1 ? sum : 1 + 0.5 * Math.tanh((sum - 1) / 0.5);   // stacks past 1, easing toward 1.5
-  }
-  function noteOn(n, vel) {
-    const v = MIDI.voices.get(n);
-    MIDI.voices.set(n, { stage: 'a', lvl: v ? v.lvl : 0, vel: S.midiVel ? vel / 127 : 1 });   // a retrigger starts from where it is
-    MIDI.held.add(n); MIDI.info = `${NOTE(n)} · velocity ${vel}`;
-  }
-  function noteOff(n) {
-    MIDI.held.delete(n);
-    if (MIDI.pedal) return;
-    const v = MIDI.voices.get(n); if (v) v.stage = 'r';
-  }
-  const releaseAll = () => { for (const [n, v] of MIDI.voices) if (!MIDI.held.has(n)) v.stage = 'r'; };
-  function onMidi(e) {
-    if (!MIDI.on || (S.midiIn && e.target.name !== S.midiIn)) return;
-    const [st, d1 = 0, d2 = 0] = e.data, kind = st & 0xf0;
-    if (kind === 0x90 && d2 > 0) noteOn(d1, d2);
-    else if (kind === 0x80 || kind === 0x90) noteOff(d1);
-    else if (kind === 0xb0) {
-      if (d1 === 64) { MIDI.pedal = d2 >= 64; if (!MIDI.pedal) releaseAll(); }
-      else if (d1 === 120) { MIDI.voices.clear(); MIDI.held.clear(); }   // all sound off
-      else if (d1 === 123) { MIDI.held.clear(); releaseAll(); }         // all notes off
-      else if (S.midiFollow && d1 >= 16 && d1 <= 19) {                  // the amp envelope's knobs
-        const key = ['midiA', 'midiD', 'midiS', 'midiR'][d1 - 16], p = d2 / 127 * 100;
-        S[key] = key === 'midiS' ? Math.round(p) : envMs(key, p);
-        syncMidiSettings(); persist();
-      }
-      MIDI.info = `CC ${d1} = ${d2}`;
-    }
-  }
-  function listMidiInputs() {
-    const sel = $('midiDev'), names = MIDI.access ? [...MIDI.access.inputs.values()].map(i => i.name) : [];
-    if (S.midiIn && !names.includes(S.midiIn)) names.push(S.midiIn);   // remembered, though not plugged in now
-    sel.replaceChildren(new Option('All inputs', ''), ...names.map(nm => new Option(nm, nm)));
-    sel.value = S.midiIn;
-    if (MIDI.access) for (const i of MIDI.access.inputs.values()) i.onmidimessage = onMidi;
-    if (MIDI.on && !MIDI.voices.size) MIDI.info = listening();
-  }
-  // what the panel says until a note or knob arrives: which inputs are heard, or why none are
-  function listening() {
-    const names = MIDI.access ? [...MIDI.access.inputs.values()].map(i => i.name) : [];
-    if (!names.length) return 'No MIDI input found: check the USB cable, then turn MIDI off and on';
-    const heard = S.midiIn ? names.filter(n => n === S.midiIn) : names;
-    return heard.length ? `Listening · ${heard.join(', ')}` : `${S.midiIn} isn’t connected`;
-  }
-  function midiStatus(text) { MIDI.info = text; $('noteInfo').textContent = text; }
-  async function setMidiOn(on) {
-    if (on && !MIDI.access) {
-      if (!navigator.requestMIDIAccess) { midiStatus('This browser has no MIDI: open the studio in Chrome or Edge'); toast('This browser has no MIDI. Chrome or Edge do.'); on = false; }
-      else try { MIDI.access = await navigator.requestMIDIAccess(); MIDI.access.onstatechange = listMidiInputs; }
-      catch {
-        // refused by the person, or by the page holding the studio (an embedded preview or artifact frame)
-        midiStatus(window.top !== window ? 'MIDI is blocked inside this frame: open the studio in its own Chrome tab' : 'MIDI was refused: allow it from the site settings (the icon left of the address)');
-        toast('MIDI wasn’t allowed here.'); on = false;
-      }
-    }
-    MIDI.on = on;
-    if (!on) { MIDI.voices.clear(); MIDI.held.clear(); MIDI.level = 0; }
-    else listMidiInputs();
-    $('midiOn').checked = on;
-    if (on) toast(MIDI.access && MIDI.access.inputs.size ? 'MIDI on · play a note' : 'MIDI on · no input found yet');
-  }
-  function toggleMidi() { setMidiOn(!MIDI.on); if (MIDI.on && !S.audioMap.some(m => m.band === 'notes')) addNotesLink(); }
-  function addNotesLink() {   // a first link, so a note does something straight away
-    if (S.audioMap.length >= 8) return;
-    S.audioMap.push({ band: 'notes', target: 'depth', amount: 60 }); sync(); persist();
-  }
-  function syncMidiSettings() {
-    for (const [id, k] of [['envA', 'midiA'], ['envD', 'midiD'], ['envR', 'midiR']]) {
-      if (document.activeElement !== $(id)) $(id).value = envPos(k, S[k]);
-      $(id + 'Val').textContent = msText(S[k]);
-    }
-    $('envS').value = S.midiS; $('envSVal').textContent = `${S.midiS}%`;
-    $('midiFollow').checked = S.midiFollow; $('midiVel').checked = S.midiVel;
-  }
-  function showNotes() {   // the meter and the last thing heard, once a frame
-    const v = Math.round(Math.min(1, MIDI.level) * 100) / 100, bar = $('noteBar');
-    if (bar.v !== v) { bar.v = v; bar.style.transform = `scaleX(${v})`; }
-    if (MIDI.info !== showNotes.info) { showNotes.info = MIDI.info; $('noteInfo').textContent = MIDI.info || 'no notes yet'; }
-  }
-  $('midiOn').addEventListener('change', e => { setMidiOn(e.target.checked).then(() => { if (MIDI.on && !S.audioMap.some(m => m.band === 'notes')) addNotesLink(); }); });
-  $('midiDev').addEventListener('change', e => { S.midiIn = e.target.value; MIDI.voices.clear(); MIDI.held.clear(); persist(); if (MIDI.on) midiStatus(listening()); });
-  for (const [id, k] of [['envA', 'midiA'], ['envD', 'midiD'], ['envR', 'midiR']]) $(id).addEventListener('input', e => set(k, envMs(k, +e.target.value)));
-  $('envS').addEventListener('input', e => set('midiS', +e.target.value));
-  $('midiFollow').addEventListener('change', e => set('midiFollow', e.target.checked));
-  $('midiVel').addEventListener('change', e => set('midiVel', e.target.checked));
+    LEARN.on = false;
+    const cal = {};
+    TONE_KEYS.forEach((k, i) => { if (LEARN.hi[i] - LEARN.lo[i] >= 0.05) cal[k] = [LEARN.lo[i], LEARN.hi[i]]; });
+    const got = Object.keys(cal);
+    if (got.length) { S.cal = cal; persist(); toast(`Learned ${got.map(k => TONE_NAME[k]).join(', ')}`); }
+    else toast('Nothing moved enough to learn: turn the knobs further while a note sounds');
+    syncLearn();
+  });
+  $('learnForget').addEventListener('click', () => { S.cal = {}; persist(); syncLearn(); toast('Forgot the learned ranges'); });
 
   function setAudioOn(on) { AUDIO.on = on; if (!on) zeroMods(); syncAudio(); }
   function pauseTrack() { if (AUDIO.el && !AUDIO.el.paused) AUDIO.el.pause(); }
@@ -3931,8 +3777,6 @@
     S.audioMap.push({ band: 'beat', target, amount: 40 }); sync(); persist();
   });
   $('audioGain').addEventListener('input', e => set('audioGain', +e.target.value));
-  $('wrapAmt').addEventListener('input', e => set('wrapAmt', +e.target.value));
-  $('wrapCycles').addEventListener('input', e => set('wrapCycles', +e.target.value));
   $('audioSmooth').addEventListener('input', e => set('audioSmooth', +e.target.value));
   // drop an audio file anywhere on the page
   const isAudioFile = f => /^audio\//.test(f.type) || /\.(mp3|wav|m4a|aac|ogg|oga|opus|flac|aiff?|caf|weba)$/i.test(f.name);
