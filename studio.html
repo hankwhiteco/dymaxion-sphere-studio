@@ -327,6 +327,7 @@
 
   /* sound: four level meters, and links from a band to a control */
   .meters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  #meters .meter:nth-child(n+5) { grid-column: span 2; }   /* timbre: a second row, two wide meters */
   .meter { display: grid; gap: 5px; font-size: 10.5px; color: var(--muted); }
   .meter i { position: relative; height: 4px; border-radius: 2px; background: var(--well); overflow: hidden; }
   .meter b { position: absolute; inset: 0; background: var(--fg); transform: scaleX(0); transform-origin: left; }
@@ -709,6 +710,7 @@
       <div class="meters" id="meters" aria-hidden="true">
         <span class="meter"><i><b></b></i>Bass</span><span class="meter"><i><b></b></i>Mids</span>
         <span class="meter"><i><b></b></i>Highs</span><span class="meter beat"><i><b></b></i>Beat</span>
+        <span class="meter"><i><b></b></i>Brightness</span><span class="meter"><i><b></b></i>Resonance</span>
       </div>
       <div class="row"><span class="lbl">Sound and notes move</span><span class="val">at full level</span></div>
       <div class="amaps" id="amaps"></div>
@@ -1369,7 +1371,7 @@
   const BLEND_NAME = Object.fromEntries(BLENDS.flatMap(([, m]) => m));
   // sound: four bands, MIDI notes (their envelopes), and the controls they can move. Each control's number is its
   // change at full level and 100%
-  const AUDIO_BANDS = { bass: 'Bass', mids: 'Mids', highs: 'Highs', beat: 'Beat', notes: 'Notes' };
+  const AUDIO_BANDS = { bass: 'Bass', mids: 'Mids', highs: 'Highs', beat: 'Beat', bright: 'Brightness', reson: 'Resonance', notes: 'Notes' };
   const AUDIO_TARGETS = { depth: ['Truss depth', 150], weight: ['Line weight', 2], freq: ['Frequency', 6], size: ['Size', 0.25],
                           spin: ['Spin', 40], hue: ['Hue', 180], tint: ['Tint', 1] };
   // envelope times: [shortest, longest] in ms. Their sliders run on a curve, so short times get most of the travel
@@ -1492,11 +1494,47 @@
     }
     const hz = rate / N, norm = 16 / (N * N);
     const sum = (lo, hi) => { let p = 0; for (let k = Math.max(1, Math.round(lo / hz)), e = Math.min(N / 2, Math.round(hi / hz)); k < e; k++) p += (re[k] * re[k] + im[k] * im[k]) * norm; return p; };
-    return [sum(20, 150), sum(150, 2000), sum(2000, 12000)];
+    // timbre, from the same spectrum (60 Hz–12 kHz). Brightness: the balance point of the power, after tilting the
+    // spectrum up 6 dB an octave, so a plain saw or square reads level and the point follows where a filter's cutoff
+    // takes the top off. Resonance: how far the strongest harmonic stands above the line through the harmonics around
+    // it (within an octave either side, leaving out its own sixth of an octave), so a filter's resonant bump shows
+    // while the steady fall of an ordinary waveform, and the cutoff's knee, mostly do not
+    const k0 = Math.max(1, Math.round(60 / hz)), k1 = Math.min(N / 2 - 1, Math.round(12000 / hz));
+    const L = FFT.L ||= new Float32Array(N / 2);
+    let tot = 0, wsum = 0, cen = 0, top = -Infinity;
+    for (let k = k0; k <= k1; k++) {
+      const pk = (re[k] * re[k] + im[k] * im[k]) * norm, w = pk * k * k;
+      tot += pk; wsum += w; cen += w * k * hz;
+      L[k] = 10 * Math.log10(pk + 1e-14); if (L[k] > top) top = L[k];
+    }
+    // the harmonics: peaks from 100 Hz, within 50 dB of the loudest and within 30 dB of the loudest bin half an
+    // octave either side (which leaves out the window's ripples between harmonics)
+    const px = [], pd = [];
+    for (let k = Math.max(k0 + 2, Math.round(100 / hz)); k < k1 - 1; k++) {
+      if (!(L[k] > L[k - 1] && L[k] >= L[k + 1] && L[k] >= L[k - 2] && L[k] >= L[k + 2] && L[k] > top - 50)) continue;
+      let near = -Infinity;
+      for (let j = Math.max(k0, Math.round(k * 0.707)), e = Math.min(k1, Math.round(k * 1.414)); j <= e; j++) if (L[j] > near) near = L[j];
+      if (L[k] >= near - 30) { px.push(Math.log2(k * hz)); pd.push(L[k]); }
+    }
+    let prom = 0;
+    for (let i = 0; i < px.length; i++) {
+      if (px[i] < Math.log2(300)) continue;
+      let n = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
+      for (let j = 0; j < px.length; j++) {
+        const d = Math.abs(px[j] - px[i]);
+        if (d < 1 / 6 || d > 1) continue;
+        n++; sx += px[j]; sy += pd[j]; sxx += px[j] * px[j]; sxy += px[j] * pd[j];
+      }
+      if (n < 3) continue;
+      const den = n * sxx - sx * sx, b = den > 1e-9 ? (n * sxy - sx * sy) / den : 0, a = (sy - b * sx) / n;
+      prom = Math.max(prom, pd[i] - (a + b * px[i]));
+    }
+    return [sum(20, 150), sum(150, 2000), sum(2000, 12000), wsum > 0 ? cen / wsum : 0, prom, tot];
   }
   // levels, frame by frame: each band in dB against its own recent peak (30 dB below it is 0), eased by attack and
   // release; the beat is bass power jumping well above its average over the last second, a pulse that decays
-  const newEnv = () => ({ peak: [-50, -50, -50], env: [0, 0, 0], avg: 0, since: 1, pulse: 0, lv: { bass: 0, mids: 0, highs: 0, beat: 0 } });
+  const newEnv = () => ({ peak: [-50, -50, -50], env: [0, 0, 0], avg: 0, since: 1, pulse: 0, tim: [0, 0],
+                          lv: { bass: 0, mids: 0, highs: 0, beat: 0, bright: 0, reson: 0 } });
   AUDIO.env = newEnv();
   function stepEnv(E, P, dt) {
     const RANGE = 30, gain = S.audioGain / 100, s = S.audioSmooth / 100;
@@ -1513,13 +1551,21 @@
     E.avg += (bass - E.avg) * (1 - Math.exp(-dt));
     E.pulse *= Math.exp(-dt / (0.08 + 0.3 * s));
     E.lv.bass = E.env[0]; E.lv.mids = E.env[1]; E.lv.highs = E.env[2]; E.lv.beat = E.pulse;
+    // timbre is read as it is, not against recent peaks, so a knob's position always lands in the same place:
+    // Brightness 0 at a centroid of 150 Hz, 1 at 6 kHz (a log scale, like the cutoff knob); Resonance 0 for a peak
+    // 3 dB above its surroundings, 1 at 18 dB. Below -60 dB (silence, or a note's tail) they hold where they were
+    if (P.length > 3 && P[5] > 1e-6) {
+      const raw = [clamp01(Math.log2(Math.max(P[3], 1) / 150) / Math.log2(40)), clamp01((P[4] - 3) / 15)];
+      for (let i = 0; i < 2; i++) E.tim[i] += (raw[i] - E.tim[i]) * (1 - Math.exp(-dt / (0.03 + 0.3 * s)));
+    }
+    E.lv.bright = E.tim[0]; E.lv.reson = E.tim[1];
   }
   function modsFrom(lv) {
     zeroMods();
     for (const m of S.audioMap) audioMod[m.target] += (lv[m.band] || 0) * m.amount / 100 * AUDIO_TARGETS[m.target][1];
   }
   // the live offsets: sound's bands while sound is on, and the notes' envelope while MIDI is on
-  const NO_SOUND = { bass: 0, mids: 0, highs: 0, beat: 0 };
+  const NO_SOUND = { bass: 0, mids: 0, highs: 0, beat: 0, bright: 0, reson: 0 };
   function applyMods(lv) {
     if (!AUDIO.on && !MIDI.on) { zeroMods(); return; }
     modsFrom({ ...(AUDIO.on && lv ? lv : NO_SOUND), notes: MIDI.on ? MIDI.level : 0 });
@@ -3436,7 +3482,7 @@
     stepEnv(A.env, P, dt);
     applyMods(A.env.lv);
     const lv = A.env.lv, bars = hear.bars ||= [...document.querySelectorAll('#meters b')];
-    ['bass', 'mids', 'highs', 'beat'].forEach((b, i) => {
+    ['bass', 'mids', 'highs', 'beat', 'bright', 'reson'].forEach((b, i) => {
       const v = Math.round(lv[b] * 100) / 100;
       if (bars[i].v !== v) { bars[i].v = v; bars[i].style.transform = `scaleX(${v})`; }
     });
