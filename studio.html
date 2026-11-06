@@ -686,6 +686,22 @@
       </div>
       <div class="stages" id="stages"></div>
       </div></details>
+      <details class="sec" data-sec="lwave" open><summary><h2>Sound wave</h2></summary>
+      <div class="sec-body">
+      <div class="row">
+        <label for="lwAmp">Amplitude</label><span class="val" id="lwAmpVal"></span>
+        <input type="range" id="lwAmp" min="0" max="30" step="1">
+      </div>
+      <div class="row">
+        <label for="lwCycles">Waves pole to pole</label><span class="val" id="lwCyclesVal"></span>
+        <input type="range" id="lwCycles" min="1" max="12" step="1">
+      </div>
+      <div class="row">
+        <label for="lwSpeed">Travel</label><span class="val" id="lwSpeedVal"></span>
+        <input type="range" id="lwSpeed" min="0" max="2" step="0.05">
+      </div>
+      <p class="note">A longitudinal wave, like sound through air: each node stays on the sphere and slides back and forth along its line of longitude, so bands of crowding and thinning travel from pole to pole while every strut keeps its place in the frame. The wave is a sine, or with sound on, the sound&rsquo;s own cycle: open the filter and the soft bands sharpen into fronts. Past 16% of a wavelength each node outruns the wave, and the bands split into spikes, as Tyler, Solomon and Anstis (2026) describe.</p>
+      </div></details>
       <details class="sec" data-sec="audio" open><summary><h2>Audio</h2></summary>
       <div class="sec-body">
       <label class="check"><input type="checkbox" id="audioOn"><span>Respond to sound</span><small>A · sound moves the sphere around your settings and never changes them</small></label>
@@ -1386,7 +1402,9 @@
     audioMap: [{ band: 'bass', target: 'depth', amount: 60 }, { band: 'beat', target: 'size', amount: 30 },
                { band: 'mids', target: 'weight', amount: 40 }, { band: 'highs', target: 'tint', amount: 35 }],
     audioGain: 100, audioSmooth: 40, trackLen: 'whole',
-    cal: {},   // learned ranges of the tone readings, from a sweep of the synth's knobs: { bright: [lo, hi], … }
+    cal: {},
+    // a longitudinal wave through the dome: amplitude (% of a wavelength; 0 = off), waves from pole to pole, waves a second
+    lwAmp: 0, lwCycles: 4, lwSpeed: 0.5,   // learned ranges of the tone readings, from a sweep of the synth's knobs: { bright: [lo, hi], … }
   };
   const KEY = 'dymaxion-studio:v1';
   let S = { ...DEFAULTS };
@@ -1434,6 +1452,8 @@
     S.cal = Object.fromEntries(Object.entries(S.cal && typeof S.cal === 'object' ? S.cal : {})
       .filter(([k, v]) => TONE_KEYS.includes(k) && Array.isArray(v) && v.length === 2 && v.every(Number.isFinite) && v[1] - v[0] >= 0.05)
       .map(([k, [a, b]]) => [k, [clamp01(a), clamp01(b)]]));
+    S.lwAmp = Math.max(0, Math.min(30, Math.round(S.lwAmp))); S.lwCycles = Math.max(1, Math.min(12, Math.round(S.lwCycles)));
+    S.lwSpeed = Math.max(0, Math.min(2, Math.round(S.lwSpeed * 20) / 20));
     S.audioGain = Math.max(25, Math.min(400, Math.round(S.audioGain))); S.audioSmooth = Math.max(0, Math.min(100, Math.round(S.audioSmooth)));
   }
   tidyState();
@@ -1550,6 +1570,37 @@
     const sharp = Math.sqrt(ds / (N - 1)) / (rms * 2 * Math.sin(Math.PI * Math.min(f, rate / 4) / rate));
     return [sharp, turns / cross, f];
   }
+
+  // The wave's shape for the longitudinal wave: one cycle, kept as 256 points from -1 to 1. With sound on, it is the
+  // sound's own cycle, as the scope shows it (from one rising crossing of the middle line to the next, each after a
+  // dip past half the trough, so a resonant wiggle doesn't start one), sized against the loudest of the last few
+  // seconds, so a quiet sound moves less and silence rests. With sound off it is a sine. Eased frame to frame
+  const WAVE = Float32Array.from({ length: 256 }, (_, j) => Math.sin(2 * Math.PI * j / 256));
+  let waveRef = 0.03;
+  function captureWave(buf, dt) {   // buf: the latest samples, or null for the plain sine
+    const N = buf ? buf.length : 0, k = 1 - Math.exp(-dt / (0.02 + 0.15 * S.audioSmooth / 100));
+    let mean = 0, top = 0, bot = 0, a = -1, b = -1;
+    if (buf) {
+      for (let i = 0; i < N; i++) mean += buf[i]; mean /= N;
+      for (let i = 0; i < N; i++) { const v = buf[i] - mean; if (v > top) top = v; if (v < bot) bot = v; }
+      const pk = Math.max(top, -bot);
+      waveRef = Math.max(pk, waveRef * Math.exp(-dt * 0.9), 0.03);
+      if (pk >= 0.0018) {
+        let armed = false;
+        for (let i = 1; i < N; i++) {
+          const v = buf[i] - mean;
+          if (v < bot / 2) armed = true;
+          else if (armed && v >= 0 && buf[i - 1] - mean < 0) { if (a < 0) a = i; else { b = i; break; } armed = false; }
+        }
+      }
+    }
+    for (let j = 0; j < 256; j++) {
+      let v = buf ? 0 : Math.sin(2 * Math.PI * j / 256);
+      if (b > a) { const t = a + j / 256 * (b - a), i = Math.floor(t), fr = t - i; v = ((buf[i] + (buf[i + 1] - buf[i]) * fr) - mean) / waveRef; }
+      WAVE[j] += (v - WAVE[j]) * k;
+    }
+  }
+  const waveAt = u => { const t = ((u % 1) + 1) % 1 * 256, i = Math.floor(t), fr = t - i; return WAVE[i] + (WAVE[(i + 1) & 255] - WAVE[i]) * fr; };
 
   // levels, frame by frame. Each band is read in dB against its own recent peak (30 dB below it is 0), so quiet and
   // loud material both use the range; but a band's peak never sinks more than 12 dB under the loudest band's, so a
@@ -1751,6 +1802,11 @@
     const overlayA = (pst ? pst.gridA : 1) * (jst ? jst.inflate : 1) * (ust ? inflate * (1 - Math.max(ust.fold, ust.align)) : 1);
 
     const Bm = S.body; let bodyOn = !!Bm;   // the sphere's own rotation (tumble)
+    // a longitudinal wave through the dome (Tyler, Solomon & Anstis 2026): every node keeps its place on the sphere
+    // and slides back and forth along the great circle from the spin axis's pole, x = x0 + a·W(k·x0 − t), so bands
+    // of crowding and thinning travel pole to pole, as sound does through air. W is one cycle of the wave (a sine,
+    // or the sound's own); a is a share of the wavelength, π / waves radians. Not while the net unfolds
+    const Ax = AXES[S.axis], lwA = ust ? 0 : S.lwAmp / 100 * Math.PI / S.lwCycles, lwK = S.lwCycles / Math.PI, lwT = clock * S.lwSpeed;
     const projArr = (src, k, flatSrc, mix, rad) => {
       const o = new Float32Array(src.length), m = mix ?? inflate;
       for (let i = 0; i < src.length; i += 3) {
@@ -1761,6 +1817,14 @@
           z = flatSrc[i+2] + (z - flatSrc[i+2]) * m;
         }
         if (rad) { const q = rad(x, y, z); x *= q; y *= q; z *= q; }   // radial displacement (ripple)
+        if (lwA) {   // the longitudinal wave: slide along the great circle from the pole, by the wave at this distance
+          const L = Math.hypot(x, y, z), cd = L > 1e-9 ? Math.max(-1, Math.min(1, (x*Ax[0] + y*Ax[1] + z*Ax[2]) / L)) : 1, sd = Math.sqrt(1 - cd * cd);
+          if (sd > 1e-6) {
+            const d = Math.acos(cd), d2 = Math.max(0, Math.min(Math.PI, d + lwA * waveAt(lwK * d - lwT)));
+            const c2 = Math.cos(d2) * L, s2 = Math.sin(d2) * L / sd;
+            x = Ax[0] * c2 + (x / L - Ax[0] * cd) * s2; y = Ax[1] * c2 + (y / L - Ax[1] * cd) * s2; z = Ax[2] * c2 + (z / L - Ax[2] * cd) * s2;
+          }
+        }
         if (bodyOn) { const X = Bm[0]*x + Bm[1]*y + Bm[2]*z, Y = Bm[3]*x + Bm[4]*y + Bm[5]*z; z = Bm[6]*x + Bm[7]*y + Bm[8]*z; x = X; y = Y; }
         x *= k; y *= k; z *= k;
         o[i]   = c + (x*r[0] + y*r[1] + z*r[2]) * R;
@@ -3241,6 +3305,7 @@
         win[i] = v / chans.length;
       }
       stepEnv(E, bandPower(win, rate), dt);
+      captureWave(win, dt);
     };
     for (let t = Math.max(0, plan.from - 3); t < plan.from - dt / 2; t += dt) hearAt(t);
     let th = theta, ck = clock;
@@ -3517,7 +3582,7 @@
     if (A.ctx.state === 'suspended') A.ctx.resume().catch(() => {});
     return A.ctx;
   }
-  const SILENT = [0, 0, 0];
+  const SILENT = [0, 0, 0], SILENT_BUF = new Float32Array(FFT_N);
   // a small scope, like the synth's: two cycles from a rising zero crossing, so a steady note stands still
   function drawScope(buf, f0, rate, live) {
     const cv = $('scope'), w = cv.clientWidth, h = cv.clientHeight;
@@ -3548,11 +3613,12 @@
   }
   function hear(dt) {
     const A = AUDIO;
-    if (!A.ctx) { applyMods(null); return; }
+    if (!A.ctx) { applyMods(null); captureWave(null, dt); return; }
     let P = SILENT;
     if ((A.el && !A.el.paused) || A.stream) { A.an.getFloatTimeDomainData(A.buf); P = bandPower(A.buf, A.ctx.sampleRate); }
     stepEnv(A.env, P, dt);
     applyMods(A.env.lv);
+    captureWave(!A.on ? null : (A.el && !A.el.paused) || A.stream ? A.buf : SILENT_BUF, dt);
     const lv = A.env.lv, bars = hear.bars ||= [...document.querySelectorAll('#meters b')];
     drawScope(A.buf, A.env.f0, A.ctx.sampleRate, (A.el && !A.el.paused) || !!A.stream);
     ['bass', 'mids', 'highs', 'beat', 'bright', 'reson', 'sharp', 'ring'].forEach((b, i) => {
@@ -3605,6 +3671,9 @@
     $('amapEmpty').hidden = S.audioMap.length > 0;
     $('amapAdd').disabled = S.audioMap.length >= 8;
     $('audioGain').value = S.audioGain; $('audioGainVal').textContent = `${S.audioGain}%`;
+    $('lwAmp').value = S.lwAmp; $('lwAmpVal').textContent = S.lwAmp ? `${S.lwAmp}% of a wave` : 'off';
+    $('lwCycles').value = S.lwCycles; $('lwCyclesVal').textContent = `${S.lwCycles}`;
+    $('lwSpeed').value = S.lwSpeed; $('lwSpeedVal').textContent = S.lwSpeed ? `${S.lwSpeed} a second` : 'still';
     syncLearn();
     $('audioSmooth').value = S.audioSmooth; $('audioSmoothVal').textContent = S.audioSmooth ? `${S.audioSmooth}%` : 'none';
   }
@@ -3777,6 +3846,9 @@
     S.audioMap.push({ band: 'beat', target, amount: 40 }); sync(); persist();
   });
   $('audioGain').addEventListener('input', e => set('audioGain', +e.target.value));
+  $('lwAmp').addEventListener('input', e => set('lwAmp', +e.target.value));
+  $('lwCycles').addEventListener('input', e => set('lwCycles', +e.target.value));
+  $('lwSpeed').addEventListener('input', e => set('lwSpeed', +e.target.value));
   $('audioSmooth').addEventListener('input', e => set('audioSmooth', +e.target.value));
   // drop an audio file anywhere on the page
   const isAudioFile = f => /^audio\//.test(f.type) || /\.(mp3|wav|m4a|aac|ogg|oga|opus|flac|aiff?|caf|weba)$/i.test(f.name);
