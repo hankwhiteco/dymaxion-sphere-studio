@@ -598,8 +598,9 @@
         <label for="grain">Grain</label><span class="val" id="grainVal"></span>
         <input type="range" id="grain" min="0" max="100" step="1" value="0">
       </div>
-      <div class="color" id="grainColorRow"><span class="lbl">Grain colour</span><div class="swatches" id="sw_grain">
+      <div class="color" id="grainColorRow"><span class="lbl">Grain</span><div class="swatches" id="sw_grain">
         <button type="button" class="ckey" data-which="mono" aria-label="Grain colour: black and white"><span class="dot" style="background: linear-gradient(90deg, #000 50%, #fff 50%)"></span>Mono</button>
+        <button type="button" class="ckey" data-which="film" aria-label="Grain: film, strongest in the midtones"><span class="dot" style="background: radial-gradient(circle at 35% 40%, #fff 0 18%, transparent 22%), radial-gradient(circle at 70% 65%, #000 0 20%, transparent 24%), #808080"></span>Film</button>
         <label class="ckey" data-which="custom"><span class="dot" id="gdot_custom"></span>Custom<input type="color" id="pick_grain" aria-label="Grain colour: custom"></label>
       </div></div>
       <div class="row" id="grainSizeRow">
@@ -1429,7 +1430,7 @@
       S.grad = Object.fromEntries(Object.entries(DEFAULTS.grad).map(([r, d]) => [r, { ...d, ...(g[r] || {}) }]));
       if (S.grad.bg.dir === 'depth') S.grad.bg.dir = 'vertical';
     }
-    if (!['mono', 'custom'].includes(S.grainColor)) S.grainColor = 'mono';   // Struts was dropped
+    if (!['mono', 'film', 'custom'].includes(S.grainColor)) S.grainColor = 'mono';   // Struts was dropped
     if (!ANIMS[S.animKind]) S.animKind = 'jitterbug';
     if (!(Array.isArray(S.body) && S.body.length === 9 && S.body.every(Number.isFinite))) S.body = null;
     for (const k of Object.keys(DEFAULTS)) {
@@ -2356,31 +2357,54 @@
   // Dispersion thins the specks out: a pixel carries one if its own fixed random number falls under the share
   // (all pixels at 0, 1 in 50 at 100), so specks keep their places as the slider moves; sparser specks are drawn
   // stronger, so scattered grain reads as distinct dots. The tile is rebuilt only when colour or dispersion change.
+  // Film (after the grain on gravity.moonshot.ooo): triangular noise (two randoms summed, which dithers smooth
+  // gradients evenly) mixed with film grain, fine specks plus soft clumps from two octaves of value noise. Over a
+  // background it is a mid-grey tile laid on with Overlay, which works the midtones and barely touches black or
+  // white, as film does; with no background, dark and light specks on the lines, like Mono.
   let grainTile = null, grainKey = '';
   const grainShare = () => 50 ** (-S.grainSpread / 100);
   function addGrain(ctx, w, h, unit, solid) {
     if (!S.grain) return;
-    const ink = S.grainColor === 'custom' ? S.grainCustom : null, share = grainShare(), key = (ink || 'mono') + '|' + share;
+    const ink = S.grainColor === 'custom' ? S.grainCustom : null, share = grainShare();
+    const film = S.grainColor === 'film', key = (ink || S.grainColor) + '|' + share + (film ? '|' + !!solid : '');
     if (key !== grainKey) {
       const N = 512, c = document.createElement('canvas'); c.width = c.height = N;
       const g = c.getContext('2d'), img = g.createImageData(N, N), d = img.data, rgb = ink && hexRgb(ink);
       let x = 0x9e3779b9;   // fixed seed: the same grain every time, in the view and in exports
       const rnd = () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296; };
       const boost = 1 / Math.sqrt(share);
-      for (let i = 0; i < d.length; i += 4) {
+      if (S.grainColor === 'film') {
+        // value noise on a lattice that wraps with the tile (cells of 2 and 4 pixels), so the tile repeats seamlessly
+        const lat = cell => { const n = N / cell, L = new Float32Array(n * n); for (let i = 0; i < L.length; i++) L[i] = rnd(); return { n, L, cell }; };
+        const A = lat(2), B = lat(4);
+        const vn = ({ n, L, cell }, px, py) => {
+          const gx = px / cell, gy = py / cell, i = Math.floor(gx), j = Math.floor(gy);
+          let fx = gx - i, fy = gy - j; fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy);
+          const at = (a, b) => L[((b % n) + n) % n * n + ((a % n) + n) % n];
+          return (at(i, j) * (1 - fx) + at(i + 1, j) * fx) * (1 - fy) + (at(i, j + 1) * (1 - fx) + at(i + 1, j + 1) * fx) * fy;
+        };
+        for (let py = 0, i = 0; py < N; py++) for (let px = 0; px < N; px++, i += 4) {
+          const tri = rnd() + rnd() - 1, fine = rnd(), clump = 0.6 * vn(A, px, py) + 0.4 * vn(B, px + 17, py + 59);
+          const keep = rnd() < share, v = keep ? Math.max(-1, Math.min(1, 0.55 * tri + 0.45 * (fine * 0.5 + clump * 0.5 - 0.5) * 2.2) * Math.min(2, boost)) : 0;
+          if (solid) { d[i] = d[i + 1] = d[i + 2] = Math.round(128 + v * 127); d[i + 3] = 255; }
+          else { d[i] = d[i + 1] = d[i + 2] = v < 0 ? 0 : 255; d[i + 3] = Math.round(Math.min(1, Math.abs(v)) * 255); }
+        }
+        g.putImageData(img, 0, 0); grainTile = c; grainKey = key;
+      }
+      else for (let i = 0; i < d.length; i += 4) {
         const v = rnd() * 2 - 1, keep = rnd() < share;
         if (rgb) { d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; }
         else d[i] = d[i + 1] = d[i + 2] = v < 0 ? 0 : 255;
         d[i + 3] = keep ? Math.round(Math.min(1, Math.abs(v) ** 1.5 * boost) * 255) : 0;
       }
-      g.putImageData(img, 0, 0); grainTile = c; grainKey = key;
+      if (!film) { g.putImageData(img, 0, 0); grainTile = c; grainKey = key; }
     }
     const pat = ctx.createPattern(grainTile, 'repeat');
     pat.setTransform(new DOMMatrix().scale(unit * S.grainSize));   // speck size scales with the image
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     ctx.globalAlpha = S.grain / 100;
-    ctx.globalCompositeOperation = solid ? 'source-over' : 'source-atop';   // with no background, only on the lines
+    ctx.globalCompositeOperation = !solid ? 'source-atop' : film ? 'overlay' : 'source-over';   // with no background, only on the lines
     ctx.fillStyle = pat; ctx.fillRect(0, 0, w, h);
     ctx.restore();
   }
